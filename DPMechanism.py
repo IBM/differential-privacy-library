@@ -152,6 +152,11 @@ class LaplaceMechanism(DPMechanism):
     def getBias(self, value):
         return 0.0
 
+    def getVariance(self, value):
+        self.checkInputs(0)
+
+        return 2 * (self.sensitivity / self.epsilon) ** 2
+
     def randomise(self, value):
         self.checkInputs(value)
         
@@ -174,11 +179,29 @@ class TruncatedLaplaceMechanism(LaplaceMechanism, TruncationMachine):
 
     def getBias(self, value):
         self.checkInputs(value)
-        TruncationMachine.checkInputs(self, value)
 
         shape = self.sensitivity / self.epsilon
 
         return shape / 2 * (np.exp((self.lowerBound - value) / shape) - np.exp((value - self.upperBound) / shape))
+
+    def getVariance(self, value):
+        self.checkInputs(value)
+
+        shape = self.sensitivity / self.epsilon
+
+        variance = value ** 2 + shape * (self.lowerBound * np.exp((self.lowerBound - value) / shape) \
+                    - self.upperBound * np.exp((value - self.upperBound) / shape))
+        variance += (shape ** 2) * (2 - np.exp((self.lowerBound - value) / shape) - np.exp((value - self.upperBound) / shape))
+
+        variance -= (self.getBias(value) + value) ** 2
+        
+        return variance
+
+    def checkInputs(self, value):
+        super().checkInputs(value)
+        TruncationMachine.checkInputs(self, value)
+        
+        return True
 
     def randomise(self, value):
         TruncationMachine.checkInputs(self, value)
@@ -198,19 +221,20 @@ class FoldedLaplaceMechanism(LaplaceMechanism, FoldingMachine):
         return output
 
     def getBias(self, value):
-        shape = self.sensitivity / self.epsilon
-        # l = (self.lowerBound - value) / b
-        # u = (self.upperBound - value) / b
+        self.checkInputs(value)
 
-        # bias = np.exp(l) * (1 - l) - np.exp(-u) *(1 + u)
-        # bias += np.exp(2 * l) * (1 + np.exp(-2 * u)) * (np.exp(-l) * (l + 1) - np.exp(-u) * (u + 1)) / (1 - np.exp(2 * l - 2 * u))
-        # bias += np.exp(-2 * u) * (1 + np.exp(2 * l)) * (np.exp(u) * (u - 1) - np.exp(l) * (l - 1)) / (1 - np.exp(2 * l - 2 * u))
-        # bias *= b / 2
+        shape = self.sensitivity / self.epsilon
 
         bias = shape * (np.exp((self.lowerBound + self.upperBound - 2 * value) / shape) - 1)
         bias /= np.exp((self.lowerBound - value) / shape) + np.exp((self.upperBound - value) / shape)
 
         return bias
+
+    def checkInputs(self, value):
+        super().checkInputs(value)
+        FoldingMachine.checkInputs(self, value)
+        
+        return True
 
     def randomise(self, value):
         FoldingMachine.checkInputs(self, value)
@@ -271,7 +295,25 @@ class BoundedLaplaceMechanism(TruncatedLaplaceMechanism):
         bias /= 1 - np.exp((self.lowerBound - value) / self.shape) / 2 - np.exp((value - self.upperBound) / self.shape) / 2
 
         return bias
+
+    def getVariance(self, value):
+        self.checkInputs(value)
+
+        if self.shape is None:
+            self.shape = self.__findShape()
+
+        variance = value**2
+        variance -= (np.exp((self.lowerBound - value) / self.shape) * (self.lowerBound ** 2) \
+                + np.exp((value - self.upperBound) / self.shape) * (self.upperBound ** 2)) / 2
+        variance += self.shape * (self.lowerBound * np.exp((self.lowerBound - value) / self.shape) \
+                - self.upperBound * np.exp((value - self.upperBound) / self.shape))
+        variance += (self.shape ** 2) * (2 - np.exp((self.lowerBound - value) / self.shape) - np.exp((value - self.upperBound) / self.shape))
+        variance /= 1 - (np.exp(-(value - self.lowerBound) / self.shape) + np.exp(-(self.upperBound - value) / self.shape)) / 2
         
+        variance -= (self.getBias(value) + value) ** 2
+
+        return variance
+
     def randomise(self, value):
         self.checkInputs(value)
         
