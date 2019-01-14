@@ -32,6 +32,12 @@ class DPMechanism(DPMachine, ABC):
     def getBias(self, value):
         return None
 
+    def getVariance(self, value):
+        return None
+    
+    def getMSE(self, value):
+        return self.getVariance(value) + (self.getBias(value)) ** 2 if self.getVariance(value) is not None else None
+
     def setEpsilon(self, epsilon):
         if self.epsilon is not None:
             raise ValueError("Epsilon cannot be reset; initiate a new mechanism instance instead.")
