@@ -18,6 +18,7 @@ class DPMachine(ABC):
 class DPMechanism(DPMachine, ABC):
     def __init__(self):
         self.epsilon = None
+        self.delta = None
 
     def __repr__(self):
         output = str(self.__module__) + "." + str(self.__class__.__name__) + "()"
@@ -48,6 +49,16 @@ class DPMechanism(DPMachine, ABC):
         self.epsilon = epsilon
         return self
 
+    def setEpsilonDelta(self, epsilon, delta):
+        self.setEpsilon(epsilon)
+
+        if 0 <= delta <= 1:
+            self.delta = delta
+        else:
+            raise ValueError("Delta must be in [0, 1]")
+
+        return self
+
     def checkInputs(self, value):
         if self.epsilon is None:
             raise ValueError("Epsilon must be set")
@@ -62,7 +73,7 @@ class TruncationMachine():
         output = ".setBounds(" + str(self.lowerBound) + ", " + str(self.upperBound) + ")" if self.lowerBound is not None else ""
         
         return output
-        
+
     def setBounds(self, lower, upper):
         if (not isinstance(lower, Number)) or (not isinstance(upper, Number)):
             raise TypeError("Bounds must be numeric")
@@ -369,7 +380,7 @@ class GeometricMechanism(DPMechanism):
 
     def randomise(self, value):
         self.checkInputs(value)
-        
+
         if self.shape is None:
             self.shape = - self.epsilon / self.sensitivity
 
@@ -377,7 +388,7 @@ class GeometricMechanism(DPMechanism):
         u = random() - 0.5 
         u *= 1 + np.exp(self.shape) 
         sgn = -1 if u < 0 else 1
-        
+
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
         return int(value + sgn * np.floor(np.log(sgn * u) / self.shape))
 
