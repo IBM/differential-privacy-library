@@ -738,3 +738,10 @@ class StringtoInt(DPTransformer):
 
     def postTransform(self, value):
         return str(value)
+
+class InttoString(DPTransformer):
+    def preTransform(self, value):
+        return str(value)
+
+    def postTransform(self, value):
+        return int(value)
