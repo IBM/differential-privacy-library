@@ -1,19 +1,28 @@
+from abc import ABC, abstractmethod
 import numpy as np
 from random import random
-from abc import ABC, abstractmethod
 from numbers import Number
 from copy import copy, deepcopy
+
 
 class DPMachine(ABC):
     @abstractmethod
     def randomise(self, value):
         pass
 
+    def randomize(self, value):
+        return self.randomise(value)
+
     def copy(self):
         return copy(self)
 
     def deepcopy(self):
         return deepcopy(self)
+
+    @abstractmethod
+    def set_epsilon(self, epsilon):
+        pass
+
 
 class DPMechanism(DPMachine, ABC):
     def __init__(self):
@@ -30,16 +39,16 @@ class DPMechanism(DPMachine, ABC):
     def randomise(self, value):
         pass
 
-    def getBias(self, value):
+    def get_bias(self, value):
         return None
 
-    def getVariance(self, value):
+    def get_variance(self, value):
         return None
     
-    def getMSE(self, value):
-        return self.getVariance(value) + (self.getBias(value)) ** 2 if self.getVariance(value) is not None else None
+    def get_mse(self, value):
+        return self.get_variance(value) + (self.get_bias(value)) ** 2 if self.get_variance(value) is not None else None
 
-    def setEpsilon(self, epsilon):
+    def set_epsilon(self, epsilon):
         if self.epsilon is not None:
             raise ValueError("Epsilon cannot be reset; initiate a new mechanism instance instead.")
 
@@ -49,8 +58,8 @@ class DPMechanism(DPMachine, ABC):
         self.epsilon = epsilon
         return self
 
-    def setEpsilonDelta(self, epsilon, delta):
-        self.setEpsilon(epsilon)
+    def set_epsilon_delta(self, epsilon, delta):
+        self.set_epsilon(epsilon)
 
         if 0 <= delta <= 1:
             self.delta = delta
@@ -59,80 +68,85 @@ class DPMechanism(DPMachine, ABC):
 
         return self
 
-    def checkInputs(self, value):
+    def check_inputs(self, value):
         if self.epsilon is None:
             raise ValueError("Epsilon must be set")
         return True
 
-class TruncationMachine():
+
+class TruncationMachine:
     def __init__(self):
-        self.lowerBound = None
-        self.upperBound = None
+        self.lower_bound = None
+        self.upper_bound = None
 
     def __repr__(self):
-        output = ".setBounds(" + str(self.lowerBound) + ", " + str(self.upperBound) + ")" if self.lowerBound is not None else ""
+        output = ".setBounds(" + str(self.lower_bound) + ", " + str(self.upper_bound) + ")"\
+            if self.lower_bound is not None else ""
         
         return output
 
-    def setBounds(self, lower, upper):
+    def set_bounds(self, lower, upper):
         if (not isinstance(lower, Number)) or (not isinstance(upper, Number)):
             raise TypeError("Bounds must be numeric")
 
         if lower > upper:
             raise ValueError("Lower bound must not be greater than upper bound")
         
-        self.lowerBound = lower
-        self.upperBound = upper
+        self.lower_bound = lower
+        self.upper_bound = upper
         
         return self
         
-    def checkInputs(self, value):
-        if (self.lowerBound is None) or (self.upperBound is None):
+    def check_inputs(self, value):
+        if (self.lower_bound is None) or (self.upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True
           
     def truncate(self, value):
-        if value > self.upperBound:
-            return self.upperBound
-        elif value < self.lowerBound:
-            return self.lowerBound
+        if value > self.upper_bound:
+            return self.upper_bound
+        elif value < self.lower_bound:
+            return self.lower_bound
 
         return value
 
-class FoldingMachine():
+
+class FoldingMachine:
     def __init__(self):
-        self.lowerBound = None
-        self.upperBound = None
+        self.lower_bound = None
+        self.upper_bound = None
         
     def __repr__(self):
-        output = ".setBounds(" + str(self.lowerBound) + ", " + str(self.upperBound) + ")" if self.lowerBound is not None else ""
+        output = ".setBounds(" + str(self.lower_bound) + ", " + str(self.upper_bound) + ")" \
+            if self.lower_bound is not None else ""
         
         return output
         
-    def setBounds(self, lower, upper):
+    def set_bounds(self, lower, upper):
         if (not isinstance(lower, Number)) or (not isinstance(upper, Number)):
             raise TypeError("Bounds must be numeric")
 
         if lower > upper:
             raise ValueError("Lower bound must not be greater than upper bound")
         
-        self.lowerBound = lower
-        self.upperBound = upper
+        self.lower_bound = lower
+        self.upper_bound = upper
         
         return self
         
-    def checkInputs(self, value):
-        if (self.lowerBound is None) or (self.upperBound is None):
+    def check_inputs(self, value):
+        if (self.lower_bound is None) or (self.upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True
 
     def fold(self, value):
-        if value < self.lowerBound:
-            return self.fold(2 * self.lowerBound - value)
-        if value > self.upperBound:
-            return self.fold(2 * self.upperBound - value)
+        if value < self.lower_bound:
+            return self.fold(2 * self.lower_bound - value)
+        if value > self.upper_bound:
+            return self.fold(2 * self.upper_bound - value)
 
         return value
+
 
 class LaplaceMechanism(DPMechanism):
     def __init__(self):
@@ -145,7 +159,14 @@ class LaplaceMechanism(DPMechanism):
         
         return output
 
-    def setSensitivity(self, sensitivity):
+    def set_sensitivity(self, sensitivity):
+        """
+
+        :param sensitivity: The sensitivity of the function being considered
+        :type sensitivity: `float`
+        :return:
+        """
+
         if not isinstance(sensitivity, Number):
             raise TypeError("Sensitivity must be numeric")
 
@@ -155,8 +176,8 @@ class LaplaceMechanism(DPMechanism):
         self.sensitivity = sensitivity
         return self
         
-    def checkInputs(self, value):
-        super().checkInputs(value)
+    def check_inputs(self, value):
+        super().check_inputs(value)
         
         if not isinstance(value, Number):
             raise TypeError("Value to be randomised must be a number")
@@ -166,22 +187,23 @@ class LaplaceMechanism(DPMechanism):
 
         return True
 
-    def getBias(self, value):
+    def get_bias(self, value):
         return 0.0
 
-    def getVariance(self, value):
-        self.checkInputs(0)
+    def get_variance(self, value):
+        self.check_inputs(0)
 
         return 2 * (self.sensitivity / self.epsilon) ** 2
 
     def randomise(self, value):
-        self.checkInputs(value)
+        self.check_inputs(value)
         
         shape = self.sensitivity / self.epsilon
         
         u = random() - 0.5
 
         return value - shape * np.sign(u) * np.log(1 - 2 * np.abs(u))
+
 
 class TruncatedLaplaceMechanism(LaplaceMechanism, TruncationMachine):
     def __init__(self):
@@ -194,37 +216,39 @@ class TruncatedLaplaceMechanism(LaplaceMechanism, TruncationMachine):
         
         return output
 
-    def getBias(self, value):
-        self.checkInputs(value)
+    def get_bias(self, value):
+        self.check_inputs(value)
 
         shape = self.sensitivity / self.epsilon
 
-        return shape / 2 * (np.exp((self.lowerBound - value) / shape) - np.exp((value - self.upperBound) / shape))
+        return shape / 2 * (np.exp((self.lower_bound - value) / shape) - np.exp((value - self.upper_bound) / shape))
 
-    def getVariance(self, value):
-        self.checkInputs(value)
+    def get_variance(self, value):
+        self.check_inputs(value)
 
         shape = self.sensitivity / self.epsilon
 
-        variance = value ** 2 + shape * (self.lowerBound * np.exp((self.lowerBound - value) / shape) \
-                    - self.upperBound * np.exp((value - self.upperBound) / shape))
-        variance += (shape ** 2) * (2 - np.exp((self.lowerBound - value) / shape) - np.exp((value - self.upperBound) / shape))
+        variance = value ** 2 + shape * (self.lower_bound * np.exp((self.lower_bound - value) / shape)
+                                         - self.upper_bound * np.exp((value - self.upper_bound) / shape))
+        variance += (shape ** 2) * (2 - np.exp((self.lower_bound - value) / shape)
+                                    - np.exp((value - self.upper_bound) / shape))
 
-        variance -= (self.getBias(value) + value) ** 2
-        
+        variance -= (self.get_bias(value) + value) ** 2
+
         return variance
 
-    def checkInputs(self, value):
-        super().checkInputs(value)
-        TruncationMachine.checkInputs(self, value)
-        
+    def check_inputs(self, value):
+        super().check_inputs(value)
+        TruncationMachine.check_inputs(self, value)
+
         return True
 
     def randomise(self, value):
-        TruncationMachine.checkInputs(self, value)
+        TruncationMachine.check_inputs(self, value)
 
-        noisyValue = super().randomise(value)
-        return super().truncate(noisyValue)
+        noisy_value = super().randomise(value)
+        return super().truncate(noisy_value)
+
 
 class FoldedLaplaceMechanism(LaplaceMechanism, FoldingMachine):
     def __init__(self):
@@ -234,118 +258,126 @@ class FoldedLaplaceMechanism(LaplaceMechanism, FoldingMachine):
     def __repr__(self):
         output = super().__repr__()
         output += FoldingMachine.__repr__(self)
-        
+
         return output
 
-    def getBias(self, value):
-        self.checkInputs(value)
+    def get_bias(self, value):
+        self.check_inputs(value)
 
         shape = self.sensitivity / self.epsilon
 
-        bias = shape * (np.exp((self.lowerBound + self.upperBound - 2 * value) / shape) - 1)
-        bias /= np.exp((self.lowerBound - value) / shape) + np.exp((self.upperBound - value) / shape)
+        bias = shape * (np.exp((self.lower_bound + self.upper_bound - 2 * value) / shape) - 1)
+        bias /= np.exp((self.lower_bound - value) / shape) + np.exp((self.upper_bound - value) / shape)
 
         return bias
 
-    def checkInputs(self, value):
-        super().checkInputs(value)
-        FoldingMachine.checkInputs(self, value)
-        
+    def check_inputs(self, value):
+        super().check_inputs(value)
+        FoldingMachine.check_inputs(self, value)
+
         return True
 
     def randomise(self, value):
-        FoldingMachine.checkInputs(self, value)
+        FoldingMachine.check_inputs(self, value)
 
-        noisyValue = super().randomise(value)
-        return super().fold(noisyValue)
+        noisy_value = super().randomise(value)
+        return super().fold(noisy_value)
+
 
 class BoundedLaplaceMechanism(TruncatedLaplaceMechanism):
     def __init__(self):
         super().__init__()
         self.shape = None
 
-    def __findShape(self):
-        EPS = self.epsilon
-        DEL = 0.0
-        DIAM = self.upperBound - self.lowerBound
-        DQ = self.sensitivity
+    def __find_shape(self):
+        eps = self.epsilon
+        delta = 0.0
+        diam = self.upper_bound - self.lower_bound
+        dq = self.sensitivity
 
-        def deltaC(shape):
-            return (2 - np.exp(- DQ / shape) - np.exp(- (DIAM - DQ) / shape)) / (1 - np.exp(- DIAM / shape))
+        def delta_c(shape):
+            return (2 - np.exp(- dq / shape) - np.exp(- (diam - dq) / shape)) / (1 - np.exp(- diam / shape))
 
         def f(shape):
-            return DQ / (EPS - np.log(deltaC(shape)) - np.log(1 - DEL))
+            return dq / (eps - np.log(delta_c(shape)) - np.log(1 - delta))
 
-        left = DQ / (EPS - np.log(1 - DEL))
+        left = dq / (eps - np.log(1 - delta))
         right = f(left)
-        oldIntervalSize = (right - left) * 2
+        old_interval_size = (right - left) * 2
 
-        while (oldIntervalSize > right - left):
-            oldIntervalSize = right - left
+        while old_interval_size > right - left:
+            old_interval_size = right - left
             middle = (right + left)/2
 
-            if (f(middle) >= middle): left = middle
-            if (f(middle) <= middle): right = middle
+            if f(middle) >= middle:
+                left = middle
+            if f(middle) <= middle:
+                right = middle
 
-        return (right + left) / 2   
+        return (right + left) / 2
 
-    def __cdf(self, x, shape):
-        if (x < 0):
+    @staticmethod
+    def __cdf(x, shape):
+        if x < 0:
             return 0.5 * np.exp(x / shape)
         else:
             return 1 - 0.5 * np.exp(-x / shape)
 
-    def getEffectiveEpsilon(self):
+    def get_effective_epsilon(self):
         if self.shape is None:
-            self.shape = self.__findShape()
+            self.shape = self.__find_shape()
 
         return self.sensitivity / self.shape
 
-    def getBias(self, value):
-        self.checkInputs(value)
+    def get_bias(self, value):
+        self.check_inputs(value)
 
         if self.shape is None:
-            self.shape = self.__findShape()
+            self.shape = self.__find_shape()
 
-        bias = (self.shape - self.lowerBound + value) / 2 * np.exp((self.lowerBound - value) / self.shape)\
-            - (self.shape + self.upperBound - value) / 2 * np.exp((value - self.upperBound) / self.shape)
-        bias /= 1 - np.exp((self.lowerBound - value) / self.shape) / 2 - np.exp((value - self.upperBound) / self.shape) / 2
+        bias = (self.shape - self.lower_bound + value) / 2 * np.exp((self.lower_bound - value) / self.shape) \
+            - (self.shape + self.upper_bound - value) / 2 * np.exp((value - self.upper_bound) / self.shape)
+        bias /= 1 - np.exp((self.lower_bound - value) / self.shape) / 2 \
+            - np.exp((value - self.upper_bound) / self.shape) / 2
 
         return bias
 
-    def getVariance(self, value):
-        self.checkInputs(value)
+    def get_variance(self, value):
+        self.check_inputs(value)
 
         if self.shape is None:
-            self.shape = self.__findShape()
+            self.shape = self.__find_shape()
 
         variance = value**2
-        variance -= (np.exp((self.lowerBound - value) / self.shape) * (self.lowerBound ** 2) \
-                + np.exp((value - self.upperBound) / self.shape) * (self.upperBound ** 2)) / 2
-        variance += self.shape * (self.lowerBound * np.exp((self.lowerBound - value) / self.shape) \
-                - self.upperBound * np.exp((value - self.upperBound) / self.shape))
-        variance += (self.shape ** 2) * (2 - np.exp((self.lowerBound - value) / self.shape) - np.exp((value - self.upperBound) / self.shape))
-        variance /= 1 - (np.exp(-(value - self.lowerBound) / self.shape) + np.exp(-(self.upperBound - value) / self.shape)) / 2
-        
-        variance -= (self.getBias(value) + value) ** 2
+        variance -= (np.exp((self.lower_bound - value) / self.shape) * (self.lower_bound ** 2)
+                     + np.exp((value - self.upper_bound) / self.shape) * (self.upper_bound ** 2)) / 2
+        variance += self.shape * (self.lower_bound * np.exp((self.lower_bound - value) / self.shape)
+                                  - self.upper_bound * np.exp((value - self.upper_bound) / self.shape))
+        variance += (self.shape ** 2) * (2 - np.exp((self.lower_bound - value) / self.shape)
+                                         - np.exp((value - self.upper_bound) / self.shape))
+        variance /= 1 - (np.exp(-(value - self.lower_bound) / self.shape)
+                         + np.exp(-(self.upper_bound - value) / self.shape)) / 2
+
+        variance -= (self.get_bias(value) + value) ** 2
 
         return variance
 
     def randomise(self, value):
-        self.checkInputs(value)
-        
+        self.check_inputs(value)
+
         if self.shape is None:
-            self.shape = self.__findShape()
-        
-        value = min(value, self.upperBound)
-        value = max(value, self.lowerBound)
-        
+            self.shape = self.__find_shape()
+
+        value = min(value, self.upper_bound)
+        value = max(value, self.lower_bound)
+
         u = random()
-        u *= self.__cdf(self.upperBound - value, self.shape) - self.__cdf(self.lowerBound - value, self.shape)
-        u += self.__cdf(self.lowerBound - value, self.shape)
+        u *= self.__cdf(self.upper_bound - value, self.shape) - self.__cdf(self.lower_bound - value, self.shape)
+        u += self.__cdf(self.lower_bound - value, self.shape)
         u -= 0.5
-        
+
         return value - self.shape * np.sign(u) * np.log(1 - 2 * np.abs(u))
+
 
 class GeometricMechanism(DPMechanism):
     def __init__(self):
@@ -356,10 +388,16 @@ class GeometricMechanism(DPMechanism):
     def __repr__(self):
         output = super().__repr__()
         output += ".setSensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
-        
+
         return output
-        
-    def setSensitivity(self, sensitivity):
+
+    def set_sensitivity(self, sensitivity):
+        """
+
+        :param sensitivity:
+        :type sensitivity `float`
+        :return:
+        """
         if not isinstance(sensitivity, Number):
             raise TypeError("Sensitivity must be numeric")
 
@@ -369,9 +407,9 @@ class GeometricMechanism(DPMechanism):
         self.sensitivity = sensitivity
         return self
 
-    def checkInputs(self, value):
-        super().checkInputs(value)
-        
+    def check_inputs(self, value):
+        super().check_inputs(value)
+
         if not isinstance(value, Number):
             raise TypeError("Value to be randomised must be a number")
 
@@ -379,21 +417,21 @@ class GeometricMechanism(DPMechanism):
             raise ValueError("Sensitivity must be set")
 
     def randomise(self, value):
-        self.checkInputs(value)
+        self.check_inputs(value)
 
         if self.shape is None:
             self.shape = - self.epsilon / self.sensitivity
 
         # Need to account for overlap of 0-value between distributions of different sign
-        u = random() - 0.5 
-        u *= 1 + np.exp(self.shape) 
+        u = random() - 0.5
+        u *= 1 + np.exp(self.shape)
         sgn = -1 if u < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
         return int(value + sgn * np.floor(np.log(sgn * u) / self.shape))
 
-    def oldRandomise(self, value):
-        self.checkInputs(value)
+    def old_randomise(self, value):
+        self.check_inputs(value)
 
         shape = self.epsilon / self.sensitivity
 
@@ -401,13 +439,14 @@ class GeometricMechanism(DPMechanism):
         sgn = np.sign(u)
         u *= sgn * (np.exp(shape) + 1)/(np.exp(shape) - 1)
 
-        cumProb = -0.5
+        cum_prob = -0.5
         i = -1
-        while u > cumProb:
+        while u > cum_prob:
             i += 1
-            cumProb += np.exp(-shape * i)
+            cum_prob += np.exp(-shape * i)
 
         return int(value + sgn * i)
+
 
 class TruncatedGeometricMechanism(GeometricMechanism, TruncationMachine):
     def __init__(self):
@@ -417,14 +456,15 @@ class TruncatedGeometricMechanism(GeometricMechanism, TruncationMachine):
     def __repr__(self):
         output = super().__repr__()
         output += TruncationMachine.__repr__(self)
-        
+
         return output
 
     def randomise(self, value):
-        TruncationMachine.checkInputs(self, value)
+        TruncationMachine.check_inputs(self, value)
 
-        noisyValue = super().randomise(value)
-        return int(super().truncate(noisyValue))
+        noisy_value = super().randomise(value)
+        return int(super().truncate(noisy_value))
+
 
 class FoldedGeometricMechanism(GeometricMechanism, FoldingMachine):
     def __init__(self):
@@ -434,226 +474,236 @@ class FoldedGeometricMechanism(GeometricMechanism, FoldingMachine):
     def __repr__(self):
         output = super().__repr__()
         output += FoldingMachine.__repr__(self)
-        
+
         return output
 
     def randomise(self, value):
-        FoldingMachine.checkInputs(self, value)
+        FoldingMachine.check_inputs(self, value)
 
-        noisyValue = super().randomise(value)
-        return super().fold(noisyValue)
+        noisy_value = super().randomise(value)
+        return super().fold(noisy_value)
+
 
 class ExponentialMechanism(DPMechanism):
     def __init__(self):
         super().__init__()
-        self.utilityFunction = None
-        self.normalisingConstant = None
+        self.utility_function = None
+        self.normalising_constant = None
         self.sensitivity = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".setUtility(" + str(self.getUtilityList()) + ")" if self.utilityFunction is not None else ""
-        
+        output += ".setUtility(" + str(self.get_utility_list()) + ")" if self.utility_function is not None else ""
+
         return output
 
-    def setUtility(self, utilityList):
-        if (self.epsilon == None):
+    def set_utility(self, utility_list):
+        if self.epsilon is None:
             raise RuntimeError("Epsilon must be set before utility is set")
 
-        if utilityList == None:
+        if utility_list is None:
             return self
 
-        if type(utilityList) is not list:
+        if type(utility_list) is not list:
             raise ValueError("Utility must be in the form of a list")
 
-        utilityFunction = {}
-        domainValues = []
+        utility_function = {}
+        domain_values = []
         sensitivity = 0
 
-        for _utilitySubList in utilityList:
-            value1 = _utilitySubList[0]
-            value2 = _utilitySubList[1]
-            utilityValue = _utilitySubList[2]
+        for _utility_sub_list in utility_list:
+            value1 = _utility_sub_list[0]
+            value2 = _utility_sub_list[1]
+            utility_value = float(_utility_sub_list[2])
 
             if (type(value1) is not str) or (type(value2) is not str):
                 raise ValueError("Utility keys must be strings")
-            if (value1.find("::") >= 0) or (value2.find("::") >= 0)\
-                or value1.endswith(":") or value2.endswith(":"):
+            if (value1.find("::") >= 0) or (value2.find("::") >= 0) \
+                    or value1.endswith(":") or value2.endswith(":"):
                 raise ValueError("Values cannot contain the substring \"::\""
-                    " and cannot end in \":\". Use a DPTransformer if necessary.")
-            if not isinstance(utilityValue, Number):
+                                 " and cannot end in \":\". Use a DPTransformer if necessary.")
+            if not isinstance(utility_value, Number):
                 raise TypeError("Utility value must be a number")
-            if utilityValue < 0:
+            if utility_value < 0.0:
                 raise ValueError("Utility values must be non-negative")
-            
-            sensitivity = max(sensitivity, utilityValue)
-            if value1 not in domainValues: domainValues.append(value1)
-            if value2 not in domainValues: domainValues.append(value2)
 
-            if (value1 is value2):
+            sensitivity = max(sensitivity, utility_value)
+            if value1 not in domain_values:
+                domain_values.append(value1)
+            if value2 not in domain_values:
+                domain_values.append(value2)
+
+            if value1 is value2:
                 continue
             if value1 < value2:
-                utilityFunction[value1 + "::" + value2] = utilityValue
+                utility_function[value1 + "::" + value2] = utility_value
             else:
-                utilityFunction[value2 + "::" + value1] = utilityValue
+                utility_function[value2 + "::" + value1] = utility_value
 
-        self.utilityFunction = utilityFunction
+        self.utility_function = utility_function
         self.sensitivity = sensitivity
-        self.normalisingConstant = self.__buildNormalisingConstant(domainValues)
-        
+        self.normalising_constant = self.__build_normalising_constant(domain_values)
+
         return self
 
-    def getUtilityList(self):
-        if self.utilityFunction == None:
+    def get_utility_list(self):
+        if self.utility_function is None:
             return None
 
-        utilityList = []
+        utility_list = []
 
-        for _key, _value in self.utilityFunction.items():
+        for _key, _value in self.utility_function.items():
             value1, value2 = _key.split("::", maxsplit=1)
-            utilityList.append([value1, value2, _value])
+            utility_list.append([value1, value2, _value])
 
-        return utilityList
-        
-    def __buildNormalisingConstant(self, domainValues, reEval = False):
-        balancedHierarchy = True
-        firstConstantValue = None
-        normalisingConstant = {}
-        
-        for _baseLeaf in domainValues:
-            constantValue = 0.0
-            
-            for _targetLeaf in domainValues:
-                constantValue += self.getProb(_baseLeaf, _targetLeaf)
-        
-            normalisingConstant[_baseLeaf] = constantValue
-            
-            if firstConstantValue == None:
-                firstConstantValue = constantValue
-            elif constantValue != firstConstantValue:
-                balancedHierarchy = False
-            
-        if balancedHierarchy and not reEval:
+        return utility_list
+
+    def __build_normalising_constant(self, domain_values, re_eval=False):
+        balanced_hierarchy = True
+        first_constant_value = None
+        normalising_constant = {}
+
+        for _baseLeaf in domain_values:
+            constant_value = 0.0
+
+            for _targetLeaf in domain_values:
+                constant_value += self.get_prob(_baseLeaf, _targetLeaf)
+
+            normalising_constant[_baseLeaf] = constant_value
+
+            if first_constant_value is None:
+                first_constant_value = constant_value
+            elif constant_value != first_constant_value:
+                balanced_hierarchy = False
+
+        if balanced_hierarchy and not re_eval:
             self.sensitivity /= 2
-            return self.__buildNormalisingConstant(domainValues, True)
-            
-        return normalisingConstant
+            return self.__build_normalising_constant(domain_values, True)
 
-    def __getUtility(self, value1, value2):
+        return normalising_constant
+
+    def __get_utility(self, value1, value2):
         if value1 == value2:
             return 0
-        
+
         if value1 > value2:
-            return self.__getUtility(value2, value1)
-        
-        return self.utilityFunction[value1 + "::" + value2]
-    
-    def getProb(self, value1, value2):
-        return np.exp(- self.epsilon * self.__getUtility(value1, value2) / self.sensitivity)
-    
-    def checkInputs(self, value):
-        super().checkInputs(value)
-        
-        if self.utilityFunction == None:
+            return self.__get_utility(value2, value1)
+
+        return self.utility_function[value1 + "::" + value2]
+
+    def get_prob(self, value1, value2):
+        return np.exp(- self.epsilon * self.__get_utility(value1, value2) / self.sensitivity)
+
+    def check_inputs(self, value):
+        super().check_inputs(value)
+
+        if self.utility_function is None:
             raise ValueError("Utility function must be set")
-        
+
         if type(value) is not str:
             raise TypeError("Value to be randomised must be a string")
 
-        if value not in self.normalisingConstant:
+        if value not in self.normalising_constant:
             raise ValueError("Value \"%s\" not in domain" % value)
-            
+
     def randomise(self, value):
-        self.checkInputs(value)
-        
-        u = random() * self.normalisingConstant[value]
-        cumProb = 0
-        
-        for _targetValue in self.normalisingConstant.keys():
-            cumProb += self.getProb(value, _targetValue)
-            
-            if u <= cumProb:
+        self.check_inputs(value)
+
+        u = random() * self.normalising_constant[value]
+        cum_prob = 0
+
+        for _targetValue in self.normalising_constant.keys():
+            cum_prob += self.get_prob(value, _targetValue)
+
+            if u <= cum_prob:
                 return _targetValue
-        
+
         return None
+
 
 class HierarchicalMechanism(ExponentialMechanism):
     def __init__(self):
         super().__init__()
-        self.listHierarchy = None
+        self.list_hierarchy = None
 
     def __repr__(self):
         output = super(ExponentialMechanism, self).__repr__()
-        output += ".setHierarchy(" + str(self.listHierarchy) + ")" if self.listHierarchy is not None else ""
-        
+        output += ".setHierarchy(" + str(self.list_hierarchy) + ")" if self.list_hierarchy is not None else ""
+
         return output
-        
-    def __buildHierarchy(self, nestedList, parentNode = []):
+
+    def __build_hierarchy(self, nested_list, parent_node=None):
+        if parent_node is None:
+            parent_node = []
+
         hierarchy = {}
 
-        for _i, _value in enumerate(nestedList):
-            if (type(_value) is str):
-                hierarchy[_value] = parentNode + [_i]
-            elif (type(_value) is not list):
-                raise TypeError("All leaves of the hierarchy must be a string " + \
-                                 "(see node " + (parentNode + [_i]).__str__() + ")")
+        for _i, _value in enumerate(nested_list):
+            if type(_value) is str:
+                hierarchy[_value] = parent_node + [_i]
+            elif type(_value) is not list:
+                raise TypeError("All leaves of the hierarchy must be a string " +
+                                "(see node " + (parent_node + [_i]).__str__() + ")")
             else:
-                hierarchy.update(self.__buildHierarchy(_value, parentNode + [_i]))
+                hierarchy.update(self.__build_hierarchy(_value, parent_node + [_i]))
 
-        self.__checkHierarchyHeight(hierarchy)
+        self.__check_hierarchy_height(hierarchy)
 
         return hierarchy
-    
-    def __checkHierarchyHeight(self, hierarchy):
-        hierarchyHeight = None
-        for _value, _hierarchyLocator in hierarchy.items():
-            if hierarchyHeight == None:
-                hierarchyHeight = len(_hierarchyLocator)
-            elif len(_hierarchyLocator) != hierarchyHeight:
-                raise ValueError("Leaves of the hierarchy must all be at the same level " +\
-                                "(node %s is at level %d instead of hierarchy height %d)" %
-                                 (_hierarchyLocator.__str__(), len(_hierarchyLocator), hierarchyHeight))
+
+    @staticmethod
+    def __check_hierarchy_height(hierarchy):
+        hierarchy_height = None
+        for _value, _hierarchy_locator in hierarchy.items():
+            if hierarchy_height is None:
+                hierarchy_height = len(_hierarchy_locator)
+            elif len(_hierarchy_locator) != hierarchy_height:
+                raise ValueError("Leaves of the hierarchy must all be at the same level " +
+                                 "(node %s is at level %d instead of hierarchy height %d)" %
+                                 (_hierarchy_locator.__str__(), len(_hierarchy_locator), hierarchy_height))
         return None
 
-    def __buildUtilityList(self, hierarchy):
+    @staticmethod
+    def __build_utility_list(hierarchy):
         if type(hierarchy) is not dict:
             raise TypeError("Hierarchy must be of type dict")
-   
-        utilityList = []
-        hierarchyHeight = None
-    
-        for _rootValue, _rootHierarchyLocator in hierarchy.items():
-            if hierarchyHeight == None:
-                hierarchyHeight = len(_rootHierarchyLocator)
-                
-            for _targetValue, _targetHierarchyLocatior in hierarchy.items():
-                if _rootValue >= _targetValue:
+
+        utility_list = []
+        hierarchy_height = None
+
+        for _root_value, _root_hierarchy_locator in hierarchy.items():
+            if hierarchy_height is None:
+                hierarchy_height = len(_root_hierarchy_locator)
+
+            for _target_value, _target_hierarchy_locator in hierarchy.items():
+                if _root_value >= _target_value:
                     continue
-                
+
                 i = 0
-                while (i < len(_rootHierarchyLocator) and
-                       _rootHierarchyLocator[i] == _targetHierarchyLocatior[i]):
+                while (i < len(_root_hierarchy_locator) and
+                       _root_hierarchy_locator[i] == _target_hierarchy_locator[i]):
                     i += 1
-                    
-                utilityList.append([_rootValue, _targetValue, hierarchyHeight - i])
-        
-        return utilityList
-    
-    def setHierarchy(self, listHierarchy):
-        if self.epsilon == None:
+
+                utility_list.append([_root_value, _target_value, hierarchy_height - i])
+
+        return utility_list
+
+    def set_hierarchy(self, list_hierarchy):
+        if self.epsilon is None:
             raise RuntimeError("Epsilon must be set before hierarchy is set")
 
-        if listHierarchy == None:
+        if list_hierarchy is None:
             return self
 
-        if type(listHierarchy) is not list:
+        if type(list_hierarchy) is not list:
             raise ValueError("Hierarchy must be a list")
-            
-        self.listHierarchy = listHierarchy
-        hierarchy = self.__buildHierarchy(listHierarchy)
-        self.setUtility(self.__buildUtilityList(hierarchy))
+
+        self.list_hierarchy = list_hierarchy
+        hierarchy = self.__build_hierarchy(list_hierarchy)
+        self.set_utility(self.__build_utility_list(hierarchy))
 
         return self
+
 
 class BinaryMechanism(DPMechanism):
     def __init__(self):
@@ -664,10 +714,10 @@ class BinaryMechanism(DPMechanism):
     def __repr__(self):
         output = super().__repr__()
         output += ".setLabels(" + str(self.value1) + ", " + str(self.value2) + ")" if self.value1 is not None else ""
-        
+
         return output
 
-    def setLabels(self, value1, value2):
+    def set_labels(self, value1, value2):
         if (type(value1) is not str) or (type(value2) is not str):
             raise ValueError("Binary labels must be strings")
 
@@ -680,9 +730,9 @@ class BinaryMechanism(DPMechanism):
         self.value1 = value1
         self.value2 = value2
         return self
-    
-    def checkInputs(self, value):
-        super().checkInputs(value)
+
+    def check_inputs(self, value):
+        super().check_inputs(value)
 
         if (self.value1 is None) or (self.value2 is None):
             raise ValueError("Binary labels must be set")
@@ -694,7 +744,7 @@ class BinaryMechanism(DPMechanism):
             raise ValueError("Value to be randomised is not in the domain")
 
     def randomise(self, value):
-        self.checkInputs(value)
+        self.check_inputs(value)
 
         indicator = 0 if value == self.value1 else 1
 
@@ -705,6 +755,7 @@ class BinaryMechanism(DPMechanism):
 
         return self.value1 if indicator == 0 else self.value2
 
+
 class DPTransformer(DPMachine):
     def __init__(self, parent):
         if not isinstance(parent, DPMachine):
@@ -712,36 +763,39 @@ class DPTransformer(DPMachine):
 
         self.parent = parent
 
-    def preTransform(self, value):
-        return value
-    
-    def postTransform(self, value):
+    def pre_transform(self, value):
         return value
 
-    def setEpsilon(self, epsilon):
-        self.parent.setEpsilon(epsilon)
+    def post_transform(self, value):
+        return value
+
+    def set_epsilon(self, epsilon):
+        self.parent.set_epsilon(epsilon)
         return self
-    
+
     def randomise(self, value):
-        transformedValue = self.preTransform(value)
-        noisyValue = self.parent.randomise(transformedValue)
-        outputValue = self.postTransform(noisyValue)
-        return outputValue
+        transformed_value = self.pre_transform(value)
+        noisy_value = self.parent.randomise(transformed_value)
+        output_value = self.post_transform(noisy_value)
+        return output_value
+
 
 class RoundedInteger(DPTransformer):
-    def postTransform(self, value):
+    def post_transform(self, value):
         return int(np.round(value))
 
-class StringtoInt(DPTransformer):
-    def preTransform(self, value):
+
+class StringToInt(DPTransformer):
+    def pre_transform(self, value):
         return int(value)
 
-    def postTransform(self, value):
+    def post_transform(self, value):
         return str(value)
 
-class InttoString(DPTransformer):
-    def preTransform(self, value):
+
+class IntToString(DPTransformer):
+    def pre_transform(self, value):
         return str(value)
 
-    def postTransform(self, value):
+    def post_transform(self, value):
         return int(value)
