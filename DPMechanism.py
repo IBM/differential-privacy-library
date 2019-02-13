@@ -10,9 +10,6 @@ class DPMachine(ABC):
     def randomise(self, value):
         pass
 
-    def randomize(self, value):
-        return self.randomise(value)
-
     def copy(self):
         return copy(self)
 

@@ -1,0 +1,236 @@
+from numbers import Number
+from numpy import sign, log, abs, exp
+from numpy.random import random
+
+from . import DPMechanism, TruncationMachine, FoldingMachine
+
+
+class Laplace(DPMechanism):
+    def __init__(self):
+        super().__init__()
+        self.sensitivity = None
+
+    def __repr__(self):
+        output = super().__repr__()
+        output += ".setSensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
+
+        return output
+
+    def set_sensitivity(self, sensitivity):
+        """
+
+        :param sensitivity: The sensitivity of the function being considered
+        :type sensitivity: `float`
+        :return:
+        """
+
+        if not isinstance(sensitivity, Number):
+            raise TypeError("Sensitivity must be numeric")
+
+        if sensitivity <= 0:
+            raise ValueError("Sensitivity must be strictly positive")
+
+        self.sensitivity = sensitivity
+        return self
+
+    def check_inputs(self, value):
+        super().check_inputs(value)
+
+        if not isinstance(value, Number):
+            raise TypeError("Value to be randomised must be a number")
+
+        if self.sensitivity is None:
+            raise ValueError("Sensitivity must be set")
+
+        return True
+
+    def get_bias(self, value):
+        return 0.0
+
+    def get_variance(self, value):
+        self.check_inputs(0)
+
+        return 2 * (self.sensitivity / self.epsilon) ** 2
+
+    def randomise(self, value):
+        self.check_inputs(value)
+
+        shape = self.sensitivity / self.epsilon
+
+        u = random() - 0.5
+
+        return value - shape * sign(u) * log(1 - 2 * abs(u))
+
+
+class LaplaceTruncated(Laplace, TruncationMachine):
+    def __init__(self):
+        super().__init__()
+        TruncationMachine.__init__(self)
+
+    def __repr__(self):
+        output = super().__repr__()
+        output += TruncationMachine.__repr__(self)
+
+        return output
+
+    def get_bias(self, value):
+        self.check_inputs(value)
+
+        shape = self.sensitivity / self.epsilon
+
+        return shape / 2 * (exp((self.lower_bound - value) / shape) - exp((value - self.upper_bound) / shape))
+
+    def get_variance(self, value):
+        self.check_inputs(value)
+
+        shape = self.sensitivity / self.epsilon
+
+        variance = value ** 2 + shape * (self.lower_bound * exp((self.lower_bound - value) / shape)
+                                         - self.upper_bound * exp((value - self.upper_bound) / shape))
+        variance += (shape ** 2) * (2 - exp((self.lower_bound - value) / shape)
+                                    - exp((value - self.upper_bound) / shape))
+
+        variance -= (self.get_bias(value) + value) ** 2
+
+        return variance
+
+    def check_inputs(self, value):
+        super().check_inputs(value)
+        TruncationMachine.check_inputs(self, value)
+
+        return True
+
+    def randomise(self, value):
+        TruncationMachine.check_inputs(self, value)
+
+        noisy_value = super().randomise(value)
+        return super().truncate(noisy_value)
+
+
+class LaplaceFolded(Laplace, FoldingMachine):
+    def __init__(self):
+        super().__init__()
+        FoldingMachine.__init__(self)
+
+    def __repr__(self):
+        output = super().__repr__()
+        output += FoldingMachine.__repr__(self)
+
+        return output
+
+    def get_bias(self, value):
+        self.check_inputs(value)
+
+        shape = self.sensitivity / self.epsilon
+
+        bias = shape * (exp((self.lower_bound + self.upper_bound - 2 * value) / shape) - 1)
+        bias /= exp((self.lower_bound - value) / shape) + exp((self.upper_bound - value) / shape)
+
+        return bias
+
+    def check_inputs(self, value):
+        super().check_inputs(value)
+        FoldingMachine.check_inputs(self, value)
+
+        return True
+
+    def randomise(self, value):
+        FoldingMachine.check_inputs(self, value)
+
+        noisy_value = super().randomise(value)
+        return super().fold(noisy_value)
+
+
+class LaplaceBounded(LaplaceTruncated):
+    def __init__(self):
+        super().__init__()
+        self.shape = None
+
+    def __find_shape(self):
+        eps = self.epsilon
+        delta = 0.0
+        diam = self.upper_bound - self.lower_bound
+        dq = self.sensitivity
+
+        def delta_c(shape):
+            return (2 - exp(- dq / shape) - exp(- (diam - dq) / shape)) / (1 - exp(- diam / shape))
+
+        def f(shape):
+            return dq / (eps - log(delta_c(shape)) - log(1 - delta))
+
+        left = dq / (eps - log(1 - delta))
+        right = f(left)
+        old_interval_size = (right - left) * 2
+
+        while old_interval_size > right - left:
+            old_interval_size = right - left
+            middle = (right + left)/2
+
+            if f(middle) >= middle:
+                left = middle
+            if f(middle) <= middle:
+                right = middle
+
+        return (right + left) / 2
+
+    @staticmethod
+    def __cdf(x, shape):
+        if x < 0:
+            return 0.5 * exp(x / shape)
+        else:
+            return 1 - 0.5 * exp(-x / shape)
+
+    def get_effective_epsilon(self):
+        if self.shape is None:
+            self.shape = self.__find_shape()
+
+        return self.sensitivity / self.shape
+
+    def get_bias(self, value):
+        self.check_inputs(value)
+
+        if self.shape is None:
+            self.shape = self.__find_shape()
+
+        bias = (self.shape - self.lower_bound + value) / 2 * exp((self.lower_bound - value) / self.shape) \
+            - (self.shape + self.upper_bound - value) / 2 * exp((value - self.upper_bound) / self.shape)
+        bias /= 1 - exp((self.lower_bound - value) / self.shape) / 2 \
+            - exp((value - self.upper_bound) / self.shape) / 2
+
+        return bias
+
+    def get_variance(self, value):
+        self.check_inputs(value)
+
+        if self.shape is None:
+            self.shape = self.__find_shape()
+
+        variance = value**2
+        variance -= (exp((self.lower_bound - value) / self.shape) * (self.lower_bound ** 2)
+                     + exp((value - self.upper_bound) / self.shape) * (self.upper_bound ** 2)) / 2
+        variance += self.shape * (self.lower_bound * exp((self.lower_bound - value) / self.shape)
+                                  - self.upper_bound * exp((value - self.upper_bound) / self.shape))
+        variance += (self.shape ** 2) * (2 - exp((self.lower_bound - value) / self.shape)
+                                         - exp((value - self.upper_bound) / self.shape))
+        variance /= 1 - (exp(-(value - self.lower_bound) / self.shape)
+                         + exp(-(self.upper_bound - value) / self.shape)) / 2
+
+        variance -= (self.get_bias(value) + value) ** 2
+
+        return variance
+
+    def randomise(self, value):
+        self.check_inputs(value)
+
+        if self.shape is None:
+            self.shape = self.__find_shape()
+
+        value = min(value, self.upper_bound)
+        value = max(value, self.lower_bound)
+
+        u = random()
+        u *= self.__cdf(self.upper_bound - value, self.shape) - self.__cdf(self.lower_bound - value, self.shape)
+        u += self.__cdf(self.lower_bound - value, self.shape)
+        u -= 0.5
+
+        return value - self.shape * sign(u) * log(1 - 2 * abs(u))
