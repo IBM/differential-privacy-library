@@ -1,29 +1,7 @@
-from diffprivlib import DPMachine
+from .utils import DPTransformer
 
-from diffprivlib.mechanisms.transforms.roundedinteger import RoundedInteger
-from diffprivlib.mechanisms.transforms.stringtoint import StringToInt
-from diffprivlib.mechanisms.transforms.inttostring import IntToString
+from .roundedinteger import RoundedInteger
+from .stringtoint import StringToInt
+from .inttostring import IntToString
 
 
-class DPTransformer(DPMachine):
-    def __init__(self, parent):
-        if not isinstance(parent, DPMachine):
-            raise TypeError("Data transformer must take a DPMachine as input")
-
-        self.parent = parent
-
-    def pre_transform(self, value):
-        return value
-
-    def post_transform(self, value):
-        return value
-
-    def set_epsilon(self, epsilon):
-        self.parent.set_epsilon(epsilon)
-        return self
-
-    def randomise(self, value):
-        transformed_value = self.pre_transform(value)
-        noisy_value = self.parent.randomise(transformed_value)
-        output_value = self.post_transform(noisy_value)
-        return output_value

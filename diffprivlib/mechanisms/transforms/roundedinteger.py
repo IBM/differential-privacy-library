@@ -1,6 +1,6 @@
 from numpy import round
 
-from diffprivlib.mechanisms.transforms import DPTransformer
+from . import DPTransformer
 
 
 class RoundedInteger(DPTransformer):

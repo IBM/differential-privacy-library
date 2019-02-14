@@ -1,8 +1,7 @@
-from numbers import Number
 from numpy import sign, log, abs, exp
 from numpy.random import random
 
-from . import DPMechanism, TruncationMachine, FoldingMachine
+from . import DPMechanism, TruncationAndFoldingMachine
 
 
 class Laplace(DPMechanism):
@@ -24,7 +23,7 @@ class Laplace(DPMechanism):
         :return:
         """
 
-        if not isinstance(sensitivity, Number):
+        if not isinstance(sensitivity, int) and not isinstance(sensitivity, float):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity <= 0:
@@ -36,7 +35,7 @@ class Laplace(DPMechanism):
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, Number):
+        if not isinstance(value, int) and not isinstance(value, float):
             raise TypeError("Value to be randomised must be a number")
 
         if self.sensitivity is None:
@@ -62,14 +61,14 @@ class Laplace(DPMechanism):
         return value - shape * sign(u) * log(1 - 2 * abs(u))
 
 
-class LaplaceTruncated(Laplace, TruncationMachine):
+class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
     def __init__(self):
         super().__init__()
-        TruncationMachine.__init__(self)
+        TruncationAndFoldingMachine.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += TruncationMachine.__repr__(self)
+        output += TruncationAndFoldingMachine.__repr__(self)
 
         return output
 
@@ -96,25 +95,25 @@ class LaplaceTruncated(Laplace, TruncationMachine):
 
     def check_inputs(self, value):
         super().check_inputs(value)
-        TruncationMachine.check_inputs(self, value)
+        TruncationAndFoldingMachine.check_inputs(self, value)
 
         return True
 
     def randomise(self, value):
-        TruncationMachine.check_inputs(self, value)
+        TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return super().truncate(noisy_value)
+        return self.truncate(noisy_value)
 
 
-class LaplaceFolded(Laplace, FoldingMachine):
+class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
     def __init__(self):
         super().__init__()
-        FoldingMachine.__init__(self)
+        TruncationAndFoldingMachine.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += FoldingMachine.__repr__(self)
+        output += TruncationAndFoldingMachine.__repr__(self)
 
         return output
 
@@ -130,15 +129,15 @@ class LaplaceFolded(Laplace, FoldingMachine):
 
     def check_inputs(self, value):
         super().check_inputs(value)
-        FoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMachine.check_inputs(self, value)
 
         return True
 
     def randomise(self, value):
-        FoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return super().fold(noisy_value)
+        return self.fold(noisy_value)
 
 
 class LaplaceBounded(LaplaceTruncated):
@@ -173,12 +172,11 @@ class LaplaceBounded(LaplaceTruncated):
 
         return (right + left) / 2
 
-    @staticmethod
-    def __cdf(x, shape):
+    def __cdf(self, x):
         if x < 0:
-            return 0.5 * exp(x / shape)
+            return 0.5 * exp(x / self.shape)
         else:
-            return 1 - 0.5 * exp(-x / shape)
+            return 1 - 0.5 * exp(-x / self.shape)
 
     def get_effective_epsilon(self):
         if self.shape is None:
@@ -229,8 +227,8 @@ class LaplaceBounded(LaplaceTruncated):
         value = max(value, self.lower_bound)
 
         u = random()
-        u *= self.__cdf(self.upper_bound - value, self.shape) - self.__cdf(self.lower_bound - value, self.shape)
-        u += self.__cdf(self.lower_bound - value, self.shape)
+        u *= self.__cdf(self.upper_bound - value) - self.__cdf(self.lower_bound - value)
+        u += self.__cdf(self.lower_bound - value)
         u -= 0.5
 
         return value - self.shape * sign(u) * log(1 - 2 * abs(u))

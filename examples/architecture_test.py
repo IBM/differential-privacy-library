@@ -1,7 +1,7 @@
 import sys
 from os.path import abspath
 
-sys.path.append(abspath('..'))
+sys.path.append(abspath('.'))
 
 # print(abspath('.'))
 

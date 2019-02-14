@@ -1,4 +1,4 @@
-from diffprivlib.mechanisms.transforms import DPTransformer
+from . import DPTransformer
 
 
 class IntToString(DPTransformer):

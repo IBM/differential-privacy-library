@@ -1,8 +1,7 @@
-from numbers import Number
 from numpy import exp
 from numpy.random import random
 
-from diffprivlib.mechanisms import DPMechanism
+from . import DPMechanism
 
 
 class Exponential(DPMechanism):
@@ -43,7 +42,7 @@ class Exponential(DPMechanism):
                     or value1.endswith(":") or value2.endswith(":"):
                 raise ValueError("Values cannot contain the substring \"::\""
                                  " and cannot end in \":\". Use a DPTransformer if necessary.")
-            if not isinstance(utility_value, Number):
+            if not isinstance(utility_value, float) and not isinstance(utility_value, int):
                 raise TypeError("Utility value must be a number")
             if utility_value < 0.0:
                 raise ValueError("Utility values must be non-negative")
@@ -126,6 +125,8 @@ class Exponential(DPMechanism):
 
         if value not in self.normalising_constant:
             raise ValueError("Value \"%s\" not in domain" % value)
+
+        return True
 
     def randomise(self, value):
         self.check_inputs(value)
