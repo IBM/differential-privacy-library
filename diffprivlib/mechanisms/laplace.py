@@ -235,5 +235,39 @@ class LaplaceBoundedDomain(LaplaceTruncated):
 
 
 class LaplaceBoundedNoise(Laplace):
+    def __init__(self):
+        super().__init__()
+        self.shape = None
+        self.noise_bound = None
+
+    def set_epsilon_delta(self, epsilon, delta):
+        if epsilon == 0:
+            raise ValueError("Epsilon must be strictly positive. For zero epsilon, use `mechanisms.Uniform`.")
+
+        if not (0 < delta < 0.5):
+            raise ValueError("Delta must be strictly in (0,0.5). For zero delta, use `mechanisms.Laplace`.")
+
+        return DPMechanism.set_epsilon_delta(self, epsilon, delta)
+
+    def __cdf(self, x):
+        if x < 0:
+            return 0.5 * exp(x / self.shape)
+        else:
+            return 1 - 0.5 * exp(-x / self.shape)
+
+    def get_bias(self, value):
+        return 0.0
+
     def randomise(self, value):
-        raise NotImplementedError
+        self.check_inputs(value)
+
+        if self.shape is None or self.noise_bound is None:
+            self.shape = self.sensitivity / self.epsilon
+            self.noise_bound = self.shape * log(1 + (exp(self.epsilon) - 1) / 2 / self.delta)
+
+        u = random()
+        u *= self.__cdf(self.noise_bound) - self.__cdf(- self.noise_bound)
+        u += self.__cdf(- self.noise_bound)
+        u -= 0.5
+
+        return value - self.shape * sign(u) * log(1 - 2 * abs(u))
