@@ -71,7 +71,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(self.truncate(noisy_value))
+        return int(self.__truncate(noisy_value))
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMachine):
@@ -89,4 +89,4 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(self.fold(noisy_value))
+        return int(self.__fold(noisy_value))

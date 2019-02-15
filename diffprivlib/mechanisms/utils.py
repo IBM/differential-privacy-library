@@ -47,19 +47,24 @@ class DPMechanism(DPMachine, ABC):
         if self.epsilon is not None:
             raise ValueError("Epsilon cannot be reset; initiate a new mechanism instance instead.")
 
-        if epsilon <= 0:
-            raise ValueError("Epsilon must be strictly positive")
+        if epsilon < 0:
+            raise ValueError("Epsilon must be non-negative")
 
         self.epsilon = epsilon
         return self
 
     def set_epsilon_delta(self, epsilon, delta):
-        self.set_epsilon(epsilon)
+        if epsilon < 0:
+            raise ValueError("Epsilon must be non-negative")
 
-        if 0 <= delta <= 1:
-            self.delta = delta
-        else:
+        if not (0 <= delta <= 1):
             raise ValueError("Delta must be in [0, 1]")
+
+        if epsilon + delta == 0:
+            raise ValueError("Epsilon and Delta cannot both be zero")
+
+        self.epsilon = epsilon
+        self.delta = delta
 
         return self
 
@@ -104,7 +109,7 @@ class TruncationAndFoldingMachine:
             raise ValueError("Upper and lower bounds must be set")
         return True
 
-    def truncate(self, value):
+    def __truncate(self, value):
         if value > self.upper_bound:
             return self.upper_bound
         elif value < self.lower_bound:
@@ -112,10 +117,10 @@ class TruncationAndFoldingMachine:
 
         return value
 
-    def fold(self, value):
+    def __fold(self, value):
         if value < self.lower_bound:
-            return self.fold(2 * self.lower_bound - value)
+            return self.__fold(2 * self.lower_bound - value)
         if value > self.upper_bound:
-            return self.fold(2 * self.upper_bound - value)
+            return self.__fold(2 * self.upper_bound - value)
 
         return value

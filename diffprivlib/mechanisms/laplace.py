@@ -103,7 +103,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return self.truncate(noisy_value)
+        return self.__truncate(noisy_value)
 
 
 class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
@@ -137,10 +137,10 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return self.fold(noisy_value)
+        return self.__fold(noisy_value)
 
 
-class LaplaceBounded(LaplaceTruncated):
+class LaplaceBoundedDomain(LaplaceTruncated):
     def __init__(self):
         super().__init__()
         self.shape = None
@@ -163,7 +163,7 @@ class LaplaceBounded(LaplaceTruncated):
 
         while old_interval_size > right - left:
             old_interval_size = right - left
-            middle = (right + left)/2
+            middle = (right + left) / 2
 
             if f(middle) >= middle:
                 left = middle
@@ -232,3 +232,8 @@ class LaplaceBounded(LaplaceTruncated):
         u -= 0.5
 
         return value - self.shape * sign(u) * log(1 - 2 * abs(u))
+
+
+class LaplaceBoundedNoise(Laplace):
+    def randomise(self, value):
+        raise NotImplementedError
