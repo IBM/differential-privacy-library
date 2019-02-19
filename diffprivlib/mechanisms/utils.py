@@ -44,14 +44,10 @@ class DPMechanism(DPMachine, ABC):
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
     def set_epsilon(self, epsilon):
-        if self.epsilon is not None:
-            raise ValueError("Epsilon cannot be reset; initiate a new mechanism instance instead.")
+        if epsilon <= 0:
+            raise ValueError("Epsilon must be strictly positive")
 
-        if epsilon < 0:
-            raise ValueError("Epsilon must be non-negative")
-
-        self.epsilon = epsilon
-        return self
+        return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
         if epsilon < 0:
