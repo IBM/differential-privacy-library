@@ -8,7 +8,7 @@ class Geometric(DPMechanism):
     def __init__(self):
         super().__init__()
         self.sensitivity = None
-        self.shape = None
+        self.scale = None
 
     def __repr__(self):
         output = super().__repr__()
@@ -44,16 +44,16 @@ class Geometric(DPMechanism):
     def randomise(self, value):
         self.check_inputs(value)
 
-        if self.shape is None:
-            self.shape = - self.epsilon / self.sensitivity
+        if self.scale is None:
+            self.scale = - self.epsilon / self.sensitivity
 
         # Need to account for overlap of 0-value between distributions of different sign
         u = random() - 0.5
-        u *= 1 + exp(self.shape)
+        u *= 1 + exp(self.scale)
         sgn = -1 if u < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
-        return int(value + sgn * floor(log(sgn * u) / self.shape))
+        return int(value + sgn * floor(log(sgn * u) / self.scale))
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
