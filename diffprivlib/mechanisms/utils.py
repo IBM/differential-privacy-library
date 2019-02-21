@@ -105,7 +105,7 @@ class TruncationAndFoldingMachine:
             raise ValueError("Upper and lower bounds must be set")
         return True
 
-    def __truncate(self, value):
+    def _truncate(self, value):
         if value > self.upper_bound:
             return self.upper_bound
         elif value < self.lower_bound:
@@ -113,10 +113,10 @@ class TruncationAndFoldingMachine:
 
         return value
 
-    def __fold(self, value):
+    def _fold(self, value):
         if value < self.lower_bound:
-            return self.__fold(2 * self.lower_bound - value)
+            return self._fold(2 * self.lower_bound - value)
         if value > self.upper_bound:
-            return self.__fold(2 * self.upper_bound - value)
+            return self._fold(2 * self.upper_bound - value)
 
         return value

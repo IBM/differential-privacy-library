@@ -103,7 +103,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return self.__truncate(noisy_value)
+        return self._truncate(noisy_value)
 
 
 class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
@@ -137,7 +137,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return self.__fold(noisy_value)
+        return self._fold(noisy_value)
 
 
 class LaplaceBoundedDomain(LaplaceTruncated):
