@@ -10,9 +10,6 @@ class Staircase(Laplace):
         self.gamma = None
 
     def set_gamma(self, gamma):
-        if not isinstance(gamma, float):
-            raise ValueError("Gamma must be a floating point number")
-
         if not (0 <= gamma <= 1):
             raise ValueError("Gamma must be in [0,1]")
 
@@ -26,9 +23,6 @@ class Staircase(Laplace):
             raise ValueError("Gamma must be set")
 
         return True
-
-    def get_variance(self, value):
-        raise NotImplementedError
 
     def randomise(self, value):
         s = -1 if random() < 0.5 else 1
