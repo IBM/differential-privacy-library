@@ -1,13 +1,16 @@
 from unittest import TestCase
 import numpy as np
 
-from diffprivlib.mechanisms import Laplace
+from diffprivlib.mechanisms import Laplace, DPMechanism
 
 
 class TestLaplace(TestCase):
     def test_not_none(self):
         mech = Laplace()
         self.assertIsNotNone(mech)
+
+    def test_class(self):
+        self.assertTrue(issubclass(Laplace, DPMechanism))
 
     def test_no_params(self):
         mech = Laplace()
