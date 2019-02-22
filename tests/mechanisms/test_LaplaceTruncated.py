@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.mechanisms import LaplaceTruncated, DPMechanism
+from diffprivlib.mechanisms import LaplaceTruncated
 
 mech = LaplaceTruncated()
 
@@ -13,6 +13,7 @@ class TestLaplaceTruncated(TestCase):
         self.assertIsNotNone(_mech)
 
     def test_class(self):
+        from diffprivlib.mechanisms import DPMechanism
         self.assertTrue(issubclass(LaplaceTruncated, DPMechanism))
 
     def test_no_params(self):

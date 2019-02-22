@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.mechanisms import LaplaceBoundedDomain, DPMechanism
+from diffprivlib.mechanisms import LaplaceBoundedDomain
 
 mech = LaplaceBoundedDomain()
 
@@ -13,6 +13,7 @@ class TestLaplaceBoundedDomain(TestCase):
         self.assertIsNotNone(_mech)
 
     def test_class(self):
+        from diffprivlib.mechanisms import DPMechanism
         self.assertTrue(issubclass(LaplaceBoundedDomain, DPMechanism))
 
     def test_no_params(self):
