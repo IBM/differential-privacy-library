@@ -70,11 +70,11 @@ class TestLaplaceBoundedDomain(TestCase):
 
         for i in range(runs):
             val0 = _mech.randomise(0)
-            if val0 <= 1 - _mech.noise_bound:
+            if val0 <= 1 - _mech._noise_bound:
                 count[0] += 1
 
             val1 = _mech.randomise(1)
-            if val1 >= _mech.noise_bound:
+            if val1 >= _mech._noise_bound:
                 count[1] += 1
 
         self.assertAlmostEqual(count[0] / runs, delta, delta=delta/10)
@@ -89,5 +89,5 @@ class TestLaplaceBoundedDomain(TestCase):
 
         vals = np.array(vals)
 
-        self.assertTrue(np.all(vals >= -_mech.noise_bound))
-        self.assertTrue(np.all(vals <= _mech.noise_bound))
+        self.assertTrue(np.all(vals >= -_mech._noise_bound))
+        self.assertTrue(np.all(vals <= _mech._noise_bound))
