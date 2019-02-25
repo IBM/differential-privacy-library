@@ -28,6 +28,10 @@ class TestLaplace(TestCase):
         with self.assertRaises(ValueError):
             mech.randomise(1)
 
+    def test_neg_epsilon(self):
+        with self.assertRaises(ValueError):
+            Laplace().set_sensitivity(1).set_epsilon(-1)
+
     def test_non_numeric(self):
         mech = Laplace().set_sensitivity(1).set_epsilon(1)
         with self.assertRaises(TypeError):
