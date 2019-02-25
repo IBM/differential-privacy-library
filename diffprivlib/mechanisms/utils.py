@@ -12,12 +12,16 @@ else:
 
 class DPMechanism(DPMachine, ABC):
     def __init__(self):
-        self.epsilon = None
-        self.delta = None
+        self._epsilon = None
+        self._delta = None
 
     def __repr__(self):
         output = str(self.__module__) + "." + str(self.__class__.__name__) + "()"
-        output += ".setEpsilon(" + str(self.epsilon) + ")" if self.epsilon is not None else ""
+
+        if self._epsilon is not None and self._delta is not None:
+            output += ".set_epsilon_delta(" + str(self._epsilon) + "," + str(self._delta) + ")"
+        elif self._epsilon is not None:
+            output += ".set_epsilon(" + str(self._epsilon) + ")"
 
         return output
 
@@ -50,6 +54,9 @@ class DPMechanism(DPMachine, ABC):
         return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
+        if not isinstance(epsilon, (int, float)) or not isinstance(delta, (int, float)):
+            raise ValueError("Epsilon and delta must be numeric")
+
         if epsilon < 0:
             raise ValueError("Epsilon must be non-negative")
 
@@ -59,8 +66,8 @@ class DPMechanism(DPMachine, ABC):
         if epsilon + delta == 0:
             raise ValueError("Epsilon and Delta cannot both be zero")
 
-        self.epsilon = epsilon
-        self.delta = delta
+        self._epsilon = epsilon
+        self._delta = delta
 
         return self
 
@@ -71,19 +78,19 @@ class DPMechanism(DPMachine, ABC):
         :return:
         :rtype: `bool`
         """
-        if self.epsilon is None:
+        if self._epsilon is None:
             raise ValueError("Epsilon must be set")
         return True
 
 
 class TruncationAndFoldingMachine:
     def __init__(self):
-        self.lower_bound = None
-        self.upper_bound = None
+        self._lower_bound = None
+        self._upper_bound = None
 
     def __repr__(self):
-        output = ".setBounds(" + str(self.lower_bound) + ", " + str(self.upper_bound) + ")" \
-            if self.lower_bound is not None else ""
+        output = ".setBounds(" + str(self._lower_bound) + ", " + str(self._upper_bound) + ")" \
+            if self._lower_bound is not None else ""
 
         return output
 
@@ -95,28 +102,28 @@ class TruncationAndFoldingMachine:
         if lower > upper:
             raise ValueError("Lower bound must not be greater than upper bound")
 
-        self.lower_bound = lower
-        self.upper_bound = upper
+        self._lower_bound = lower
+        self._upper_bound = upper
 
         return self
 
     def check_inputs(self, value):
-        if (self.lower_bound is None) or (self.upper_bound is None):
+        if (self._lower_bound is None) or (self._upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True
 
     def _truncate(self, value):
-        if value > self.upper_bound:
-            return self.upper_bound
-        elif value < self.lower_bound:
-            return self.lower_bound
+        if value > self._upper_bound:
+            return self._upper_bound
+        elif value < self._lower_bound:
+            return self._lower_bound
 
         return value
 
     def _fold(self, value):
-        if value < self.lower_bound:
-            return self._fold(2 * self.lower_bound - value)
-        if value > self.upper_bound:
-            return self._fold(2 * self.upper_bound - value)
+        if value < self._lower_bound:
+            return self._fold(2 * self._lower_bound - value)
+        if value > self._upper_bound:
+            return self._fold(2 * self._upper_bound - value)
 
         return value

@@ -6,7 +6,7 @@ from . import DPMechanism
 class Uniform(DPMechanism):
     def __init__(self):
         super().__init__()
-        self.sensitivity = None
+        self._sensitivity = None
 
     def set_epsilon_delta(self, epsilon, delta):
         if epsilon != 0:
@@ -31,16 +31,24 @@ class Uniform(DPMechanism):
         if sensitivity <= 0:
             raise ValueError("Sensitivity must be strictly positive")
 
-        self.sensitivity = sensitivity
+        self._sensitivity = sensitivity
         return self
 
     def get_bias(self, value):
         return 0.0
 
+    def check_inputs(self, value):
+        super().check_inputs(value)
+
+        if not isinstance(value, (int, float)):
+            raise TypeError("Value to be randomised must be a number")
+
+        return True
+
     def randomise(self, value):
         self.check_inputs(value)
 
         u = 2 * random() - 1
-        u *= self.sensitivity / self.delta / 2
+        u *= self._sensitivity / self._delta / 2
 
         return value + u

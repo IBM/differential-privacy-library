@@ -7,12 +7,12 @@ from . import DPMechanism, TruncationAndFoldingMachine
 class Geometric(DPMechanism):
     def __init__(self):
         super().__init__()
-        self.sensitivity = None
-        self.scale = None
+        self._sensitivity = None
+        self._scale = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".setSensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
+        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
 
         return output
 
@@ -23,37 +23,43 @@ class Geometric(DPMechanism):
         :type sensitivity `float`
         :return:
         """
-        if not isinstance(sensitivity, int):
-            raise TypeError("Sensitivity must be integer-valued")
+        if not isinstance(sensitivity, (int, float)):
+            raise TypeError("Sensitivity must be numeric")
 
         if sensitivity <= 0:
             raise ValueError("Sensitivity must be strictly positive")
 
-        self.sensitivity = sensitivity
+        self._sensitivity = sensitivity
         return self
 
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, int):
-            raise TypeError("Value to be randomised must be an integer")
+        if not isinstance(value, (int, float)):
+            raise TypeError("Value to be randomised must be a number")
 
-        if self.sensitivity is None:
+        if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
+
+    def set_epsilon_delta(self, epsilon, delta):
+        if delta > 0:
+            raise ValueError("Delta must be zero")
+
+        return super().set_epsilon_delta(epsilon, delta)
 
     def randomise(self, value):
         self.check_inputs(value)
 
-        if self.scale is None:
-            self.scale = - self.epsilon / self.sensitivity
+        if self._scale is None:
+            self._scale = - self._epsilon / self._sensitivity
 
         # Need to account for overlap of 0-value between distributions of different sign
         u = random() - 0.5
-        u *= 1 + exp(self.scale)
+        u *= 1 + exp(self._scale)
         sgn = -1 if u < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
-        return int(value + sgn * floor(log(sgn * u) / self.scale))
+        return int(value + sgn * floor(log(sgn * u) / self._scale))
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMachine):

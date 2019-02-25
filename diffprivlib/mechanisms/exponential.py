@@ -13,12 +13,12 @@ class Exponential(DPMechanism):
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".setUtility(" + str(self.get_utility_list()) + ")" if self.utility_function is not None else ""
+        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self.utility_function is not None else ""
 
         return output
 
     def set_utility(self, utility_list):
-        if self.epsilon is None:
+        if self._epsilon is None:
             raise RuntimeError("Epsilon must be set before utility is set")
 
         if utility_list is None:
@@ -112,7 +112,7 @@ class Exponential(DPMechanism):
         return self.utility_function[value1 + "::" + value2]
 
     def get_prob(self, value1, value2):
-        return exp(- self.epsilon * self.__get_utility(value1, value2) / self.sensitivity)
+        return exp(- self._epsilon * self.__get_utility(value1, value2) / self.sensitivity)
 
     def check_inputs(self, value):
         super().check_inputs(value)
@@ -211,7 +211,7 @@ class ExponentialHierarchical(Exponential):
         return utility_list
 
     def set_hierarchy(self, list_hierarchy):
-        if self.epsilon is None:
+        if self._epsilon is None:
             raise RuntimeError("Epsilon must be set before hierarchy is set")
 
         if list_hierarchy is None:

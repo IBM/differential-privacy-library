@@ -7,11 +7,11 @@ from . import DPMechanism, TruncationAndFoldingMachine
 class Laplace(DPMechanism):
     def __init__(self):
         super().__init__()
-        self.sensitivity = None
+        self._sensitivity = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".setSensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
+        output += ".setSensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
 
         return output
 
@@ -23,22 +23,22 @@ class Laplace(DPMechanism):
         :return:
         """
 
-        if not isinstance(sensitivity, int) and not isinstance(sensitivity, float):
+        if not isinstance(sensitivity, (int, float)):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity <= 0:
             raise ValueError("Sensitivity must be strictly positive")
 
-        self.sensitivity = sensitivity
+        self._sensitivity = sensitivity
         return self
 
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, int) and not isinstance(value, float):
+        if not isinstance(value, (int, float)):
             raise TypeError("Value to be randomised must be a number")
 
-        if self.sensitivity is None:
+        if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
 
         return True
@@ -49,12 +49,12 @@ class Laplace(DPMechanism):
     def get_variance(self, value):
         self.check_inputs(0)
 
-        return 2 * (self.sensitivity / self.epsilon) ** 2
+        return 2 * (self._sensitivity / self._epsilon) ** 2
 
     def randomise(self, value):
         self.check_inputs(value)
 
-        scale = self.sensitivity / self.epsilon
+        scale = self._sensitivity / self._epsilon
 
         u = random() - 0.5
 
@@ -75,19 +75,19 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
     def get_bias(self, value):
         self.check_inputs(value)
 
-        shape = self.sensitivity / self.epsilon
+        shape = self._sensitivity / self._epsilon
 
-        return shape / 2 * (exp((self.lower_bound - value) / shape) - exp((value - self.upper_bound) / shape))
+        return shape / 2 * (exp((self._lower_bound - value) / shape) - exp((value - self._upper_bound) / shape))
 
     def get_variance(self, value):
         self.check_inputs(value)
 
-        shape = self.sensitivity / self.epsilon
+        shape = self._sensitivity / self._epsilon
 
-        variance = value ** 2 + shape * (self.lower_bound * exp((self.lower_bound - value) / shape)
-                                         - self.upper_bound * exp((value - self.upper_bound) / shape))
-        variance += (shape ** 2) * (2 - exp((self.lower_bound - value) / shape)
-                                    - exp((value - self.upper_bound) / shape))
+        variance = value ** 2 + shape * (self._lower_bound * exp((self._lower_bound - value) / shape)
+                                         - self._upper_bound * exp((value - self._upper_bound) / shape))
+        variance += (shape ** 2) * (2 - exp((self._lower_bound - value) / shape)
+                                    - exp((value - self._upper_bound) / shape))
 
         variance -= (self.get_bias(value) + value) ** 2
 
@@ -120,10 +120,10 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
     def get_bias(self, value):
         self.check_inputs(value)
 
-        shape = self.sensitivity / self.epsilon
+        shape = self._sensitivity / self._epsilon
 
-        bias = shape * (exp((self.lower_bound + self.upper_bound - 2 * value) / shape) - 1)
-        bias /= exp((self.lower_bound - value) / shape) + exp((self.upper_bound - value) / shape)
+        bias = shape * (exp((self._lower_bound + self._upper_bound - 2 * value) / shape) - 1)
+        bias /= exp((self._lower_bound - value) / shape) + exp((self._upper_bound - value) / shape)
 
         return bias
 
@@ -143,13 +143,13 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
 class LaplaceBoundedDomain(LaplaceTruncated):
     def __init__(self):
         super().__init__()
-        self.scale = None
+        self._scale = None
 
-    def __find_scale(self):
-        eps = self.epsilon
+    def _find_scale(self):
+        eps = self._epsilon
         delta = 0.0
-        diam = self.upper_bound - self.lower_bound
-        dq = self.sensitivity
+        diam = self._upper_bound - self._lower_bound
+        dq = self._sensitivity
 
         def delta_c(shape):
             return (2 - exp(- dq / shape) - exp(- (diam - dq) / shape)) / (1 - exp(- diam / shape))
@@ -172,46 +172,46 @@ class LaplaceBoundedDomain(LaplaceTruncated):
 
         return (right + left) / 2
 
-    def __cdf(self, x):
+    def _cdf(self, x):
         if x < 0:
-            return 0.5 * exp(x / self.scale)
+            return 0.5 * exp(x / self._scale)
         else:
-            return 1 - 0.5 * exp(-x / self.scale)
+            return 1 - 0.5 * exp(-x / self._scale)
 
     def get_effective_epsilon(self):
-        if self.scale is None:
-            self.scale = self.__find_scale()
+        if self._scale is None:
+            self._scale = self._find_scale()
 
-        return self.sensitivity / self.scale
+        return self._sensitivity / self._scale
 
     def get_bias(self, value):
         self.check_inputs(value)
 
-        if self.scale is None:
-            self.scale = self.__find_scale()
+        if self._scale is None:
+            self._scale = self._find_scale()
 
-        bias = (self.scale - self.lower_bound + value) / 2 * exp((self.lower_bound - value) / self.scale) \
-            - (self.scale + self.upper_bound - value) / 2 * exp((value - self.upper_bound) / self.scale)
-        bias /= 1 - exp((self.lower_bound - value) / self.scale) / 2 \
-            - exp((value - self.upper_bound) / self.scale) / 2
+        bias = (self._scale - self._lower_bound + value) / 2 * exp((self._lower_bound - value) / self._scale) \
+               - (self._scale + self._upper_bound - value) / 2 * exp((value - self._upper_bound) / self._scale)
+        bias /= 1 - exp((self._lower_bound - value) / self._scale) / 2 \
+                - exp((value - self._upper_bound) / self._scale) / 2
 
         return bias
 
     def get_variance(self, value):
         self.check_inputs(value)
 
-        if self.scale is None:
-            self.scale = self.__find_scale()
+        if self._scale is None:
+            self._scale = self._find_scale()
 
         variance = value**2
-        variance -= (exp((self.lower_bound - value) / self.scale) * (self.lower_bound ** 2)
-                     + exp((value - self.upper_bound) / self.scale) * (self.upper_bound ** 2)) / 2
-        variance += self.scale * (self.lower_bound * exp((self.lower_bound - value) / self.scale)
-                                  - self.upper_bound * exp((value - self.upper_bound) / self.scale))
-        variance += (self.scale ** 2) * (2 - exp((self.lower_bound - value) / self.scale)
-                                         - exp((value - self.upper_bound) / self.scale))
-        variance /= 1 - (exp(-(value - self.lower_bound) / self.scale)
-                         + exp(-(self.upper_bound - value) / self.scale)) / 2
+        variance -= (exp((self._lower_bound - value) / self._scale) * (self._lower_bound ** 2)
+                     + exp((value - self._upper_bound) / self._scale) * (self._upper_bound ** 2)) / 2
+        variance += self._scale * (self._lower_bound * exp((self._lower_bound - value) / self._scale)
+                                   - self._upper_bound * exp((value - self._upper_bound) / self._scale))
+        variance += (self._scale ** 2) * (2 - exp((self._lower_bound - value) / self._scale)
+                                          - exp((value - self._upper_bound) / self._scale))
+        variance /= 1 - (exp(-(value - self._lower_bound) / self._scale)
+                         + exp(-(self._upper_bound - value) / self._scale)) / 2
 
         variance -= (self.get_bias(value) + value) ** 2
 
@@ -220,25 +220,25 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     def randomise(self, value):
         self.check_inputs(value)
 
-        if self.scale is None:
-            self.scale = self.__find_scale()
+        if self._scale is None:
+            self._scale = self._find_scale()
 
-        value = min(value, self.upper_bound)
-        value = max(value, self.lower_bound)
+        value = min(value, self._upper_bound)
+        value = max(value, self._lower_bound)
 
         u = random()
-        u *= self.__cdf(self.upper_bound - value) - self.__cdf(self.lower_bound - value)
-        u += self.__cdf(self.lower_bound - value)
+        u *= self._cdf(self._upper_bound - value) - self._cdf(self._lower_bound - value)
+        u += self._cdf(self._lower_bound - value)
         u -= 0.5
 
-        return value - self.scale * sign(u) * log(1 - 2 * abs(u))
+        return value - self._scale * sign(u) * log(1 - 2 * abs(u))
 
 
 class LaplaceBoundedNoise(Laplace):
     def __init__(self):
         super().__init__()
-        self.shape = None
-        self.noise_bound = None
+        self._shape = None
+        self._noise_bound = None
 
     def set_epsilon_delta(self, epsilon, delta):
         if epsilon == 0:
@@ -249,11 +249,11 @@ class LaplaceBoundedNoise(Laplace):
 
         return DPMechanism.set_epsilon_delta(self, epsilon, delta)
 
-    def __cdf(self, x):
+    def _cdf(self, x):
         if x < 0:
-            return 0.5 * exp(x / self.shape)
+            return 0.5 * exp(x / self._shape)
         else:
-            return 1 - 0.5 * exp(-x / self.shape)
+            return 1 - 0.5 * exp(-x / self._shape)
 
     def get_bias(self, value):
         return 0.0
@@ -261,13 +261,13 @@ class LaplaceBoundedNoise(Laplace):
     def randomise(self, value):
         self.check_inputs(value)
 
-        if self.shape is None or self.noise_bound is None:
-            self.shape = self.sensitivity / self.epsilon
-            self.noise_bound = self.shape * log(1 + (exp(self.epsilon) - 1) / 2 / self.delta)
+        if self._shape is None or self._noise_bound is None:
+            self._shape = self._sensitivity / self._epsilon
+            self._noise_bound = self._shape * log(1 + (exp(self._epsilon) - 1) / 2 / self._delta)
 
         u = random()
-        u *= self.__cdf(self.noise_bound) - self.__cdf(- self.noise_bound)
-        u += self.__cdf(- self.noise_bound)
+        u *= self._cdf(self._noise_bound) - self._cdf(- self._noise_bound)
+        u += self._cdf(- self._noise_bound)
         u -= 0.5
 
-        return value - self.shape * sign(u) * log(1 - 2 * abs(u))
+        return value - self._shape * sign(u) * log(1 - 2 * abs(u))
