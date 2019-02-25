@@ -43,6 +43,9 @@ class Uniform(DPMechanism):
         if not isinstance(value, (int, float)):
             raise TypeError("Value to be randomised must be a number")
 
+        if self._sensitivity is None:
+            raise ValueError("Sensitivity must be set")
+
         return True
 
     def randomise(self, value):
