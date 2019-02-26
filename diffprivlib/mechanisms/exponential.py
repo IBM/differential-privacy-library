@@ -7,13 +7,13 @@ from . import DPMechanism
 class Exponential(DPMechanism):
     def __init__(self):
         super().__init__()
-        self.utility_function = None
-        self.normalising_constant = None
-        self.sensitivity = None
+        self._utility_function = None
+        self._normalising_constant = None
+        self._sensitivity = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self.utility_function is not None else ""
+        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self._utility_function is not None else ""
 
         return output
 
@@ -60,25 +60,25 @@ class Exponential(DPMechanism):
             else:
                 utility_function[value2 + "::" + value1] = utility_value
 
-        self.utility_function = utility_function
-        self.sensitivity = sensitivity
-        self.normalising_constant = self.__build_normalising_constant(domain_values)
+        self._utility_function = utility_function
+        self._sensitivity = sensitivity
+        self._normalising_constant = self._build_normalising_constant(domain_values)
 
         return self
 
     def get_utility_list(self):
-        if self.utility_function is None:
+        if self._utility_function is None:
             return None
 
         utility_list = []
 
-        for _key, _value in self.utility_function.items():
+        for _key, _value in self._utility_function.items():
             value1, value2 = _key.split("::", maxsplit=1)
             utility_list.append([value1, value2, _value])
 
         return utility_list
 
-    def __build_normalising_constant(self, domain_values, re_eval=False):
+    def _build_normalising_constant(self, domain_values, re_eval=False):
         balanced_hierarchy = True
         first_constant_value = None
         normalising_constant = {}
@@ -97,33 +97,33 @@ class Exponential(DPMechanism):
                 balanced_hierarchy = False
 
         if balanced_hierarchy and not re_eval:
-            self.sensitivity /= 2
-            return self.__build_normalising_constant(domain_values, True)
+            self._sensitivity /= 2
+            return self._build_normalising_constant(domain_values, True)
 
         return normalising_constant
 
-    def __get_utility(self, value1, value2):
+    def _get_utility(self, value1, value2):
         if value1 == value2:
             return 0
 
         if value1 > value2:
-            return self.__get_utility(value2, value1)
+            return self._get_utility(value2, value1)
 
-        return self.utility_function[value1 + "::" + value2]
+        return self._utility_function[value1 + "::" + value2]
 
     def get_prob(self, value1, value2):
-        return exp(- self._epsilon * self.__get_utility(value1, value2) / self.sensitivity)
+        return exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
 
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if self.utility_function is None:
+        if self._utility_function is None:
             raise ValueError("Utility function must be set")
 
         if type(value) is not str:
             raise TypeError("Value to be randomised must be a string")
 
-        if value not in self.normalising_constant:
+        if value not in self._normalising_constant:
             raise ValueError("Value \"%s\" not in domain" % value)
 
         return True
@@ -131,10 +131,10 @@ class Exponential(DPMechanism):
     def randomise(self, value):
         self.check_inputs(value)
 
-        u = random() * self.normalising_constant[value]
+        u = random() * self._normalising_constant[value]
         cum_prob = 0
 
-        for _targetValue in self.normalising_constant.keys():
+        for _targetValue in self._normalising_constant.keys():
             cum_prob += self.get_prob(value, _targetValue)
 
             if u <= cum_prob:
@@ -146,15 +146,15 @@ class Exponential(DPMechanism):
 class ExponentialHierarchical(Exponential):
     def __init__(self):
         super().__init__()
-        self.list_hierarchy = None
+        self._list_hierarchy = None
 
     def __repr__(self):
         output = super(Exponential, self).__repr__()
-        output += ".setHierarchy(" + str(self.list_hierarchy) + ")" if self.list_hierarchy is not None else ""
+        output += ".set_hierarchy(" + str(self._list_hierarchy) + ")" if self._list_hierarchy is not None else ""
 
         return output
 
-    def __build_hierarchy(self, nested_list, parent_node=None):
+    def _build_hierarchy(self, nested_list, parent_node=None):
         if parent_node is None:
             parent_node = []
 
@@ -167,14 +167,14 @@ class ExponentialHierarchical(Exponential):
                 raise TypeError("All leaves of the hierarchy must be a string " +
                                 "(see node " + (parent_node + [_i]).__str__() + ")")
             else:
-                hierarchy.update(self.__build_hierarchy(_value, parent_node + [_i]))
+                hierarchy.update(self._build_hierarchy(_value, parent_node + [_i]))
 
-        self.__check_hierarchy_height(hierarchy)
+        self._check_hierarchy_height(hierarchy)
 
         return hierarchy
 
     @staticmethod
-    def __check_hierarchy_height(hierarchy):
+    def _check_hierarchy_height(hierarchy):
         hierarchy_height = None
         for _value, _hierarchy_locator in hierarchy.items():
             if hierarchy_height is None:
@@ -186,7 +186,7 @@ class ExponentialHierarchical(Exponential):
         return None
 
     @staticmethod
-    def __build_utility_list(hierarchy):
+    def _build_utility_list(hierarchy):
         if type(hierarchy) is not dict:
             raise TypeError("Hierarchy must be of type dict")
 
@@ -220,8 +220,8 @@ class ExponentialHierarchical(Exponential):
         if type(list_hierarchy) is not list:
             raise ValueError("Hierarchy must be a list")
 
-        self.list_hierarchy = list_hierarchy
-        hierarchy = self.__build_hierarchy(list_hierarchy)
-        self.set_utility(self.__build_utility_list(hierarchy))
+        self._list_hierarchy = list_hierarchy
+        hierarchy = self._build_hierarchy(list_hierarchy)
+        self.set_utility(self._build_utility_list(hierarchy))
 
         return self
