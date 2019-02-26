@@ -34,10 +34,12 @@ class Staircase(Laplace):
         return 0.0
 
     def randomise(self, value):
+        self.check_inputs(value)
+
         s = -1 if random() < 0.5 else 1
         g = geometric(1 - exp(- self._epsilon)) - 1
         u = random()
         b = 0 if random() < self._gamma / (self._gamma + (1 - self._gamma) * exp(- self._epsilon)) else 1
 
-        return s * ((1 - b) * ((g + self._gamma * u) * self._sensitivity) +
-                    b * ((g + self._gamma + (1 - self._gamma) * u) * self._sensitivity))
+        return value + s * ((1 - b) * ((g + self._gamma * u) * self._sensitivity) +
+                            b * ((g + self._gamma + (1 - self._gamma) * u) * self._sensitivity))
