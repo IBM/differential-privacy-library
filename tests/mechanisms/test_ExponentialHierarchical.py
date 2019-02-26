@@ -73,3 +73,4 @@ class TestExponentialHierarchical(TestCase):
 
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
         self.assertAlmostEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs, delta=0.1)
+        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
