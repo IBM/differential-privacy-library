@@ -128,6 +128,12 @@ class Exponential(DPMechanism):
 
         return True
 
+    def set_epsilon_delta(self, epsilon, delta):
+        if delta > 0:
+            raise ValueError("Delta must be zero")
+
+        return super().set_epsilon_delta(epsilon, delta)
+
     def randomise(self, value):
         self.check_inputs(value)
 
