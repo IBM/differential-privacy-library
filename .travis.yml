@@ -5,7 +5,7 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install .
-  - sudo apt-get install -y pycodestyle
+  - pip install pycodestyle
 
 script:
   - pytest
