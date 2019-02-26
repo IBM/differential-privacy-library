@@ -191,9 +191,9 @@ class LaplaceBoundedDomain(LaplaceTruncated):
             self._scale = self._find_scale()
 
         bias = (self._scale - self._lower_bound + value) / 2 * exp((self._lower_bound - value) / self._scale) \
-               - (self._scale + self._upper_bound - value) / 2 * exp((value - self._upper_bound) / self._scale)
+            - (self._scale + self._upper_bound - value) / 2 * exp((value - self._upper_bound) / self._scale)
         bias /= 1 - exp((self._lower_bound - value) / self._scale) / 2 \
-                - exp((value - self._upper_bound) / self._scale) / 2
+            - exp((value - self._upper_bound) / self._scale) / 2
 
         return bias
 

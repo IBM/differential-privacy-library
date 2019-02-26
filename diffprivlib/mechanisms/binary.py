@@ -19,7 +19,7 @@ class Binary(DPMechanism):
     def set_labels(self, value0, value1):
         if (type(value0) is not str) or (type(value1) is not str):
             raise TypeError("Binary labels must be strings. Use a DPTransformer"
-                             " (e.g. transformers.IntToString) for non-string labels")
+                            " (e.g. transformers.IntToString) for non-string labels")
 
         if len(value0) * len(value1) == 0:
             raise ValueError("Binary labels must be non-empty strings")
