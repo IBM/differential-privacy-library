@@ -9,4 +9,4 @@ install:
 
 script:
   - pytest
-  - pycodestyle --max-line-length=121
+  - pycodestyle --max-line-length=121 diffprivlib
