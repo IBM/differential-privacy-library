@@ -23,8 +23,8 @@ class Geometric(DPMechanism):
         :type sensitivity `float`
         :return:
         """
-        if not isinstance(sensitivity, (int, float)):
-            raise TypeError("Sensitivity must be numeric")
+        if not isinstance(sensitivity, int):
+            raise TypeError("Sensitivity must be an integer")
 
         if sensitivity <= 0:
             raise ValueError("Sensitivity must be strictly positive")
@@ -35,8 +35,8 @@ class Geometric(DPMechanism):
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, (int, float)):
-            raise TypeError("Value to be randomised must be a number")
+        if not isinstance(value, int):
+            raise TypeError("Value to be randomised must be an integer")
 
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
@@ -59,7 +59,7 @@ class Geometric(DPMechanism):
         sgn = -1 if u < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
-        return int(value + sgn * floor(log(sgn * u) / self._scale))
+        return int(round(value + sgn * floor(log(sgn * u) / self._scale)))
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
@@ -73,11 +73,17 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
 
         return output
 
+    def set_bounds(self, lower, upper):
+        if not isinstance(lower, int) or not isinstance(upper, int):
+            raise TypeError("Bounds must be integers")
+
+        return super().set_bounds(lower, upper)
+
     def randomise(self, value):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(self._truncate(noisy_value))
+        return int(round(self._truncate(noisy_value)))
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMachine):
@@ -91,8 +97,11 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
 
         return output
 
+    def _fold(self, value):
+        return super()._fold(int(round(value)))
+
     def randomise(self, value):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(self._fold(noisy_value))
+        return int(round(self._fold(noisy_value)))
