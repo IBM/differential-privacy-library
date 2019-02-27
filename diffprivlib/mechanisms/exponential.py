@@ -37,7 +37,7 @@ class Exponential(DPMechanism):
             utility_value = float(_utility_sub_list[2])
 
             if (type(value1) is not str) or (type(value2) is not str):
-                raise ValueError("Utility keys must be strings")
+                raise TypeError("Utility keys must be strings")
             if (value1.find("::") >= 0) or (value2.find("::") >= 0) \
                     or value1.endswith(":") or value2.endswith(":"):
                 raise ValueError("Values cannot contain the substring \"::\""
@@ -62,9 +62,21 @@ class Exponential(DPMechanism):
 
         self._utility_function = utility_function
         self._sensitivity = sensitivity
+
+        self._check_utility_full(domain_values)
+
         self._normalising_constant = self._build_normalising_constant(domain_values)
 
         return self
+
+    def _check_utility_full(self, domain_values):
+        for val1 in domain_values:
+            for val2 in domain_values:
+                if val1 >= val2:
+                    continue
+
+                if val1 + "::" + val2 not in self._utility_function:
+                    raise ValueError("Utility value for %s missing" % (val1 + "::" + val2))
 
     def get_utility_list(self):
         if self._utility_function is None:
