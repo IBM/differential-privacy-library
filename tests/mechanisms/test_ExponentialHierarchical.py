@@ -58,7 +58,7 @@ class TestExponentialHierarchical(TestCase):
 
     def test_distrib(self):
         epsilon = np.log(2)
-        runs = 10000
+        runs = 20000
         _mech = mech.copy().set_epsilon(epsilon).set_hierarchy([["A", "B"], ["C"]])
         count = [0, 0, 0]
 
