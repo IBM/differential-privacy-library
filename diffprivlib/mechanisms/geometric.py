@@ -1,5 +1,5 @@
 from numpy.random import random
-from numpy import exp, floor, log
+from numpy import exp, floor, log, isclose
 
 from . import DPMechanism, TruncationAndFoldingMachine
 
@@ -96,6 +96,12 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
         output += TruncationAndFoldingMachine.__repr__(self)
 
         return output
+
+    def set_bounds(self, lower, upper):
+        if not isclose(2 * lower, round(2 * lower)) or not isclose(2 * upper, round(2 * upper)):
+            raise ValueError("Bounds must be integer or half-integer floats")
+
+        return super().set_bounds(lower, upper)
 
     def _fold(self, value):
         return super()._fold(int(round(value)))
