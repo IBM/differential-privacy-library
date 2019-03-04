@@ -1,3 +1,5 @@
+from numbers import Real
+
 from numpy import log, sqrt, cos, pi
 from numpy.random import random
 
@@ -11,17 +13,17 @@ class Gaussian(DPMechanism):
         self._scale = None
 
     def set_epsilon_delta(self, epsilon, delta):
-        if epsilon * delta == 0:
+        if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        if epsilon > 1.0:
+        if isinstance(epsilon, Real) and epsilon > 1.0:
             raise ValueError("Epsilon cannot be greater than 1")
 
         self._scale = None
         return super().set_epsilon_delta(epsilon, delta)
 
     def set_sensitivity(self, sensitivity):
-        if not isinstance(sensitivity, (int, float)):
+        if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity <= 0:
@@ -40,7 +42,10 @@ class Gaussian(DPMechanism):
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
 
-        if not isinstance(value, (int, float)):
+        if self._scale is None:
+            self._scale = sqrt(2 * log(1.25 / self._delta)) * self._sensitivity / self._epsilon
+
+        if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         return True
@@ -55,9 +60,6 @@ class Gaussian(DPMechanism):
 
     def randomise(self, value):
         self.check_inputs(value)
-
-        if self._scale is None:
-            self._scale = sqrt(2 * log(1.25 / self._delta)) * self._sensitivity / self._epsilon
 
         u1 = random()
         u2 = random()

@@ -32,20 +32,34 @@ class TestLaplaceBoundedDomain(TestCase):
             _mech.randomise(1)
 
     def test_neg_epsilon(self):
+        _mech = mech.copy().set_sensitivity(1)
         with self.assertRaises(ValueError):
-            _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(-1, 0.1)
+            _mech.set_epsilon_delta(-1, 0.1)
 
     def test_zero_epsilon(self):
+        _mech = mech.copy().set_sensitivity(1)
         with self.assertRaises(ValueError):
-            _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(0, 0.1)
+            _mech.set_epsilon_delta(0, 0.1)
+
+    def test_complex_epsilon(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon(1+2j)
+
+    def test_string_epsilon(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon("Two")
 
     def test_no_delta(self):
+        _mech = mech.copy().set_sensitivity(1)
         with self.assertRaises(ValueError):
-            _mech = mech.copy().set_sensitivity(1).set_epsilon(1)
+            _mech.set_epsilon(1)
 
     def test_large_delta(self):
+        _mech = mech.copy().set_sensitivity(1)
         with self.assertRaises(ValueError):
-            _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(1, 0.6)
+            _mech.set_epsilon_delta(1, 0.6)
 
     def test_non_numeric(self):
         _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(1, 0.1)

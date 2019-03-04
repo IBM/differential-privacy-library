@@ -12,7 +12,8 @@ class Binary(DPMechanism):
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_labels(" + str(self._value0) + ", " + str(self._value1) + ")" if self._value0 is not None else ""
+        output += ".set_labels(" + str(self._value0) + ", " + str(self._value1) + ")" \
+            if self._value0 is not None else ""
 
         return output
 

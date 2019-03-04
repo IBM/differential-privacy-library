@@ -1,3 +1,5 @@
+from numbers import Real
+
 from numpy import exp
 from numpy.random import random
 
@@ -34,7 +36,7 @@ class Exponential(DPMechanism):
         for _utility_sub_list in utility_list:
             value1 = _utility_sub_list[0]
             value2 = _utility_sub_list[1]
-            utility_value = float(_utility_sub_list[2])
+            utility_value = _utility_sub_list[2]
 
             if (type(value1) is not str) or (type(value2) is not str):
                 raise TypeError("Utility keys must be strings")
@@ -42,7 +44,7 @@ class Exponential(DPMechanism):
                     or value1.endswith(":") or value2.endswith(":"):
                 raise ValueError("Values cannot contain the substring \"::\""
                                  " and cannot end in \":\". Use a DPTransformer if necessary.")
-            if not isinstance(utility_value, float) and not isinstance(utility_value, int):
+            if not isinstance(utility_value, Real):
                 raise TypeError("Utility value must be a number")
             if utility_value < 0.0:
                 raise ValueError("Utility values must be non-negative")

@@ -1,5 +1,6 @@
 import abc
 import sys
+from numbers import Real
 
 from .. import DPMachine
 
@@ -54,20 +55,21 @@ class DPMechanism(DPMachine, ABC):
         return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
-        if not isinstance(epsilon, (int, float)) or not isinstance(delta, (int, float)):
+        if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise ValueError("Epsilon and delta must be numeric")
 
         if epsilon < 0:
             raise ValueError("Epsilon must be non-negative")
 
+        # noinspection PyTypeChecker
         if not (0 <= delta <= 1):
             raise ValueError("Delta must be in [0, 1]")
 
         if epsilon + delta == 0:
             raise ValueError("Epsilon and Delta cannot both be zero")
 
-        self._epsilon = epsilon
-        self._delta = delta
+        self._epsilon = float(epsilon)
+        self._delta = float(delta)
 
         return self
 
@@ -95,15 +97,14 @@ class TruncationAndFoldingMachine:
         return output
 
     def set_bounds(self, lower, upper):
-        if (not isinstance(lower, int) and not isinstance(lower, float)) or\
-                (not isinstance(upper, int) and not isinstance(upper, float)):
+        if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")
 
         if lower > upper:
             raise ValueError("Lower bound must not be greater than upper bound")
 
-        self._lower_bound = lower
-        self._upper_bound = upper
+        self._lower_bound = float(lower)
+        self._upper_bound = float(upper)
 
         return self
 

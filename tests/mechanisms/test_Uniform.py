@@ -41,6 +41,16 @@ class TestUniform(TestCase):
         with self.assertRaises(ValueError):
             _mech.set_epsilon_delta(1, 0.2)
 
+    def test_complex_delta(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon_delta(0, 0.5+2j)
+
+    def test_string_delta(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon_delta(0, "Half")
+
     def test_no_sensitivity(self):
         _mech = mech.copy().set_epsilon_delta(0, 0.2)
         with self.assertRaises(ValueError):

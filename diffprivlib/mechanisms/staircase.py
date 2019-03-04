@@ -1,3 +1,5 @@
+from numbers import Real
+
 from numpy import exp
 from numpy.random import geometric, random
 
@@ -10,10 +12,13 @@ class Staircase(Laplace):
         self._gamma = None
 
     def set_gamma(self, gamma):
-        if not (0 <= gamma <= 1):
+        if not isinstance(gamma, Real):
+            raise TypeError("Gamma must be numeric")
+        # noinspection PyTypeChecker
+        if not (0.0 <= gamma <= 1.0):
             raise ValueError("Gamma must be in [0,1]")
 
-        self._gamma = gamma
+        self._gamma = float(gamma)
         return self
 
     def check_inputs(self, value):
@@ -25,7 +30,7 @@ class Staircase(Laplace):
         return True
 
     def set_epsilon_delta(self, epsilon, delta):
-        if delta > 0:
+        if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super().set_epsilon_delta(epsilon, delta)

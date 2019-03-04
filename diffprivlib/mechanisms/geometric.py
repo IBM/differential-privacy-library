@@ -1,3 +1,5 @@
+from numbers import Integral
+
 from numpy.random import random
 from numpy import exp, floor, log, isclose
 
@@ -23,7 +25,7 @@ class Geometric(DPMechanism):
         :type sensitivity `float`
         :return:
         """
-        if not isinstance(sensitivity, int):
+        if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
         if sensitivity <= 0:
@@ -35,14 +37,14 @@ class Geometric(DPMechanism):
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, int):
+        if not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
 
     def set_epsilon_delta(self, epsilon, delta):
-        if delta > 0:
+        if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super().set_epsilon_delta(epsilon, delta)
@@ -74,7 +76,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
         return output
 
     def set_bounds(self, lower, upper):
-        if not isinstance(lower, int) or not isinstance(upper, int):
+        if not isinstance(lower, Integral) or not isinstance(upper, Integral):
             raise TypeError("Bounds must be integers")
 
         return super().set_bounds(lower, upper)

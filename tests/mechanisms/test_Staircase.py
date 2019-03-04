@@ -36,6 +36,16 @@ class TestStaircase(TestCase):
         with self.assertRaises(ValueError):
             _mech.set_epsilon(-1)
 
+    def test_complex_epsilon(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon(1+2j)
+
+    def test_string_epsilon(self):
+        _mech = mech.copy()
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon("Two")
+
     def test_non_zero_delta(self):
         _mech = mech.copy().set_sensitivity(1).set_gamma(0.5)
         with self.assertRaises(ValueError):

@@ -1,3 +1,5 @@
+from numbers import Real
+
 from numpy import sign, log, abs, exp
 from numpy.random import random
 
@@ -23,19 +25,19 @@ class Laplace(DPMechanism):
         :return:
         """
 
-        if not isinstance(sensitivity, (int, float)):
+        if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity <= 0:
             raise ValueError("Sensitivity must be strictly positive")
 
-        self._sensitivity = sensitivity
+        self._sensitivity = float(sensitivity)
         return self
 
     def check_inputs(self, value):
         super().check_inputs(value)
 
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         if self._sensitivity is None:

@@ -31,6 +31,16 @@ class TestBinary(TestCase):
         with self.assertRaises(ValueError):
             _mech.randomise("1")
 
+    def test_complex_epsilon(self):
+        _mech = mech.copy().set_labels("0", "1")
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon(1+2j)
+
+    def test_string_epsilon(self):
+        _mech = mech.copy().set_labels("0", "1")
+        with self.assertRaises(TypeError):
+            _mech.set_epsilon("Two")
+
     def test_non_string_labels(self):
         with self.assertRaises(TypeError):
             mech.copy().set_epsilon(1).set_labels(0, 1)
