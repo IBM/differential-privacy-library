@@ -2,8 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Binary
+from diffprivlib.utils import global_seed
 
 mech = Binary()
+global_seed(3141592653)
 
 
 class TestBinary(TestCase):

@@ -1,4 +1,5 @@
 import abc
+import numpy as np
 import sys
 from copy import copy, deepcopy
 
@@ -23,3 +24,7 @@ class DPMachine(ABC):
     @abc.abstractmethod
     def set_epsilon(self, epsilon):
         pass
+
+
+def global_seed(seed):
+    np.random.seed(seed)

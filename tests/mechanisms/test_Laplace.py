@@ -2,7 +2,9 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.mechanisms import Laplace
+from diffprivlib.utils import global_seed
 
+global_seed(3141592653)
 mech = Laplace()
 
 

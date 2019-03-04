@@ -2,7 +2,9 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import LaplaceTruncated
+from diffprivlib.utils import global_seed
 
+global_seed(3141592653)
 mech = LaplaceTruncated()
 
 

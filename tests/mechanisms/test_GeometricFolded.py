@@ -2,7 +2,9 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import GeometricFolded
+from diffprivlib.utils import global_seed
 
+global_seed(3141592653)
 mech = GeometricFolded()
 
 
