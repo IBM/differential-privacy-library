@@ -3,10 +3,9 @@ dist: trusty
 python:
   - "3.6"
 install:
-  - pip install -r requirements.txt
-  - pip install .
   - pip install pycodestyle
+  - pip install .
 
 script:
-  - pytest
   - pycodestyle --max-line-length=120 diffprivlib
+  - pytest

@@ -1,2 +1,0 @@
--i https://pypi.org/simple
-numpy==1.16.1
