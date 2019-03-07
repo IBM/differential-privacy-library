@@ -126,7 +126,7 @@ class DPMechanism(DPMachine, ABC):
 
         return self
 
-    def check_inputs(self, value=None):
+    def check_inputs(self, value):
         """
         Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
@@ -164,7 +164,7 @@ class TruncationAndFoldingMachine:
 
         return self
 
-    def check_inputs(self, value=None):
+    def check_inputs(self, value):
         if (self._lower_bound is None) or (self._upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True

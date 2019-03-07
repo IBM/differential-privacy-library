@@ -39,13 +39,13 @@ class Staircase(Laplace):
         self._gamma = float(gamma)
         return self
 
-    def check_inputs(self, value=None):
+    def check_inputs(self, value):
         """
         Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked, optional.
-        :type value: Union[float, None]
+        :param value: Value to be checked.
+        :type value: `float`
         :return: True if the mechanism is correctly initialised.
         :rtype: `bool`
         """

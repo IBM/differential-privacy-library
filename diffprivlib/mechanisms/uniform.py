@@ -66,7 +66,7 @@ class Uniform(DPMechanism):
         """
         return 0.0
 
-    def check_inputs(self, value=None):
+    def check_inputs(self, value):
         """
         Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
@@ -78,7 +78,7 @@ class Uniform(DPMechanism):
         """
         super().check_inputs(value)
 
-        if (value is not None) and not isinstance(value, Real):
+        if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         if self._sensitivity is None:

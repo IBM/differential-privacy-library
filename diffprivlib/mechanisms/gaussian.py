@@ -59,7 +59,7 @@ class Gaussian(DPMechanism):
         self._sensitivity = sensitivity
         return self
 
-    def check_inputs(self, value=None):
+    def check_inputs(self, value):
         """
         Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
@@ -80,7 +80,7 @@ class Gaussian(DPMechanism):
         if self._scale is None:
             self._scale = sqrt(2 * log(1.25 / self._delta)) * self._sensitivity / self._epsilon
 
-        if (value is not None) and not isinstance(value, Real):
+        if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         return True
