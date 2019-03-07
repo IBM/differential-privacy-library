@@ -12,6 +12,9 @@ else:
 
 
 class DPMechanism(DPMachine, ABC):
+    """
+    Base class for all mechanisms. Instantiated from :class:`.DPMachine`.
+    """
     def __init__(self):
         self._epsilon = None
         self._delta = None
@@ -28,33 +31,81 @@ class DPMechanism(DPMachine, ABC):
 
     @abc.abstractmethod
     def randomise(self, value):
+        """
+        Randomise the given value using the mechanism.
+
+        :param value: Value to be randomised.
+        :type value: `int` or `float` or `string`
+        :return: Randomised value, same type as `value`.
+        :rtype: `int` or `float` or `string`
+        """
         pass
 
     def get_bias(self, value):
         """
+        Returns the bias of the mechanism at a given `value`.
 
-        :param value:
-        :return:
+        :param value: The value at which the bias of the mechanism is sought.
+        :type value: `int` or `float`
+        :return: The bias of the mechanism at `value`. `None` if bias is not implemented or not defined.
         :rtype: Union[None, float]
         """
         return None
 
     def get_variance(self, value):
+        """
+        Returns the variance of the mechanism at a given `value`.
+
+        :param value: The value at which the variance of the mechanism is sought.
+        :type value: Union[int, float]
+        :return: The variance of the mechanism at `value`. `None` if the variance is not implemented or not defined.
+        :rtype: Union[None, float]
+        """
         return None
 
     def get_mse(self, value):
+        """
+        Gives the mean squared error (MSE) of the mechanism, if its bias and variance is defined.
+
+        :param value: The value at which the MSE is sought.
+        :type value: Union[int, float]
+        :return: The MSE of the mechanism at `value`. `None` if either :func:`get_bias` or :func:`get_variance` is None.
+        """
         if self.get_variance(value) is None or self.get_bias(value) is None:
             return None
 
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
     def set_epsilon(self, epsilon):
+        """
+        Sets the value of epsilon to be used by the mechanism.
+
+        Epsilon be strictly positive, epsilon >= 0.
+
+        :param epsilon: Epsilon value for differential privacy.
+        :type epsilon: Union[float, int]
+        :return: self
+        """
         if epsilon <= 0:
             raise ValueError("Epsilon must be strictly positive")
 
         return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
+        """
+        Set the privacy parameters epsilon and delta for the mechanism.
+
+        Epsilon must be strictly positive, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. Pure
+        (strict) differential privacy is given when delta = 0.
+
+        Mechanisms may place other restrictions on epsilon and delta.
+
+        :param epsilon: Epsilon value of the mechanism.
+        :type epsilon: Union[float, int]
+        :param delta: Delta value of the mechanism.
+        :type delta: Union[float, int]
+        :return: self
+        """
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise ValueError("Epsilon and delta must be numeric")
 
@@ -75,9 +126,12 @@ class DPMechanism(DPMachine, ABC):
 
     def check_inputs(self, value):
         """
+        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
 
-        :param value:
-        :return:
+        :param value: Value to be checked.
+        :type value: Union[float, int, str]
+        :return: True if the mechanism is ready to be used.
         :rtype: `bool`
         """
         if self._epsilon is None:

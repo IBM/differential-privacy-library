@@ -6,25 +6,44 @@ from . import DPMechanism
 
 
 class Uniform(DPMechanism):
+    """
+    The Uniform mechanism in differential privacy.
+
+    This emerges as a special case of the :class:`.LaplaceBoundedNoise` mechanism when epsilon = 0.
+    Paper link: https://arxiv.org/pdf/1810.00877.pdf
+    """
     def __init__(self):
         super().__init__()
         self._sensitivity = None
 
     def set_epsilon_delta(self, epsilon, delta):
-        if epsilon != 0:
+        """
+        Set privacy parameters epsilon and delta for the mechanism.
+
+        For the uniform mechanism, epsilon must be strictly zero and delta must satisfy 0 < delta <= 0.5.
+
+        :param epsilon: Epsilon value of the mechanism.
+        :type epsilon: Union[float, int]
+        :param delta: Delta value of the mechanism.
+        :type delta: float
+        :return: self
+        """
+        if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
 
         if not (0 < delta <= 0.5):
-            raise ValueError("Delta must be strictly in (0,0.5]")
+            raise ValueError("Delta must satisfy 0 < delta <= 0.5")
 
         return super().set_epsilon_delta(epsilon, delta)
 
     def set_sensitivity(self, sensitivity):
         """
+        Set the sensitivity of the mechanism.
 
-        :param sensitivity: The sensitivity of the function being considered
+        :param sensitivity: The sensitivity of the function being considered, must be > 0.
         :type sensitivity: `float`
-        :return:
+        :return: self
+        :rtype: :class:`.Uniform`
         """
 
         if not isinstance(sensitivity, Real):
@@ -37,9 +56,26 @@ class Uniform(DPMechanism):
         return self
 
     def get_bias(self, value):
+        """
+        Get the bias of the mechanism at `value`.
+
+        :param value: The value at which the bias of the mechanism is sought.
+        :type value: `int` or `float`
+        :return: The bias of the mechanism at `value`.
+        :rtype: `float`
+        """
         return 0.0
 
     def check_inputs(self, value):
+        """
+        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
+
+        :param value: Value to be checked.
+        :type value: float
+        :return: True if the mechanism is ready to be used.
+        :rtype: `bool`
+        """
         super().check_inputs(value)
 
         if not isinstance(value, Real):
@@ -51,6 +87,14 @@ class Uniform(DPMechanism):
         return True
 
     def randomise(self, value):
+        """
+        Randomise the given value.
+
+        :param value: Value to be randomised.
+        :type value: `float`
+        :return: Randomised value.
+        :rtype: `float`
+        """
         self.check_inputs(value)
 
         u = 2 * random() - 1
