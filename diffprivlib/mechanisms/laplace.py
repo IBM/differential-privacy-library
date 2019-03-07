@@ -34,10 +34,10 @@ class Laplace(DPMechanism):
         self._sensitivity = float(sensitivity)
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
 
-        if not isinstance(value, Real):
+        if (value is not None) and not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         if self._sensitivity is None:
@@ -95,7 +95,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
 
         return variance
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
         TruncationAndFoldingMachine.check_inputs(self, value)
 
@@ -129,7 +129,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
 
         return bias
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
         TruncationAndFoldingMachine.check_inputs(self, value)
 

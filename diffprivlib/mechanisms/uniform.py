@@ -23,10 +23,11 @@ class Uniform(DPMechanism):
         For the uniform mechanism, epsilon must be strictly zero and delta must satisfy 0 < delta <= 0.5.
 
         :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: Union[float, int]
+        :type epsilon: `float`
         :param delta: Delta value of the mechanism.
-        :type delta: float
+        :type delta: `float`
         :return: self
+        :rtype: :class:`.Uniform`
         """
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
@@ -60,25 +61,25 @@ class Uniform(DPMechanism):
         Get the bias of the mechanism at `value`.
 
         :param value: The value at which the bias of the mechanism is sought.
-        :type value: `int` or `float`
+        :type value: `float`
         :return: The bias of the mechanism at `value`.
         :rtype: `float`
         """
         return 0.0
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         """
         Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
         :param value: Value to be checked.
-        :type value: float
+        :type value: `float`
         :return: True if the mechanism is ready to be used.
         :rtype: `bool`
         """
         super().check_inputs(value)
 
-        if not isinstance(value, Real):
+        if (value is not None) and not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         if self._sensitivity is None:

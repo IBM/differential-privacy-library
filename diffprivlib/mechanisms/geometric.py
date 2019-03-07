@@ -34,10 +34,10 @@ class Geometric(DPMechanism):
         self._sensitivity = sensitivity
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
 
-        if not isinstance(value, Integral):
+        if (value is not None) and not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
         if self._sensitivity is None:

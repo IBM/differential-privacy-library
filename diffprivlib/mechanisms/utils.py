@@ -80,11 +80,12 @@ class DPMechanism(DPMachine, ABC):
         """
         Sets the value of epsilon to be used by the mechanism.
 
-        Epsilon be strictly positive, epsilon >= 0.
+        Epsilon be strictly positive, epsilon > 0.
 
         :param epsilon: Epsilon value for differential privacy.
-        :type epsilon: Union[float, int]
+        :type epsilon: `float`
         :return: self
+        :rtype: :class:`.DPMechanism`
         """
         if epsilon <= 0:
             raise ValueError("Epsilon must be strictly positive")
@@ -95,10 +96,11 @@ class DPMechanism(DPMachine, ABC):
         """
         Set the privacy parameters epsilon and delta for the mechanism.
 
-        Epsilon must be strictly positive, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. Pure
-        (strict) differential privacy is given when delta = 0.
+        Epsilon must be strictly positive, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
+        one or epsilon and delta must be non-zero.
 
-        Mechanisms may place other restrictions on epsilon and delta.
+        Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given
+        when delta > 0.
 
         :param epsilon: Epsilon value of the mechanism.
         :type epsilon: Union[float, int]
@@ -124,9 +126,9 @@ class DPMechanism(DPMachine, ABC):
 
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         """
-        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
         :param value: Value to be checked.
@@ -162,7 +164,7 @@ class TruncationAndFoldingMachine:
 
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         if (self._lower_bound is None) or (self._upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True

@@ -21,7 +21,7 @@ class Staircase(Laplace):
         self._gamma = float(gamma)
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
 
         if self._gamma is None:

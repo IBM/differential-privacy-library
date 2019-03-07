@@ -128,17 +128,18 @@ class Exponential(DPMechanism):
     def get_prob(self, value1, value2):
         return exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
 
         if self._utility_function is None:
             raise ValueError("Utility function must be set")
 
-        if type(value) is not str:
-            raise TypeError("Value to be randomised must be a string")
+        if value is not None:
+            if type(value) is not str:
+                raise TypeError("Value to be randomised must be a string")
 
-        if value not in self._normalising_constant:
-            raise ValueError("Value \"%s\" not in domain" % value)
+            if value not in self._normalising_constant:
+                raise ValueError("Value \"%s\" not in domain" % value)
 
         return True
 

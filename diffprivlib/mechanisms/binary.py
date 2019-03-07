@@ -32,17 +32,19 @@ class Binary(DPMechanism):
         self._value1 = value1
         return self
 
-    def check_inputs(self, value):
+    def check_inputs(self, value=None):
         super().check_inputs(value)
 
         if (self._value0 is None) or (self._value1 is None):
             raise ValueError("Binary labels must be set")
 
-        if type(value) is not str:
-            raise TypeError("Value to be randomised must be a string")
-        elif value not in [self._value0, self._value1]:
-            raise ValueError("Value to be randomised is not in the domain {\"" +
-                             self._value0 + "\", \"" + self._value1 + "\"}")
+        if value is not None:
+            if type(value) is not str:
+                raise TypeError("Value to be randomised must be a string")
+
+            if value not in [self._value0, self._value1]:
+                raise ValueError("Value to be randomised is not in the domain {\"" +
+                                 self._value0 + "\", \"" + self._value1 + "\"}")
 
         return True
 
