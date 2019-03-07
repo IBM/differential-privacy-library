@@ -7,12 +7,30 @@ from . import DPMechanism
 
 
 class Gaussian(DPMechanism):
+    """
+    The Gaussian mechanism in differential privacy.
+
+    As first proposed by Dwork and Roth in "The algorithmic foundations of differential privacy".
+    Paper link: https://www.nowpublishers.com/article/DownloadSummary/TCS-042
+    """
     def __init__(self):
         super().__init__()
         self._sensitivity = None
         self._scale = None
 
     def set_epsilon_delta(self, epsilon, delta):
+        """
+        Set privacy parameters epsilon and delta for the mechanism.
+
+        For the Gaussian mechanism, epsilon cannot be greater than 1.
+
+        :param epsilon: Epsilon value of the mechanism.
+        :type epsilon: `float`
+        :param delta: Delta value of the mechanism.
+        :type delta: `float`
+        :return: self
+        :rtype: :class:`.Gaussian`
+        """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
@@ -23,6 +41,14 @@ class Gaussian(DPMechanism):
         return super().set_epsilon_delta(epsilon, delta)
 
     def set_sensitivity(self, sensitivity):
+        """
+        Set the sensitivity of the mechanism.
+
+        :param sensitivity: The sensitivity of the function being considered, must be > 0.
+        :type sensitivity: `float`
+        :return: self
+        :rtype: :class:`.Uniform`
+        """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -34,6 +60,15 @@ class Gaussian(DPMechanism):
         return self
 
     def check_inputs(self, value=None):
+        """
+        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
+
+        :param value: Value to be checked.
+        :type value: `float`
+        :return: True if the mechanism is ready to be used.
+        :rtype: `bool`
+        """
         super().check_inputs(value)
 
         if self._delta is None:
@@ -51,14 +86,38 @@ class Gaussian(DPMechanism):
         return True
 
     def get_bias(self, value):
+        """
+        Get the bias of the mechanism at `value`.
+
+        :param value: The value at which the bias of the mechanism is sought.
+        :type value: `float`
+        :return: The bias of the mechanism at `value`.
+        :rtype: `float`
+        """
         return 0.0
 
     def get_variance(self, value):
+        """
+        Get the variance of the mechanism at `value`.
+
+        :param value: The value at which the variance is sought.
+        :type value: `float`
+        :return: The variance of the mechanism at `value`.
+        :rtype: `float`
+        """
         self.check_inputs(0)
 
         return self._scale ** 2
 
     def randomise(self, value):
+        """
+        Randomise the given value.
+
+        :param value: Value to be randomised.
+        :type value: `float`
+        :return: Randomised value.
+        :rtype: `float`
+        """
         self.check_inputs(value)
 
         u1 = random()

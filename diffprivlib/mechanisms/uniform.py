@@ -46,7 +46,6 @@ class Uniform(DPMechanism):
         :return: self
         :rtype: :class:`.Uniform`
         """
-
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
