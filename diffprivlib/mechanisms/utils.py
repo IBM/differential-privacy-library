@@ -103,10 +103,11 @@ class DPMechanism(DPMachine, ABC):
         when delta > 0.
 
         :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: Union[float, int]
+        :type epsilon: `float`
         :param delta: Delta value of the mechanism.
-        :type delta: Union[float, int]
+        :type delta: `float`
         :return: self
+        :rtype: :class:`.DPMechanism`
         """
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise ValueError("Epsilon and delta must be numeric")
@@ -114,8 +115,7 @@ class DPMechanism(DPMachine, ABC):
         if epsilon < 0:
             raise ValueError("Epsilon must be non-negative")
 
-        # noinspection PyTypeChecker
-        if not (0 <= delta <= 1):
+        if not 0 <= delta <= 1:
             raise ValueError("Delta must be in [0, 1]")
 
         if epsilon + delta == 0:

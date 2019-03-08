@@ -1,6 +1,6 @@
 from numbers import Real
 
-from numpy import exp
+import numpy as np
 from numpy.random import random
 
 from . import DPMechanism
@@ -26,7 +26,7 @@ class Exponential(DPMechanism):
         if utility_list is None:
             return self
 
-        if type(utility_list) is not list:
+        if not isinstance(utility_list, list):
             raise ValueError("Utility must be in the form of a list")
 
         utility_function = {}
@@ -38,7 +38,7 @@ class Exponential(DPMechanism):
             value2 = _utility_sub_list[1]
             utility_value = _utility_sub_list[2]
 
-            if (type(value1) is not str) or (type(value2) is not str):
+            if not isinstance(value1, str) or not isinstance(value2, str):
                 raise TypeError("Utility keys must be strings")
             if (value1.find("::") >= 0) or (value2.find("::") >= 0) \
                     or value1.endswith(":") or value2.endswith(":"):
@@ -97,13 +97,13 @@ class Exponential(DPMechanism):
         first_constant_value = None
         normalising_constant = {}
 
-        for _baseLeaf in domain_values:
+        for _base_leaf in domain_values:
             constant_value = 0.0
 
-            for _targetLeaf in domain_values:
-                constant_value += self.get_prob(_baseLeaf, _targetLeaf)
+            for _target_leaf in domain_values:
+                constant_value += self.get_prob(_base_leaf, _target_leaf)
 
-            normalising_constant[_baseLeaf] = constant_value
+            normalising_constant[_base_leaf] = constant_value
 
             if first_constant_value is None:
                 first_constant_value = constant_value
@@ -126,7 +126,7 @@ class Exponential(DPMechanism):
         return self._utility_function[value1 + "::" + value2]
 
     def get_prob(self, value1, value2):
-        return exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
+        return np.exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
 
     def check_inputs(self, value):
         super().check_inputs(value)
@@ -134,7 +134,7 @@ class Exponential(DPMechanism):
         if self._utility_function is None:
             raise ValueError("Utility function must be set")
 
-        if type(value) is not str:
+        if not isinstance(value, str):
             raise TypeError("Value to be randomised must be a string")
 
         if value not in self._normalising_constant:
@@ -151,14 +151,14 @@ class Exponential(DPMechanism):
     def randomise(self, value):
         self.check_inputs(value)
 
-        u = random() * self._normalising_constant[value]
+        unif_rv = random() * self._normalising_constant[value]
         cum_prob = 0
 
-        for _targetValue in self._normalising_constant.keys():
-            cum_prob += self.get_prob(value, _targetValue)
+        for _target_value in self._normalising_constant.keys():
+            cum_prob += self.get_prob(value, _target_value)
 
-            if u <= cum_prob:
-                return _targetValue
+            if unif_rv <= cum_prob:
+                return _target_value
 
         return None
 
@@ -169,7 +169,7 @@ class ExponentialHierarchical(Exponential):
         self._list_hierarchy = None
 
     def __repr__(self):
-        output = super(Exponential, self).__repr__()
+        output = super().__repr__()
         output += ".set_hierarchy(" + str(self._list_hierarchy) + ")" if self._list_hierarchy is not None else ""
 
         return output
@@ -181,9 +181,9 @@ class ExponentialHierarchical(Exponential):
         hierarchy = {}
 
         for _i, _value in enumerate(nested_list):
-            if type(_value) is str:
+            if isinstance(_value, str):
                 hierarchy[_value] = parent_node + [_i]
-            elif type(_value) is not list:
+            elif not isinstance(_value, list):
                 raise TypeError("All leaves of the hierarchy must be a string " +
                                 "(see node " + (parent_node + [_i]).__str__() + ")")
             else:
@@ -207,7 +207,7 @@ class ExponentialHierarchical(Exponential):
 
     @staticmethod
     def _build_utility_list(hierarchy):
-        if type(hierarchy) is not dict:
+        if not isinstance(hierarchy, dict):
             raise TypeError("Hierarchy must be of type dict")
 
         utility_list = []
@@ -237,7 +237,7 @@ class ExponentialHierarchical(Exponential):
         if list_hierarchy is None:
             return self
 
-        if type(list_hierarchy) is not list:
+        if not isinstance(list_hierarchy, list):
             raise ValueError("Hierarchy must be a list")
 
         self._list_hierarchy = list_hierarchy

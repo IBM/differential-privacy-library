@@ -32,7 +32,7 @@ class Uniform(DPMechanism):
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
 
-        if not (0 < delta <= 0.5):
+        if not 0 < delta <= 0.5:
             raise ValueError("Delta must satisfy 0 < delta <= 0.5")
 
         return super().set_epsilon_delta(epsilon, delta)
@@ -97,7 +97,7 @@ class Uniform(DPMechanism):
         """
         self.check_inputs(value)
 
-        u = 2 * random() - 1
-        u *= self._sensitivity / self._delta / 2
+        unif_rv = 2 * random() - 1
+        unif_rv *= self._sensitivity / self._delta / 2
 
-        return value + u
+        return value + unif_rv

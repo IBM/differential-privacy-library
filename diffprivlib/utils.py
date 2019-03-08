@@ -1,7 +1,8 @@
 import abc
-import numpy as np
-import sys
 from copy import copy, deepcopy
+import sys
+
+import numpy as np
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
 if sys.version_info >= (3, 4):

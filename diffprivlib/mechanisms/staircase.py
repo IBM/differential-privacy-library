@@ -1,7 +1,7 @@
 import warnings
 from numbers import Real
 
-from numpy import exp
+import numpy as np
 from numpy.random import geometric, random
 
 from . import Laplace
@@ -33,7 +33,7 @@ class Staircase(Laplace):
         """
         if not isinstance(gamma, Real):
             raise TypeError("Gamma must be numeric")
-        if not (0.0 <= gamma <= 1.0):
+        if not 0.0 <= gamma <= 1.0:
             raise ValueError("Gamma must be in [0,1]")
 
         self._gamma = float(gamma)
@@ -52,7 +52,7 @@ class Staircase(Laplace):
         super().check_inputs(value)
 
         if self._gamma is None:
-            self._gamma = 1 / (1 + exp(self._epsilon / 2))
+            self._gamma = 1 / (1 + np.exp(self._epsilon / 2))
             raise warnings.warn("Gamma not set, falling back to default: 1 / (1 + exp(epsilon / 2)).", UserWarning)
 
         return True
@@ -97,10 +97,11 @@ class Staircase(Laplace):
         """
         self.check_inputs(value)
 
-        s = -1 if random() < 0.5 else 1
-        g = geometric(1 - exp(- self._epsilon)) - 1
-        u = random()
-        b = 0 if random() < self._gamma / (self._gamma + (1 - self._gamma) * exp(- self._epsilon)) else 1
+        sign = -1 if random() < 0.5 else 1
+        geometric_rv = geometric(1 - np.exp(- self._epsilon)) - 1
+        unif_rv = random()
+        binary_rv = 0 if random() < self._gamma / (self._gamma + (1 - self._gamma) * np.exp(- self._epsilon)) else 1
 
-        return value + s * ((1 - b) * ((g + self._gamma * u) * self._sensitivity) +
-                            b * ((g + self._gamma + (1 - self._gamma) * u) * self._sensitivity))
+        return value + sign * ((1 - binary_rv) * ((geometric_rv + self._gamma * unif_rv) * self._sensitivity) +
+                               binary_rv * ((geometric_rv + self._gamma + (1 - self._gamma) * unif_rv) *
+                                            self._sensitivity))

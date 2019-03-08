@@ -1,7 +1,7 @@
 from numbers import Integral
 
+import numpy as np
 from numpy.random import random
-from numpy import exp, floor, log, isclose
 
 from . import DPMechanism, TruncationAndFoldingMachine
 
@@ -56,12 +56,12 @@ class Geometric(DPMechanism):
             self._scale = - self._epsilon / self._sensitivity
 
         # Need to account for overlap of 0-value between distributions of different sign
-        u = random() - 0.5
-        u *= 1 + exp(self._scale)
-        sgn = -1 if u < 0 else 1
+        unif_rv = random() - 0.5
+        unif_rv *= 1 + np.exp(self._scale)
+        sgn = -1 if unif_rv < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
-        return int(round(value + sgn * floor(log(sgn * u) / self._scale)))
+        return int(np.round(value + sgn * np.floor(np.log(sgn * unif_rv) / self._scale)))
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
@@ -85,7 +85,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(round(self._truncate(noisy_value)))
+        return int(np.round(self._truncate(noisy_value)))
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMachine):
@@ -100,16 +100,16 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
         return output
 
     def set_bounds(self, lower, upper):
-        if not isclose(2 * lower, round(2 * lower)) or not isclose(2 * upper, round(2 * upper)):
+        if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):
             raise ValueError("Bounds must be integer or half-integer floats")
 
         return super().set_bounds(lower, upper)
 
     def _fold(self, value):
-        return super()._fold(int(round(value)))
+        return super()._fold(int(np.round(value)))
 
     def randomise(self, value):
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
-        return int(round(self._fold(noisy_value)))
+        return int(np.round(self._fold(noisy_value)))

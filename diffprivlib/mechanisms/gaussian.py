@@ -1,6 +1,6 @@
 from numbers import Real
 
-from numpy import log, sqrt, cos, pi
+import numpy as np
 from numpy.random import random
 
 from . import DPMechanism
@@ -78,7 +78,7 @@ class Gaussian(DPMechanism):
             raise ValueError("Sensitivity must be set")
 
         if self._scale is None:
-            self._scale = sqrt(2 * log(1.25 / self._delta)) * self._sensitivity / self._epsilon
+            self._scale = np.sqrt(2 * np.log(1.25 / self._delta)) * self._sensitivity / self._epsilon
 
         if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
@@ -120,7 +120,7 @@ class Gaussian(DPMechanism):
         """
         self.check_inputs(value)
 
-        u1 = random()
-        u2 = random()
+        unif_rv1 = random()
+        unif_rv2 = random()
 
-        return sqrt(- 2 * log(u1)) * cos(2 * pi * u2) * self._scale + value
+        return np.sqrt(- 2 * np.log(unif_rv1)) * np.cos(2 * np.pi * unif_rv2) * self._scale + value
