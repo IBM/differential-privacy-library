@@ -63,7 +63,7 @@ class Geometric(DPMechanism):
         :param delta: Delta value of the mechanism. For the geometric mechanism, this must be zero.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Geometrc`
+        :rtype: :class:`.Geometric`
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
