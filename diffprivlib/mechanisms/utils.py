@@ -50,7 +50,7 @@ class DPMechanism(DPMachine, ABC):
         :return: The bias of the mechanism at `value`. `None` if bias is not implemented or not defined.
         :rtype: Union[None, float]
         """
-        return None
+        pass
 
     def get_variance(self, value):
         """
@@ -61,7 +61,7 @@ class DPMechanism(DPMachine, ABC):
         :return: The variance of the mechanism at `value`. `None` if the variance is not implemented or not defined.
         :rtype: Union[None, float]
         """
-        return None
+        pass
 
     def get_mse(self, value):
         """
@@ -72,7 +72,7 @@ class DPMechanism(DPMachine, ABC):
         :return: The MSE of the mechanism at `value`. `None` if either :func:`get_bias` or :func:`get_variance` is None.
         """
         if self.get_variance(value) is None or self.get_bias(value) is None:
-            return None
+            pass
 
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
@@ -142,7 +142,13 @@ class DPMechanism(DPMachine, ABC):
 
 
 class TruncationAndFoldingMachine:
+    """
+    Base class for truncating or folding the outputs of a mechanism. Must be instantiated with a :class:`.DPMechanism`.
+    """
     def __init__(self):
+        if not isinstance(self, DPMechanism):
+            raise TypeError("TruncationAndFoldingMachine must be implemented alongside a :class:`.DPMechanism`")
+
         self._lower_bound = None
         self._upper_bound = None
 
@@ -153,6 +159,16 @@ class TruncationAndFoldingMachine:
         return output
 
     def set_bounds(self, lower, upper):
+        """
+        Set the lower and upper bounds of the mechanism. Must satisfy lower <= upper.
+
+        :param lower: Lower bound value.
+        :type lower: float
+        :param upper: Upper bound value.
+        :type upper: float
+        :return: self.
+        :rtype: :class:`.DPMechanism`
+        """
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")
 
@@ -165,6 +181,15 @@ class TruncationAndFoldingMachine:
         return self
 
     def check_inputs(self, value):
+        """
+        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
+
+        :param value: Value to be checked.
+        :type value: `float`
+        :return: True if the mechanism is ready to be used.
+        :rtype: `bool`
+        """
         if (self._lower_bound is None) or (self._upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True
