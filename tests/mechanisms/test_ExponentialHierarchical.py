@@ -24,9 +24,9 @@ class TestExponentialHierarchical(TestCase):
             _mech.randomise("A")
 
     def test_no_epsilon(self):
-        _mech = mech.copy()
-        with self.assertRaises(RuntimeError):
-            _mech.set_hierarchy([["A", "B"], ["C"]])
+        _mech = mech.copy().set_hierarchy([["A", "B"], ["C"]])
+        with self.assertRaises(ValueError):
+            _mech.randomise("A")
 
     def test_neg_epsilon(self):
         _mech = mech.copy()
@@ -47,6 +47,10 @@ class TestExponentialHierarchical(TestCase):
         _mech = mech.copy()
         with self.assertRaises(ValueError):
             _mech.set_epsilon_delta(1, 0.5)
+
+    def test_hierarchy_first(self):
+        _mech = mech.copy().set_hierarchy([["A", "B"], ["C"]])
+        self.assertIsNotNone(_mech)
 
     def test_non_string_hierarchy(self):
         _mech = mech.copy().set_epsilon(1)

@@ -29,9 +29,9 @@ class TestExponential(TestCase):
             ["A", "C", 2],
             ["B", "C", 2]
         ]
-        _mech = mech.copy()
-        with self.assertRaises(RuntimeError):
-            _mech.set_utility(utility_list)
+        _mech = mech.copy().set_utility(utility_list)
+        with self.assertRaises(ValueError):
+            _mech.randomise("A")
 
     def test_neg_epsilon(self):
         _mech = mech.copy()
@@ -53,13 +53,23 @@ class TestExponential(TestCase):
         with self.assertRaises(ValueError):
             _mech.set_epsilon_delta(1, 0.5)
 
+    def test_hierarchy_first(self):
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "2", 2],
+            ["B", "2", 2]
+        ]
+        _mech = mech.copy()
+        _mech.set_utility(utility_list)
+        self.assertIsNotNone(_mech)
+
     def test_non_string_hierarchy(self):
         utility_list = [
             ["A", "B", 1],
             ["A", 2, 2],
             ["B", 2, 2]
         ]
-        _mech = mech.copy().set_epsilon(1)
+        _mech = mech.copy()
         with self.assertRaises(TypeError):
             _mech.set_utility(utility_list)
 
@@ -68,7 +78,7 @@ class TestExponential(TestCase):
             ["A", "B", 1],
             ["A", "C", 2]
         ]
-        _mech = mech.copy().set_epsilon(1)
+        _mech = mech.copy()
         with self.assertRaises(ValueError):
             _mech.set_utility(utility_list)
 

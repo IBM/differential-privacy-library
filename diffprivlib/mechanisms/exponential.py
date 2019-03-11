@@ -16,13 +16,14 @@ class Exponential(DPMechanism):
     """
     def __init__(self):
         super().__init__()
-        self._utility_function = None
+        self._domain_values = None
+        self._utility_values = None
         self._normalising_constant = None
         self._sensitivity = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self._utility_function is not None else ""
+        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self._utility_values is not None else ""
 
         return output
 
@@ -38,16 +39,12 @@ class Exponential(DPMechanism):
         :return: self.
         :rtype: :class:`.Exponential`
         """
-        if self._epsilon is None:
-            raise RuntimeError("Epsilon must be set before utility is set")
-
-        if utility_list is None:
-            return self
-
         if not isinstance(utility_list, list):
-            raise ValueError("Utility must be in the form of a list")
+            raise ValueError("Utility must be given in a list")
 
-        utility_function = {}
+        self._normalising_constant = None
+
+        utility_values = {}
         domain_values = []
         sensitivity = 0
 
@@ -74,16 +71,15 @@ class Exponential(DPMechanism):
             if value1 is value2:
                 continue
             if value1 < value2:
-                utility_function[value1 + "::" + value2] = utility_value
+                utility_values[value1 + "::" + value2] = utility_value
             else:
-                utility_function[value2 + "::" + value1] = utility_value
+                utility_values[value2 + "::" + value1] = utility_value
 
-        self._utility_function = utility_function
+        self._utility_values = utility_values
         self._sensitivity = sensitivity
+        self._domain_values = domain_values
 
         self._check_utility_full(domain_values)
-
-        self._normalising_constant = self._build_normalising_constant(domain_values)
 
         return self
 
@@ -93,8 +89,10 @@ class Exponential(DPMechanism):
                 if val1 >= val2:
                     continue
 
-                if val1 + "::" + val2 not in self._utility_function:
+                if val1 + "::" + val2 not in self._utility_values:
                     raise ValueError("Utility value for %s missing" % (val1 + "::" + val2))
+
+        return True
 
     def get_utility_list(self):
         """
@@ -104,26 +102,26 @@ class Exponential(DPMechanism):
         :return: Utility list of tuples, of the form ("label1", "label2", utility).
         :rtype: `list`
         """
-        if self._utility_function is None:
+        if self._utility_values is None:
             return None
 
         utility_list = []
 
-        for _key, _value in self._utility_function.items():
+        for _key, _value in self._utility_values.items():
             value1, value2 = _key.split("::", maxsplit=1)
             utility_list.append((value1, value2, _value))
 
         return utility_list
 
-    def _build_normalising_constant(self, domain_values, re_eval=False):
+    def _build_normalising_constant(self, re_eval=False):
         balanced_hierarchy = True
         first_constant_value = None
         normalising_constant = {}
 
-        for _base_leaf in domain_values:
+        for _base_leaf in self._domain_values:
             constant_value = 0.0
 
-            for _target_leaf in domain_values:
+            for _target_leaf in self._domain_values:
                 constant_value += self._get_prob(_base_leaf, _target_leaf)
 
             normalising_constant[_base_leaf] = constant_value
@@ -135,7 +133,7 @@ class Exponential(DPMechanism):
 
         if balanced_hierarchy and not re_eval:
             self._sensitivity /= 2
-            return self._build_normalising_constant(domain_values, True)
+            return self._build_normalising_constant(True)
 
         return normalising_constant
 
@@ -146,7 +144,7 @@ class Exponential(DPMechanism):
         if value1 > value2:
             return self._get_utility(value2, value1)
 
-        return self._utility_function[value1 + "::" + value2]
+        return self._utility_values[value1 + "::" + value2]
 
     def _get_prob(self, value1, value2):
         return np.exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
@@ -163,13 +161,16 @@ class Exponential(DPMechanism):
         """
         super().check_inputs(value)
 
-        if self._utility_function is None:
+        if self._utility_values is None:
             raise ValueError("Utility function must be set")
+
+        if self._normalising_constant is None:
+            self._normalising_constant = self._build_normalising_constant()
 
         if not isinstance(value, str):
             raise TypeError("Value to be randomised must be a string")
 
-        if value not in self._normalising_constant:
+        if value not in self._domain_values:
             raise ValueError("Value \"%s\" not in domain" % value)
 
         return True
@@ -190,6 +191,8 @@ class Exponential(DPMechanism):
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
+
+        self._normalising_constant = None
 
         return super().set_epsilon_delta(epsilon, delta)
 
@@ -265,7 +268,7 @@ class ExponentialHierarchical(Exponential):
     @staticmethod
     def _build_utility_list(hierarchy):
         if not isinstance(hierarchy, dict):
-            raise TypeError("Hierarchy must be of type dict")
+            raise TypeError("Hierarchy for _build_utility_list must be a dict")
 
         utility_list = []
         hierarchy_height = None
@@ -298,9 +301,6 @@ class ExponentialHierarchical(Exponential):
         :return: self.
         :rtype: :class:`.ExponentialHierarchical`
         """
-        if self._epsilon is None:
-            raise RuntimeError("Epsilon must be set before hierarchy is set")
-
         if not isinstance(list_hierarchy, list):
             raise TypeError("Hierarchy must be a list")
 
