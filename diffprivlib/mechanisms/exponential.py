@@ -1,3 +1,6 @@
+"""
+Implementation of the standard exponential mechanism, and its derivative, the hierarchical mechanism.
+"""
 from numbers import Real
 
 import numpy as np
@@ -7,6 +10,10 @@ from . import DPMechanism
 
 
 class Exponential(DPMechanism):
+    """
+    The exponential mechanism, as first proposed by McSherry and Talwar.
+    Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
+    """
     def __init__(self):
         super().__init__()
         self._utility_function = None
@@ -20,6 +27,17 @@ class Exponential(DPMechanism):
         return output
 
     def set_utility(self, utility_list):
+        """
+        Set the utility of the mechanism. Utilities define the pairwise distance between two entries of the mechanism's
+        dictionary.
+
+        :param utility_list: List of tuples, or list of lists, of the form ("label1", "label2", utility). Labels must
+        be specified as strings (for non-string labels, a :class:`.DPTransformer` can be used), and the utility value
+        must be a strictly positive `float`.
+        :type utility_list: `list`
+        :return: self.
+        :rtype: :class:`.Exponential`
+        """
         if self._epsilon is None:
             raise RuntimeError("Epsilon must be set before utility is set")
 
@@ -34,16 +52,14 @@ class Exponential(DPMechanism):
         sensitivity = 0
 
         for _utility_sub_list in utility_list:
-            value1 = _utility_sub_list[0]
-            value2 = _utility_sub_list[1]
-            utility_value = _utility_sub_list[2]
+            value1, value2, utility_value = _utility_sub_list
 
             if not isinstance(value1, str) or not isinstance(value2, str):
                 raise TypeError("Utility keys must be strings")
             if (value1.find("::") >= 0) or (value2.find("::") >= 0) \
                     or value1.endswith(":") or value2.endswith(":"):
-                raise ValueError("Values cannot contain the substring \"::\""
-                                 " and cannot end in \":\". Use a DPTransformer if necessary.")
+                raise ValueError("Values cannot contain the substring \"::\" and cannot end in \":\". "
+                                 "Use a DPTransformer if necessary.")
             if not isinstance(utility_value, Real):
                 raise TypeError("Utility value must be a number")
             if utility_value < 0.0:
@@ -81,6 +97,13 @@ class Exponential(DPMechanism):
                     raise ValueError("Utility value for %s missing" % (val1 + "::" + val2))
 
     def get_utility_list(self):
+        """
+        Get the list of utility values of the mechanism. Returned in the same format as accepted by
+        :func:`.set_utility`.
+
+        :return: Utility list of tuples, of the form ("label1", "label2", utility).
+        :rtype: `list`
+        """
         if self._utility_function is None:
             return None
 
@@ -88,7 +111,7 @@ class Exponential(DPMechanism):
 
         for _key, _value in self._utility_function.items():
             value1, value2 = _key.split("::", maxsplit=1)
-            utility_list.append([value1, value2, _value])
+            utility_list.append((value1, value2, _value))
 
         return utility_list
 
@@ -101,7 +124,7 @@ class Exponential(DPMechanism):
             constant_value = 0.0
 
             for _target_leaf in domain_values:
-                constant_value += self.get_prob(_base_leaf, _target_leaf)
+                constant_value += self._get_prob(_base_leaf, _target_leaf)
 
             normalising_constant[_base_leaf] = constant_value
 
@@ -125,10 +148,19 @@ class Exponential(DPMechanism):
 
         return self._utility_function[value1 + "::" + value2]
 
-    def get_prob(self, value1, value2):
+    def _get_prob(self, value1, value2):
         return np.exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
 
     def check_inputs(self, value):
+        """
+        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
+
+        :param value: Value to be checked.
+        :type value: `string`
+        :return: True if the mechanism is ready to be used.
+        :rtype: `bool`
+        """
         super().check_inputs(value)
 
         if self._utility_function is None:
@@ -143,19 +175,40 @@ class Exponential(DPMechanism):
         return True
 
     def set_epsilon_delta(self, epsilon, delta):
-        if delta > 0:
+        """
+        Set the privacy parameters epsilon and delta for the mechanism.
+
+        For the exponential mechanism, delta must be strictly zero.
+        As is normal, epsilon must be strictly positive, epsilon >= 0.
+
+        :param epsilon: Epsilon value of the mechanism.
+        :type epsilon: `float`
+        :param delta: Delta value of the mechanism. Must be zero for the exponential mechanism.
+        :type delta: `float`
+        :return: self
+        :rtype: :class:`.Exponential`
+        """
+        if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super().set_epsilon_delta(epsilon, delta)
 
     def randomise(self, value):
+        """
+        Randomise the given value using the mechanism. The value must be an element of the mechanism dictionary.
+
+        :param value: Value to be randomised.
+        :type value: `string`
+        :return: Randomised value.
+        :rtype: `string`
+        """
         self.check_inputs(value)
 
         unif_rv = random() * self._normalising_constant[value]
         cum_prob = 0
 
         for _target_value in self._normalising_constant.keys():
-            cum_prob += self.get_prob(value, _target_value)
+            cum_prob += self._get_prob(value, _target_value)
 
             if unif_rv <= cum_prob:
                 return _target_value
@@ -164,6 +217,10 @@ class Exponential(DPMechanism):
 
 
 class ExponentialHierarchical(Exponential):
+    """
+    Adaptation of the exponential mechanism to hierarchical data. Simplifies the process of specifying utility values,
+    as the values can be inferred from the hierarchy.
+    """
     def __init__(self):
         super().__init__()
         self._list_hierarchy = None
@@ -231,14 +288,21 @@ class ExponentialHierarchical(Exponential):
         return utility_list
 
     def set_hierarchy(self, list_hierarchy):
+        """
+        Set the hierarchy of the mechanism, specified as a list of lists. The hierarchy must have a uniform height, with
+        values specified as strings. For non-string values, a :class:`.DPTransformer` can be used. The exponential
+        mechanism is then invoked, using the height of the closest ancestor as the utility metric.
+
+        :param list_hierarchy: Hierarchy list.
+        :type list_hierarchy: `list`
+        :return: self.
+        :rtype: :class:`.ExponentialHierarchical`
+        """
         if self._epsilon is None:
             raise RuntimeError("Epsilon must be set before hierarchy is set")
 
-        if list_hierarchy is None:
-            return self
-
         if not isinstance(list_hierarchy, list):
-            raise ValueError("Hierarchy must be a list")
+            raise TypeError("Hierarchy must be a list")
 
         self._list_hierarchy = list_hierarchy
         hierarchy = self._build_hierarchy(list_hierarchy)

@@ -5,6 +5,10 @@ from . import DPMechanism
 
 
 class Binary(DPMechanism):
+    """
+    Classic binary mechanism for differential privacy.
+    Paper link: https://arxiv.org/pdf/1612.05568.pdf
+    """
     def __init__(self):
         super().__init__()
         self._value0 = None
@@ -18,6 +22,18 @@ class Binary(DPMechanism):
         return output
 
     def set_labels(self, value0, value1):
+        """
+        Set the binary labels of the mechanism. Labels must be unique, non-empty strings.
+
+        If non-string labels are required, consider using a :class:`.DPTransformer`.
+
+        :param value0: Binary label.
+        :type value0: str
+        :param value1: Binary label.
+        :type value1: str
+        :return: self.
+        :rtype: :class:`.Binary`
+        """
         if not isinstance(value0, str) or not isinstance(value1, str):
             raise TypeError("Binary labels must be strings. Use a DPTransformer"
                             " (e.g. transformers.IntToString) for non-string labels")
@@ -33,6 +49,15 @@ class Binary(DPMechanism):
         return self
 
     def check_inputs(self, value):
+        """
+        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        to be used.
+
+        :param value: Value to be checked.
+        :type value: `str`
+        :return: True if the mechanism is ready to be used.
+        :rtype: `bool`
+        """
         super().check_inputs(value)
 
         if (self._value0 is None) or (self._value1 is None):
@@ -48,13 +73,21 @@ class Binary(DPMechanism):
         return True
 
     def randomise(self, value):
+        """
+        Randomise the given value. The value must be one of the pre-defined binary labels.
+
+        :param value: Value to be randomised.
+        :type value: `string`
+        :return: Randomised value, one of the binary labels.
+        :rtype: `string`
+        """
         self.check_inputs(value)
 
         indicator = 0 if value == self._value0 else 1
 
         unif_rv = random() * (np.exp(self._epsilon) + 1)
 
-        if unif_rv > np.exp(self._epsilon):
+        if unif_rv > np.exp(self._epsilon) + self._delta:
             indicator = 1 - indicator
 
         return self._value0 if indicator == 0 else self._value1
