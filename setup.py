@@ -4,7 +4,7 @@ from setuptools import find_packages
 # with open("README.md", "r") as fh:
 #     long_description = fh.read()
 
-install_requires = ['numpy',
+install_requires = ['numpy >= 1.15.0',
                     'setuptools']
 
 # tests_require = ['mxnet',
