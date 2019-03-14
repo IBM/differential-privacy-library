@@ -1,3 +1,6 @@
+"""
+The classic geometric mechanism for differential privacy, and its derivatives.
+"""
 from numbers import Integral
 
 import numpy as np
@@ -7,6 +10,11 @@ from . import DPMechanism, TruncationAndFoldingMachine
 
 
 class Geometric(DPMechanism):
+    """
+    The classic geometric mechanism for differential privacy, as first proposed by Ghosh, Roughgarden and Sundararajan.
+    Extended to allow for non-unity sensitivity.
+    Paper link: https://arxiv.org/pdf/0811.2841.pdf
+    """
     def __init__(self):
         super().__init__()
         self._sensitivity = None
@@ -20,10 +28,12 @@ class Geometric(DPMechanism):
 
     def set_sensitivity(self, sensitivity):
         """
+        Set the sensitivity of the mechanism.
 
-        :param sensitivity:
-        :type sensitivity `float`
-        :return:
+        :param sensitivity: The sensitivity of the function being considered, must be integer-valued and > 0.
+        :type sensitivity: `int`
+        :return: self
+        :rtype: :class:`.Geometric`
         """
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
@@ -94,6 +104,10 @@ class Geometric(DPMechanism):
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
+    """
+    The truncated geometric mechanism, where values that fall outside a pre-described range are mapped back to the
+    closest point within the range.
+    """
     def __init__(self):
         super().__init__()
         TruncationAndFoldingMachine.__init__(self)
@@ -138,6 +152,11 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMachine):
+    """
+    The folded geometric mechanism, where values outside a pre-described range are folded back toward the domain around
+    the closest point within the domain.
+    Half-integer bounds are permitted.
+    """
     def __init__(self):
         super().__init__()
         TruncationAndFoldingMachine.__init__(self)

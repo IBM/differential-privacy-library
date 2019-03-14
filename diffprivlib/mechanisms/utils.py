@@ -96,7 +96,7 @@ class DPMechanism(DPMachine, ABC):
         """
         Set the privacy parameters epsilon and delta for the mechanism.
 
-        Epsilon must be strictly positive, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
+        Epsilon must be non-negative, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
         one or epsilon and delta must be non-zero.
 
         Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given

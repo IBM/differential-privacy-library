@@ -1,3 +1,6 @@
+"""
+Basic mechanisms for achieving differential privacy, the basic building blocks of the library.
+"""
 from .utils import DPMechanism, TruncationAndFoldingMachine
 
 from .binary import Binary

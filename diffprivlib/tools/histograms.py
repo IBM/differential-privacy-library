@@ -10,13 +10,13 @@ from diffprivlib import mechanisms
 
 
 # noinspection PyShadowingBuiltins
-def histogram(a, epsilon, bins=10, range=None, normed=None, weights=None, density=None):
+def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, density=None):
     """
     Differentially private histogram. Identical functionality to Numpy's `histogram`, but with required `range`
     argument. See numpy.histogram for full help.
 
-    :param a: Input data. The histogram is computed over the flattened array.
-    :type a: array-like
+    :param sample: Input data. The histogram is computed over the flattened array.
+    :type sample: array-like
     :param epsilon: Privacy parameter epsilon to be applied.
     :type epsilon: `float`
     :param bins: If `bins` is an int, it defines the number of equal-width bins in the given range (10, by default). If
@@ -45,7 +45,7 @@ def histogram(a, epsilon, bins=10, range=None, normed=None, weights=None, densit
     if range is None:
         raise ValueError("Range must be specified for dp_histogram, as the tuple (lower, upper)")
 
-    hist, bin_edges = np.histogram(a, bins=bins, range=range, normed=None, weights=weights, density=None)
+    hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
     dp_mech = mechanisms.GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
@@ -57,8 +57,8 @@ def histogram(a, epsilon, bins=10, range=None, normed=None, weights=None, densit
     # dp_hist = dp_hist.astype(float, casting='safe')
 
     if normed or density:
-        db = np.array(np.diff(bin_edges), float)
-        return dp_hist / db / dp_hist.sum(), bin_edges
+        bin_sizes = np.array(np.diff(bin_edges), float)
+        return dp_hist / bin_sizes / dp_hist.sum(), bin_edges
 
     return dp_hist, bin_edges
 
@@ -126,12 +126,12 @@ def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None,
     if density or normed:
         # calculate the probability density function
         dims = 1 if len(sample.shape) == 1 else sample.shape[1]
-        s = dp_hist.sum()
+        dp_hist_sum = dp_hist.sum()
         for i in np.arange(dims):
             shape = np.ones(dims, int)
             shape[i] = dp_hist.shape[i]
             # noinspection PyUnresolvedReferences
             dp_hist = dp_hist / np.diff(bin_edges[i]).reshape(shape)
-        dp_hist /= s
+        dp_hist /= dp_hist_sum
 
     return dp_hist, bin_edges

@@ -1,3 +1,6 @@
+"""
+Basic functions and other utilities for the library
+"""
 import abc
 from copy import copy, deepcopy
 import sys

@@ -1,3 +1,6 @@
+"""
+The classic Gaussian mechanism in differential privacy, and its derivatives.
+"""
 from numbers import Real
 
 import numpy as np

@@ -1,3 +1,6 @@
+"""
+The binary mechanism for differential privacy.
+"""
 import numpy as np
 from numpy.random import random
 
