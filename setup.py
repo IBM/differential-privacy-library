@@ -5,7 +5,7 @@ from setuptools import find_packages
 #     long_description = fh.read()
 
 install_requires = ['numpy >= 1.15.0',
-                    'setuptools']
+                    'setuptools >= 39.0.1']
 
 # tests_require = ['mxnet',
 #                  'h5py',
