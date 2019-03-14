@@ -188,7 +188,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
 
 class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
     """
-    The folded Laplace mechanism, where values outside a pre-described domain are foloded around the domain until they
+    The folded Laplace mechanism, where values outside a pre-described domain are folded around the domain until they
     fall within.
     """
     def __init__(self):
