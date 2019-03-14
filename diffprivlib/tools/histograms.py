@@ -121,6 +121,8 @@ def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None,
         dp_hist[iterator.multi_index] = dp_mech.randomise(int(iterator[0]))
         iterator.iternext()
 
+    dp_hist = dp_hist.astype(float, casting='safe')
+
     if density or normed:
         # calculate the probability density function
         dims = 1 if len(sample.shape) == 1 else sample.shape[1]

@@ -25,8 +25,8 @@ class TestHistogramdd(TestCase):
         hist, _ = np.histogramdd(a, bins=3, range=[(0, 10)])
         dp_hist, _ = histogramdd(a, epsilon=0.1, bins=3, range=[(0, 10)])
 
-        print("Non-private histogram: %s" % hist)
-        print("Private histogram: %s" % dp_hist)
+        # print("Non-private histogram: %s" % hist)
+        # print("Private histogram: %s" % dp_hist)
         self.assertTrue((hist != dp_hist).any())
 
     def test_density_1d(self):
