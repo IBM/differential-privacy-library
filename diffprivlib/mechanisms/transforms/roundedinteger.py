@@ -1,8 +1,6 @@
 """
 Rounded integer transformer. Rounds the output of the given mechanism to the nearest integer.
 """
-import numpy as np
-
 from . import DPTransformer
 
 
@@ -19,4 +17,4 @@ class RoundedInteger(DPTransformer):
         :return: Transformed mechanism output.
         :rtype: `int`
         """
-        return np.round(value).astype(int)
+        return int(round(value))
