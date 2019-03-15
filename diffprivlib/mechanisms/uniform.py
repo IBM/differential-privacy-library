@@ -1,3 +1,6 @@
+"""
+The uniform mechanism in differential privacy.
+"""
 from numbers import Real
 
 from numpy.random import random

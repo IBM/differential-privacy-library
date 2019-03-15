@@ -203,6 +203,7 @@ class DPMechanism(DPMachine, ABC):
         :return: True if the mechanism is ready to be used.
         :rtype: `bool`
         """
+        del value
         if self._epsilon is None:
             raise ValueError("Epsilon must be set")
         return True
@@ -257,6 +258,7 @@ class TruncationAndFoldingMachine:
         :return: True if the mechanism is ready to be used.
         :rtype: `bool`
         """
+        del value
         if (self._lower_bound is None) or (self._upper_bound is None):
             raise ValueError("Upper and lower bounds must be set")
         return True

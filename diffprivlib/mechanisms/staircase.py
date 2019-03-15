@@ -1,3 +1,6 @@
+"""
+The staircase mechanism in differential privacy.
+"""
 import warnings
 from numbers import Real
 
@@ -9,7 +12,7 @@ from . import Laplace
 
 class Staircase(Laplace):
     """
-    The Staircase mechanism in differential privacy.
+    The staircase mechanism in differential privacy.
 
     The staircase mechanism is an optimisation of the classical Laplace Mechanism (:class:`.Laplace`), described as a
     "geometric mixture of uniform random variables".
