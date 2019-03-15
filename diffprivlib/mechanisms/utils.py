@@ -1,3 +1,6 @@
+"""
+Core utilities for differential privacy mechanisms.
+"""
 import abc
 import sys
 from copy import copy, deepcopy
@@ -44,7 +47,6 @@ class DPMachine(ABC):
         """
         return deepcopy(self)
 
-    @abc.abstractmethod
     def set_epsilon(self, epsilon):
         """
         Sets the value of epsilon to be used by the mechanism.
@@ -52,6 +54,26 @@ class DPMachine(ABC):
         :param epsilon: Epsilon value for differential privacy.
         :type epsilon: `float`
         :return: self
+        """
+        return self.set_epsilon_delta(epsilon, 0.0)
+
+    @abc.abstractmethod
+    def set_epsilon_delta(self, epsilon, delta):
+        """
+        Set the privacy parameters epsilon and delta for the mechanism.
+
+        Epsilon must be non-negative, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
+        one or epsilon and delta must be non-zero.
+
+        Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given
+        when delta > 0.
+
+        :param epsilon: Epsilon value of the mechanism.
+        :type epsilon: `float`
+        :param delta: Delta value of the mechanism.
+        :type delta: `float`
+        :return: self
+        :rtype: :class:`.DPMechanism`
         """
         pass
 

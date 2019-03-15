@@ -28,6 +28,9 @@ class TestDPMachine(TestCase):
             def set_epsilon(self, epsilon):
                 return self
 
+            def set_epsilon_delta(self, epsilon):
+                return self
+
             def randomise(self, value):
                 return random()
 
