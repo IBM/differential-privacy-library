@@ -2,8 +2,7 @@ from unittest import TestCase
 
 from numpy.random import random
 
-from diffprivlib import DPMachine
-from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.mechanisms import DPMachine, DPMechanism
 
 
 class TestDPMechanism(TestCase):

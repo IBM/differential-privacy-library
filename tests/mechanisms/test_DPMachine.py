@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from numpy.random import random
 
-from diffprivlib import DPMachine
+from diffprivlib.mechanisms import DPMachine
 
 if sys.version_info >= (3, 4):
     ABC = abc.ABC

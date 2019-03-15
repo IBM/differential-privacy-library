@@ -1,4 +1,4 @@
-from diffprivlib import DPMachine
+from ..utils import DPMachine
 
 
 class DPTransformer(DPMachine):
