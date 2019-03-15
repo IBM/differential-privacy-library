@@ -75,6 +75,7 @@ class TestExponentialHierarchical(TestCase):
     def test_distrib(self):
         epsilon = np.log(2)
         runs = 20000
+        balanced_tree = False
         _mech = mech.copy().set_epsilon(epsilon).set_hierarchy([["A", "B"], ["C"]])
         count = [0, 0, 0]
 
@@ -87,6 +88,57 @@ class TestExponentialHierarchical(TestCase):
             elif val == "C":
                 count[2] += 1
 
+        # print(_mech.get_utility_list())
+        # print(_mech._sensitivity)
+
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
-        self.assertAlmostEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs, delta=0.1)
+        self.assertAlmostEqual(count[0] / runs, np.exp(epsilon / (1 if balanced_tree else 2)) * count[2] / runs, delta=0.1)
         self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
+
+    def test_neighbours(self):
+        epsilon = np.log(2)
+        runs = 20000
+        _mech = mech.copy().set_epsilon(epsilon).set_hierarchy([["A", "B"], ["C"]])
+        count = [0, 0, 0]
+
+        for i in range(runs):
+            val = _mech.randomise("A")
+            if val == "A":
+                count[0] += 1
+
+            val = _mech.randomise("B")
+            if val == "A":
+                count[1] += 1
+
+            val = _mech.randomise("C")
+            if val == "A":
+                count[2] += 1
+
+        # print("Output: A\nInput: A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs)
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs)
+        self.assertLessEqual(count[1] / runs, np.exp(epsilon) * count[2] / runs)
+
+    def test_neighbours_flat_hierarchy(self):
+        epsilon = np.log(2)
+        runs = 20000
+        _mech = mech.copy().set_epsilon(epsilon).set_hierarchy(["A", "B", "C"])
+        count = [0, 0, 0]
+
+        for i in range(runs):
+            val = _mech.randomise("A")
+            if val == "A":
+                count[0] += 1
+
+            val = _mech.randomise("B")
+            if val == "A":
+                count[1] += 1
+
+            val = _mech.randomise("C")
+            if val == "A":
+                count[2] += 1
+
+        # print("(Output: A) Input: A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.05)
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
+        self.assertLessEqual(count[1] / runs, np.exp(epsilon) * count[2] / runs + 0.05)

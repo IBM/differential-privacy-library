@@ -20,6 +20,7 @@ class Exponential(DPMechanism):
         self._utility_values = None
         self._normalising_constant = None
         self._sensitivity = None
+        self._balanced_tree = False
 
     def __repr__(self):
         output = super().__repr__()
@@ -114,7 +115,7 @@ class Exponential(DPMechanism):
         return utility_list
 
     def _build_normalising_constant(self, re_eval=False):
-        balanced_hierarchy = True
+        balanced_tree = True
         first_constant_value = None
         normalising_constant = {}
 
@@ -128,11 +129,12 @@ class Exponential(DPMechanism):
 
             if first_constant_value is None:
                 first_constant_value = constant_value
-            elif constant_value != first_constant_value:
-                balanced_hierarchy = False
+            elif not np.isclose(constant_value, first_constant_value):
+                balanced_tree = False
 
-        if balanced_hierarchy and not re_eval:
-            self._sensitivity /= 2
+        # If the tree is balanced, we can eliminate the doubling factor
+        if balanced_tree and not re_eval:
+            self._balanced_tree = True
             return self._build_normalising_constant(True)
 
         return normalising_constant
@@ -147,7 +149,8 @@ class Exponential(DPMechanism):
         return self._utility_values[value1 + "::" + value2]
 
     def _get_prob(self, value1, value2):
-        return np.exp(- self._epsilon * self._get_utility(value1, value2) / self._sensitivity)
+        balancing_factor = 1 if self._balanced_tree else 2
+        return np.exp(- self._epsilon * self._get_utility(value1, value2) / balancing_factor / self._sensitivity)
 
     def check_inputs(self, value):
         """

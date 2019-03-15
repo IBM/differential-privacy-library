@@ -123,5 +123,5 @@ class TestExponential(TestCase):
                 count[2] += 1
 
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
-        self.assertAlmostEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs, delta=0.1)
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
         self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
