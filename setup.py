@@ -6,7 +6,7 @@ from setuptools import find_packages
 
 install_requires = ['numpy >= 1.15.0',
                     'setuptools >= 39.0.1',
-                    'sklearn >= 0.20.3']
+                    'scikit-learn >= 0.20.3']
 
 # tests_require = ['mxnet',
 #                  'h5py',
