@@ -43,6 +43,12 @@ class TestExponentialHierarchical(TestCase):
         with self.assertRaises(TypeError):
             _mech.set_epsilon("Two")
 
+    def test_inf_epsilon(self):
+        _mech = mech.copy().set_hierarchy([["A", "B"], ["C"]]).set_epsilon(float("inf"))
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise("A"), "A")
+
     def test_non_zero_delta(self):
         _mech = mech.copy()
         with self.assertRaises(ValueError):

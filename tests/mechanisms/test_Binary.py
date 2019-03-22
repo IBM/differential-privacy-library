@@ -33,6 +33,13 @@ class TestBinary(TestCase):
         with self.assertRaises(ValueError):
             _mech.randomise("1")
 
+    def test_inf_epsilon(self):
+        _mech = mech.copy().set_labels("0", "1").set_epsilon(float("inf"))
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise("1"), "1")
+            self.assertEqual(_mech.randomise("0"), "0")
+
     def test_complex_epsilon(self):
         _mech = mech.copy().set_labels("0", "1")
         with self.assertRaises(TypeError):

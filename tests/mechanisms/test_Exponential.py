@@ -33,6 +33,19 @@ class TestExponential(TestCase):
         with self.assertRaises(ValueError):
             _mech.randomise("A")
 
+    def test_inf_epsilon(self):
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2]
+        ]
+        _mech = mech.copy().set_utility(utility_list).set_epsilon(float("inf"))
+
+        # print(_mech.randomise("A"))
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise("A"), "A")
+
     def test_neg_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(ValueError):

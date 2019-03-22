@@ -33,6 +33,12 @@ class TestLaplaceFolded(TestCase):
         with self.assertRaises(ValueError):
             _mech.randomise(1)
 
+    def test_inf_epsilon(self):
+        _mech = mech.copy().set_sensitivity(1).set_epsilon(float("inf")).set_bounds(0, 1)
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise(0.5), 0.5)
+
     def test_complex_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(TypeError):

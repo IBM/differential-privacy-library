@@ -276,6 +276,8 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         delta_q = self._sensitivity
 
         def _delta_c(shape):
+            if shape == 0:
+                return 2.0
             return (2 - np.exp(- delta_q / shape) - np.exp(- (diam - delta_q) / shape)) / (1 - np.exp(- diam / shape))
 
         def _f(shape):
@@ -297,6 +299,10 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return (right + left) / 2
 
     def _cdf(self, value):
+        # Allow for infinite epsilon
+        if self._scale == 0:
+            return 0 if value < 0 else 1
+
         if value < 0:
             return 0.5 * np.exp(value / self._scale)
 
@@ -421,6 +427,9 @@ class LaplaceBoundedNoise(Laplace):
         return DPMechanism.set_epsilon_delta(self, epsilon, delta)
 
     def _cdf(self, value):
+        if self._shape == 0:
+            return 0 if value < 0 else 1
+
         if value < 0:
             return 0.5 * np.exp(value / self._shape)
 
@@ -461,11 +470,12 @@ class LaplaceBoundedNoise(Laplace):
 
         if self._shape is None or self._noise_bound is None:
             self._shape = self._sensitivity / self._epsilon
-            self._noise_bound = self._shape * np.log(1 + (np.exp(self._epsilon) - 1) / 2 / self._delta)
+            self._noise_bound = -1 if self._shape == 0 else\
+                self._shape * np.log(1 + (np.exp(self._epsilon) - 1) / 2 / self._delta)
 
         unif_rv = random()
         unif_rv *= self._cdf(self._noise_bound) - self._cdf(- self._noise_bound)
         unif_rv += self._cdf(- self._noise_bound)
         unif_rv -= 0.5
 
-        return value - self._shape * np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv))
+        return value - self._shape * (np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv)))

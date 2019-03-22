@@ -62,7 +62,7 @@ class TestGaussian(TestCase):
         _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(0.5, 0.1)
         vals = []
 
-        for i in range(10000):
+        for i in range(20000):
             vals.append(_mech.randomise(0.5))
 
         median = float(np.median(vals))

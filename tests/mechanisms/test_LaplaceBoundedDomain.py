@@ -43,6 +43,12 @@ class TestLaplaceBoundedDomain(TestCase):
         with self.assertRaises(TypeError):
             _mech.set_epsilon("Two")
 
+    def test_inf_epsilon(self):
+        _mech = mech.copy().set_sensitivity(1).set_epsilon(float("inf")).set_bounds(0, 10)
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise(1), 1)
+
     def test_no_bounds(self):
         _mech = mech.copy().set_sensitivity(1).set_epsilon(1)
         with self.assertRaises(ValueError):
