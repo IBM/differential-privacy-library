@@ -8,6 +8,7 @@ class KMeans(BaseEstimator):
     def __init__(self, epsilon, bounds, n_clusters=8, verbose=0):
         self.epsilon = epsilon
         self.bounds = bounds
+        self.bounds_processed = None
         self.n_clusters = n_clusters
         self.verbose = verbose
         self.fitted_centers = None
@@ -49,15 +50,50 @@ class KMeans(BaseEstimator):
         return self._distances_labels(X, self.fitted_centers)[1]
 
     def _init_centers(self, dims):
-        centers = np.zeros(shape=(self.n_clusters, dims))
 
-        for dim in range(dims):
-            lower = self.bounds[dim][0]
-            upper = self.bounds[dim][1]
+        if self.bounds_processed is None:
+            bounds_processed = np.zeros(shape=(dims, 2))
 
-            centers[:, dim] = lower + np.random.random(self.n_clusters) * (upper - lower)
+            for dim in range(dims):
+                lower = self.bounds[dim][0]
+                upper = self.bounds[dim][1]
 
-        return centers
+                bounds_processed[dim, :] = [upper - lower, lower]
+
+            self.bounds_processed = bounds_processed
+
+        # Find clusters at least cluster_proximity apart
+        cluster_proximity = np.min(self.bounds_processed[:, 0]) / 2.0
+
+        while cluster_proximity > 0:
+            centers = np.zeros(shape=(self.n_clusters, dims))
+            cluster, retry = 0, 0
+
+            while retry < 100:
+                if cluster >= self.n_clusters:
+                    break
+
+                temp_center = np.random.random(dims) * self.bounds_processed[:, 0] + self.bounds_processed[:, 1]
+
+                if cluster == 0:
+                    centers[0, :] = temp_center
+                    cluster += 1
+                    continue
+
+                min_distance = ((centers[:cluster, :] - temp_center) ** 2).sum(axis=1).min()
+
+                if np.sqrt(min_distance) >= cluster_proximity:
+                    centers[cluster, :] = temp_center
+                    cluster += 1
+                else:
+                    retry += 1
+
+            if cluster >= self.n_clusters:
+                return centers
+            else:
+                cluster_proximity /= 2.0
+
+        return None
 
     def _distances_labels(self, X, centers):
         distances = np.zeros((X.shape[0], self.n_clusters))
