@@ -38,6 +38,12 @@ class TestLaplaceBoundedDomain(TestCase):
         with self.assertRaises(ValueError):
             _mech.set_epsilon_delta(-1, 0.1)
 
+    def test_inf_epsilon(self):
+        _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(float("inf"), 0.1)
+
+        for i in range(1000):
+            self.assertEqual(_mech.randomise(1), 1)
+
     def test_zero_epsilon(self):
         _mech = mech.copy().set_sensitivity(1)
         with self.assertRaises(ValueError):

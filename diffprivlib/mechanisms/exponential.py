@@ -149,6 +149,9 @@ class Exponential(DPMechanism):
         return self._utility_values[value1 + "::" + value2]
 
     def _get_prob(self, value1, value2):
+        if value1 == value2:
+            return 1.0
+
         balancing_factor = 1 if self._balanced_tree else 2
         return np.exp(- self._epsilon * self._get_utility(value1, value2) / balancing_factor / self._sensitivity)
 
