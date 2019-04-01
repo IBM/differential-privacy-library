@@ -4,6 +4,9 @@ from sklearn.base import BaseEstimator
 
 
 # noinspection PyPep8Naming
+from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
+
+
 class KMeans(BaseEstimator):
     def __init__(self, epsilon, bounds, n_clusters=8, verbose=0):
         self.epsilon = epsilon
@@ -30,7 +33,7 @@ class KMeans(BaseEstimator):
         for i in range(iters):
             distances, labels = self._distances_labels(X, centers)
 
-            centers = self._update_centers(X, centers, labels)
+            centers = self._update_centers(X, centers, labels, dims)
 
         self.fitted_centers = centers
 
@@ -62,7 +65,6 @@ class KMeans(BaseEstimator):
 
             self.bounds_processed = bounds_processed
 
-        # Find clusters at least cluster_proximity apart
         cluster_proximity = np.min(self.bounds_processed[:, 0]) / 2.0
 
         while cluster_proximity > 0:
@@ -85,6 +87,7 @@ class KMeans(BaseEstimator):
                 if np.sqrt(min_distance) >= cluster_proximity:
                     centers[cluster, :] = temp_center
                     cluster += 1
+                    retry = 0
                 else:
                     retry += 1
 
@@ -104,12 +107,52 @@ class KMeans(BaseEstimator):
         labels = np.argmin(distances, axis=1)
         return distances, labels
 
-    def _update_centers(self, X, centers, labels):
+    def _update_centers(self, X, centers, labels, dims):
+        epsilon_0, epsilon_i = self._split_epsilon(dims)
+        # laplace_mechs = []
+        geometric_mech = GeometricFolded().set_sensitivity(1).set_bounds(0.5, float("inf")).set_epsilon(epsilon_0)
+        laplace_mech = LaplaceBoundedDomain().set_epsilon(epsilon_i)
+
+        # for i in range(dims):
+        #     laplace_mechs.append(LaplaceBoundedDomain()
+        #                          .set_sensitivity(self.bounds[i][1] - self.bounds[i][0])
+        #                          .set_bounds(self.bounds[i][0], self.bounds[i][1])
+        #                          .set_epsilon(epsilon_i))
+
         for cluster in range(self.n_clusters):
             if cluster not in labels:
                 continue
 
-            temp = np.mean(X[labels == cluster], axis=0)
-            centers[cluster, :] = temp
+            cluster_count = sum(labels == cluster)
+            noisy_count = geometric_mech.randomise(cluster_count)
+
+            cluster_sum = np.sum(X[labels == cluster], axis=0)
+            noisy_sum = np.zeros_like(cluster_sum)
+
+            for i in range(dims):
+                _mech = laplace_mech.copy().set_sensitivity(self.bounds[i][1] - self.bounds[i][0])\
+                    .set_bounds(noisy_count * self.bounds[i][0], noisy_count * self.bounds[i][1])
+                noisy_sum[i] = _mech.randomise(cluster_sum[i])
+
+            centers[cluster, :] = noisy_sum / noisy_count
 
         return centers
+
+    def _split_epsilon(self, dims, rho=0.225):
+        """
+        Split epsilon between sum perturbation and count perturbation, as proposed by Su et al.
+
+        Paper link: http://delivery.acm.org/10.1145/2860000/2857708/p26-su.pdf
+        :param dims: Number of dimensions to split epsilon between
+        :type dims: int
+        :param rho: Coordinate normalisation factor, default 0.225
+        :type rho: float
+        :return: (epsilon_0, epsilon_i)
+        """
+
+        epsilon_i = 1
+        epsilon_0 = np.cbrt(4 * dims * rho ** 2)
+
+        normaliser = self.epsilon / (epsilon_i * dims + epsilon_0)
+
+        return epsilon_i * normaliser, epsilon_0 * normaliser
