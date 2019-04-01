@@ -25,7 +25,6 @@ class TestKMeans(TestCase):
         self.assertTrue(np.isclose(centers, 0.9, atol=0.05).any())
 
     def test_predict(self):
-        global_seed(3141592653)
         clf = KMeans(10, [(0, 1)], 3)
 
         X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])
@@ -37,3 +36,15 @@ class TestKMeans(TestCase):
         self.assertNotEqual(predicted[0], predicted[1])
         self.assertNotEqual(predicted[0], predicted[2])
         self.assertNotEqual(predicted[2], predicted[1])
+
+    def test_inf_epsilon(self):
+        global_seed(3141592653)
+        clf = KMeans(float("inf"), [(0, 1)], 3)
+
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9])
+        centers = clf.fit(X)
+
+        self.assertIn(0.1, centers)
+        self.assertIn(0.5, centers)
+        self.assertIn(0.9, centers)
+
