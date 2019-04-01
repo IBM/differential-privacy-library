@@ -9,6 +9,7 @@ import sklearn.naive_bayes as sk_nb
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 
 
+# noinspection PyPep8Naming
 class GaussianNB(sk_nb.GaussianNB):
     def __init__(self, epsilon, bounds, priors=None, var_smoothing=1e-9):
         super().__init__(priors, var_smoothing)

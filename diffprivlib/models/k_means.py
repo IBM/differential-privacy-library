@@ -7,6 +7,7 @@ from sklearn.base import BaseEstimator
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 
 
+# noinspection PyPep8Naming
 class KMeans(BaseEstimator):
     def __init__(self, epsilon, bounds, n_clusters=8, verbose=0):
         self.epsilon = epsilon
@@ -18,6 +19,7 @@ class KMeans(BaseEstimator):
 
     def fit(self, X, y=None, sample_weight=None):
         del y, sample_weight
+        # Todo: Determine iters on-the-fly as a function of epsilon
         iters = 7
 
         if len(X.shape) == 1:
@@ -40,10 +42,12 @@ class KMeans(BaseEstimator):
         return centers
 
     def fit_predict(self, X, y=None, sample_weight=None):
+        del y, sample_weight
         self.fit(X)
         return self.predict(X)
 
     def predict(self, X, sample_weight=None):
+        del sample_weight
         if self.fitted_centers is None:
             raise ValueError("Classifier not fitted yet. Run `.fit()` with training data first.")
 
@@ -53,7 +57,8 @@ class KMeans(BaseEstimator):
         return self._distances_labels(X, self.fitted_centers)[1]
 
     def _init_centers(self, dims):
-
+        # Todo: Fix to ensure initialised centers are at least a distance d from the domain boundaries, and 2d from
+        #  other custer centres
         if self.bounds_processed is None:
             bounds_processed = np.zeros(shape=(dims, 2))
 
