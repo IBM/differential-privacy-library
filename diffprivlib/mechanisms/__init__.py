@@ -10,3 +10,4 @@ from .geometric import Geometric, GeometricFolded, GeometricTruncated
 from .laplace import Laplace, LaplaceBoundedDomain, LaplaceBoundedNoise, LaplaceFolded, LaplaceTruncated
 from .staircase import Staircase
 from .uniform import Uniform
+from .vector import Vector
