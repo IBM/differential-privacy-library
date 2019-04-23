@@ -113,7 +113,7 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
 
         while not iterator.finished:
             dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf"))\
-                .set_sensitivity(ranges[iterator.multi_index] ** 2 / n)
+                .set_sensitivity((ranges[iterator.multi_index] / n) ** 2 * (n - 1))
 
             dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()

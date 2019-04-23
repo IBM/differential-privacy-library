@@ -130,8 +130,8 @@ class GaussianNB(sk_nb.GaussianNB):
 
         for feature in range(features):
             local_diameter = self.bounds[feature][1] - self.bounds[feature][0]
-            mech_mu = Laplace().set_sensitivity(local_diameter / (n + 1)).set_epsilon(local_epsilon)
-            mech_var = LaplaceBoundedDomain().set_sensitivity(np.sqrt(n) * local_diameter / (n + 1))\
+            mech_mu = Laplace().set_sensitivity(local_diameter / n).set_epsilon(local_epsilon)
+            mech_var = LaplaceBoundedDomain().set_sensitivity((n - 1) * local_diameter ** 2 / n ** 2)\
                 .set_epsilon(local_epsilon).set_bounds(0, float("inf"))
 
             new_mu[feature] = mech_mu.randomise(mu[feature])
