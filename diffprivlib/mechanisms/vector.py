@@ -70,8 +70,8 @@ class Vector(DPMechanism):
         if not isinstance(lam, Real):
             raise TypeError("Lambda must be numeric")
 
-        if lam < 0:
-            raise ValueError("Lambda must be non-negative")
+        if lam <= 0:
+            raise ValueError("Lambda must be strictly positive")
 
         self._lambda = lam
         return self

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator
+from sklearn.exceptions import NotFittedError
 
 from diffprivlib.mechanisms import Vector
 
@@ -16,10 +17,14 @@ class LogisticRegression(BaseEstimator):
         pass
 
     def predict_proba(self, X):
-        pass
+        if self.beta is None:
+            raise NotFittedError("Model not fitted. Call fit() first.")
+
+        return np.exp(- self.loss(self.beta, X, 1))
 
     @staticmethod
     def loss(beta, x, label):
+        # TODO: Allow for array-valued x to return losses for multiple inputs
         exponent = beta[0] + np.dot(beta[1:], x)
         return np.log(1 + np.exp(exponent)) - label * exponent
 
@@ -39,7 +44,7 @@ class LogisticRegression(BaseEstimator):
 
             return total
 
-        vector_mech = Vector().set_dimensions(d, n).set_epsilon(self.epsilon).set_lambda(self.lam)
+        vector_mech = Vector().set_dimensions(d + 1, n).set_epsilon(self.epsilon).set_lambda(self.lam)
         noisy_objective = vector_mech.randomise(objective)
 
         noisy_beta = minimize(noisy_objective, beta0, method='Nelder-Mead').x
@@ -48,4 +53,4 @@ class LogisticRegression(BaseEstimator):
         return self
 
     def predict(self, X):
-        pass
+        return np.int(self.predict_proba(X) > 0.5)
