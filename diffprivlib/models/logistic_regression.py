@@ -8,9 +8,7 @@ from diffprivlib.mechanisms import Vector
 class LogisticRegression(BaseEstimator):
     def __init__(self, epsilon, lam=0.01, verbose=0):
         self.epsilon = epsilon
-        self.bounds_processed = None
         self.verbose = verbose
-        self.fitted_centers = None
         self.lam = lam
         self.beta = None
 
@@ -47,9 +45,7 @@ class LogisticRegression(BaseEstimator):
         noisy_beta = minimize(noisy_objective, beta0, method='Nelder-Mead').x
         self.beta = noisy_beta
 
-        pass
+        return self
 
     def predict(self, X):
         pass
-
-
