@@ -21,7 +21,7 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
     :param dtype: See np.mean.
     :param out: See np.mean.
     :param keepdims: See np.mean.
-    :return:
+    :return: Differentially private mean of `a`.
     """
     if isinstance(axis, tuple):
         temp_axis = axis

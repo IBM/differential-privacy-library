@@ -4,24 +4,14 @@
 
 Histogram functions
 -----------------------------
-.. autoclass:: histogram
-   :members:
-   :inherited-members:
+.. autofunction:: histogram
 
-.. autoclass:: histogramdd
-   :members:
-   :inherited-members:
+.. autofunction:: histogramdd
 
-.. autoclass:: histogram2d
-   :members:
-   :inherited-members:
+.. autofunction:: histogram2d
 
 General Utilities
 -----------------------------
-.. autoclass:: mean
-   :members:
-   :inherited-members:
+.. autofunction:: mean
 
-.. autoclass:: var
-   :members:
-   :inherited-members:
+.. autofunction:: var

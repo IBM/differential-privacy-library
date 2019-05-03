@@ -23,7 +23,7 @@ def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, d
         `bins` is a sequence, it defines a monotonically increasing array of bin edges,  including the rightmost edge,
         allowing for non-uniform bin widths.
     :type bins: `int` or sequence of scalars or `str`, optional
-    :param range: The lower and upper range of the bins.  Required parameter for `dp_histogram`. Values outside the
+    :param range: The lower and upper range of the bins. Values outside the
         range are ignored. The first element of the range must be less than or equal to the second.
     :type range: (float, float)
     :param normed: Deprecated. use `density` instead.
@@ -35,12 +35,15 @@ def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, d
     :param density: If ``False``, the result will contain the number of samples in each bin. If ``True``, the result is
         the value of the probability *density* function at the bin, normalized such that the *integral* over the range
         is 1. Note that the sum of the histogram values will not be equal to 1 unless bins of unity width are chosen; it
-         is not a probability *mass* function.
+        is not a probability *mass* function.
     :type density: `bool`, optional
     :return: (hist, bin_edges)
         hist: The values of the histogram. See `density` and `weights` for a description of the possible semantics.
         bin_edges: Return the bin edges ``(length(hist)+1)``.
     :rtype: (array, array of dtype float)
+
+    Some extra test with an example:
+
     """
     if range is None:
         raise ValueError("Range must be specified for dp_histogram, as the tuple (lower, upper)")
@@ -64,6 +67,7 @@ def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, d
 
 
 # noinspection PyShadowingBuiltins
+# todo Throw warning if range not specified, and use sample.min() and sample.max() as substitute
 def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None, density=None):
     """
     Compute the differentially private multidimensional histogram of some data. Behaves the same as Numpy's

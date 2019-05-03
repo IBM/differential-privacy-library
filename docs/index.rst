@@ -3,12 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to IBM Differential Privacy Library
-===========================================
+Welcome to the IBM Differential Privacy Library
+===============================================
 
 This is a library dedicated to differential privacy and machine learning.
 Its purpose is to allow experimentation, simulation, and implementation of differentially private models using a common codebase and building blocks.
-The code can be found on `GitHub`_.
 
 
 .. toctree::
@@ -16,6 +15,8 @@ The code can be found on `GitHub`_.
    :caption: Modules
 
    modules/mechanisms
+   modules/tools
+   modules/models
 
 
 
