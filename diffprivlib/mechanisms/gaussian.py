@@ -32,7 +32,6 @@ class Gaussian(DPMechanism):
         :param delta: Delta value of the mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Gaussian`
         """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
@@ -50,7 +49,6 @@ class Gaussian(DPMechanism):
         :param sensitivity: The sensitivity of the function being considered, must be > 0.
         :type sensitivity: `float`
         :return: self
-        :rtype: :class:`.Uniform`
         """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")

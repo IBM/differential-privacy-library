@@ -34,8 +34,7 @@ class Binary(DPMechanism):
         :type value0: str
         :param value1: Binary label.
         :type value1: str
-        :return: self.
-        :rtype: :class:`.Binary`
+        :return: self
         """
         if not isinstance(value0, str) or not isinstance(value1, str):
             raise TypeError("Binary labels must be strings. Use a DPTransformer"

@@ -73,7 +73,6 @@ class DPMachine(ABC):
         :param delta: Delta value of the mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.DPMechanism`
         """
         pass
 
@@ -152,7 +151,6 @@ class DPMechanism(DPMachine, ABC):
         :param epsilon: Epsilon value for differential privacy.
         :type epsilon: `float`
         :return: self
-        :rtype: :class:`.DPMechanism`
         """
         if epsilon <= 0:
             raise ValueError("Epsilon must be strictly positive")
@@ -174,7 +172,6 @@ class DPMechanism(DPMachine, ABC):
         :param delta: Delta value of the mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.DPMechanism`
         """
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise ValueError("Epsilon and delta must be numeric")
@@ -234,8 +231,7 @@ class TruncationAndFoldingMachine:
         :type lower: float
         :param upper: Upper bound value.
         :type upper: float
-        :return: self.
-        :rtype: :class:`.DPMechanism`
+        :return: self
         """
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")

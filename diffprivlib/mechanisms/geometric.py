@@ -33,7 +33,6 @@ class Geometric(DPMechanism):
         :param sensitivity: The sensitivity of the function being considered, must be integer-valued and > 0.
         :type sensitivity: `int`
         :return: self
-        :rtype: :class:`.Geometric`
         """
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
@@ -73,7 +72,6 @@ class Geometric(DPMechanism):
         :param delta: Delta value of the mechanism. For the geometric mechanism, this must be zero.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Geometric`
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
@@ -128,8 +126,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
         :type lower: `int`
         :param upper: Upper bound value.
         :type upper: `int`
-        :return: self.
-        :rtype: :class:`.GeometricTruncated`
+        :return: self
         """
         if not isinstance(lower, Integral) or not isinstance(upper, Integral):
             raise TypeError("Bounds must be integers")
@@ -177,8 +174,7 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
         :type lower: `float`
         :param upper: Upper bound value.
         :type upper: `float`
-        :return: self.
-        :rtype: :class:`.GeometricFolded`
+        :return: self
         """
         if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):
             raise ValueError("Bounds must be integer or half-integer floats")

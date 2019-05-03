@@ -32,7 +32,6 @@ class Staircase(Laplace):
         :param gamma: Gamma value of the mechanism.
         :type gamma: `float`
         :return: self
-        :rtype: :class:`.Uniform`
         """
         if not isinstance(gamma, Real):
             raise TypeError("Gamma must be numeric")
@@ -71,7 +70,6 @@ class Staircase(Laplace):
         :param delta: Delta value of the mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Uniform`
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")

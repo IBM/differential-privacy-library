@@ -37,8 +37,7 @@ class Exponential(DPMechanism):
         be specified as strings (for non-string labels, a :class:`.DPTransformer` can be used), and the utility value
         must be a strictly positive `float`.
         :type utility_list: `list`
-        :return: self.
-        :rtype: :class:`.Exponential`
+        :return: self
         """
         if not isinstance(utility_list, list):
             raise ValueError("Utility must be given in a list")
@@ -193,7 +192,6 @@ class Exponential(DPMechanism):
         :param delta: Delta value of the mechanism. Must be zero for the exponential mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Exponential`
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
@@ -304,8 +302,7 @@ class ExponentialHierarchical(Exponential):
 
         :param list_hierarchy: Hierarchy list.
         :type list_hierarchy: `list`
-        :return: self.
-        :rtype: :class:`.ExponentialHierarchical`
+        :return: self
         """
         if not isinstance(list_hierarchy, list):
             raise TypeError("Hierarchy must be a list")

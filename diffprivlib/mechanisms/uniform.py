@@ -30,7 +30,6 @@ class Uniform(DPMechanism):
         :param delta: Delta value of the mechanism.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Uniform`
         """
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
@@ -47,7 +46,6 @@ class Uniform(DPMechanism):
         :param sensitivity: The sensitivity of the function being considered, must be > 0.
         :type sensitivity: `float`
         :return: self
-        :rtype: :class:`.Uniform`
         """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
