@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator
@@ -6,6 +8,7 @@ from sklearn.exceptions import NotFittedError
 from diffprivlib.mechanisms import Vector
 
 
+# noinspection PyPep8Naming
 class LogisticRegression(BaseEstimator):
     def __init__(self, epsilon, lam=0.01, verbose=0):
         self.epsilon = epsilon
@@ -30,6 +33,13 @@ class LogisticRegression(BaseEstimator):
 
     def fit(self, X, y, sample_weight=None):
         del sample_weight
+
+        max_norm = np.linalg.norm(X, axis=1).max()
+        if max_norm > 1:
+            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most 1. "
+                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved.",
+                          RuntimeWarning)
+
         n, d = X.shape
         beta0 = np.zeros(d + 1)
 
