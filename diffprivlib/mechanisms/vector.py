@@ -17,7 +17,7 @@ class Vector(DPMechanism):
     """
     def __init__(self):
         super().__init__()
-        self._sensitivity = 1
+        self._sensitivity = None
         self._d = None
         self._n = None
         self._lambda = 0.01
@@ -33,7 +33,6 @@ class Vector(DPMechanism):
         :param delta: Delta value of the mechanism. For the geometric mechanism, this must be zero.
         :type delta: `float`
         :return: self
-        :rtype: :class:`.Geometric`
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
@@ -42,12 +41,12 @@ class Vector(DPMechanism):
 
     def set_sensitivity(self, sensitivity):
         """
-        Set the sensitivity of the mechanism. Default: 1
+        Set the sensitivity of the mechanism, bounding the second derivative of the loss function. This is the `c`
+        variable in the original ERM paper.
 
         :param sensitivity: The sensitivity of the function being considered, must be > 0.
         :type sensitivity: `float`
         :return: self
-        :rtype: :class:`.Vector`
         """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
@@ -65,7 +64,6 @@ class Vector(DPMechanism):
         :param lam: Regularisation parameter, default is 0.01
         :type lam: `float`
         :return: self
-        :rtype: :class:`.Vector`
         """
         if not isinstance(lam, Real):
             raise TypeError("Lambda must be numeric")
@@ -94,6 +92,9 @@ class Vector(DPMechanism):
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
 
+        if self._n is None or self._d is None:
+            raise ValueError("Dimensions n and d must be set")
+
         return True
 
     def set_dimensions(self, d, n):
@@ -105,7 +106,6 @@ class Vector(DPMechanism):
         :param n: Number of datapoints in the dataset.
         :type n: `int`
         :return: self
-        :rtype: :class:`.Vector`
         """
 
         if not isinstance(d, Real) or not d >= 1 or not np.isclose(d, int(d)):
@@ -129,7 +129,7 @@ class Vector(DPMechanism):
         """
         self.check_inputs(value)
 
-        c = 0.25
+        c = self._sensitivity
         epsilon_p = self._epsilon - 2 * np.log(1 + c / (self._lambda * self._n))
         delta = 0
 

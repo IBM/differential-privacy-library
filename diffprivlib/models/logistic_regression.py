@@ -44,7 +44,8 @@ class LogisticRegression(BaseEstimator):
 
             return total
 
-        vector_mech = Vector().set_dimensions(d + 1, n).set_epsilon(self.epsilon).set_lambda(self.lam)
+        vector_mech = Vector().set_dimensions(d + 1, n).set_epsilon(self.epsilon).set_lambda(self.lam).\
+            set_sensitivity(0.25)
         noisy_objective = vector_mech.randomise(objective)
 
         noisy_beta = minimize(noisy_objective, beta0, method='Nelder-Mead').x
