@@ -1,8 +1,7 @@
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import find_packages, setup
 
-# with open("README.md", "r") as fh:
-#     long_description = fh.read()
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 install_requires = ['numpy >= 1.15.0',
                     'setuptools >= 39.0.1',
@@ -19,11 +18,11 @@ install_requires = ['numpy >= 1.15.0',
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
-setup(name='IBM DPL',
+setup(name='diffprivlib',
       version='0.0.1',
       description='IBM Differential Privacy Library',
-      # long_description=long_description,
-      # long_description_content_type='text/markdown',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Naoise Holohan',
       author_email='naoise@ibm.com',
       url='https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib',
@@ -35,15 +34,17 @@ setup(name='IBM DPL',
           'docs': docs_require
       },
       classifiers=[
-            # 'Development Status :: 3 - Alpha',
+            'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
             'Intended Audience :: Education',
             'Intended Audience :: Science/Research',
-            # 'License :: OSI Approved :: MIT License',
-            # 'Programming Language :: Python :: 2',
+            'License :: OSI Approved',
+            'Natural Language :: English',
             'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3 :: Only',
             'Topic :: Software Development :: Libraries',
             'Topic :: Software Development :: Libraries :: Python Modules',
-            # 'Topic :: Scientific/Engineering :: Artificial Intelligence',
+            'Topic :: Scientific/Engineering',
+            'Topic :: Security',
       ],
       packages=find_packages())
