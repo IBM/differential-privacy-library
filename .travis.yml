@@ -1,7 +1,7 @@
 language: python
 dist: trusty
 python:
-  - "3.3"
+  - "3.4"
   - "3.6"
 install:
   - pip install pycodestyle
