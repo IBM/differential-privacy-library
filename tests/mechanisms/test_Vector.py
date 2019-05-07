@@ -2,19 +2,15 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Vector
-from diffprivlib.utils import global_seed
 
 func = lambda x: np.sum(x ** 2)
 
 
 class TestVector(TestCase):
     def setup_method(self, method):
-        # print("setup_method      method:%s" % method.__name__)
-        global_seed(3141592653)
         self.mech = Vector()
 
     def teardown_method(self, method):
-        # print("setup_method      method:%s" % method.__name__)
         del self.mech
 
     def test_not_none(self):
