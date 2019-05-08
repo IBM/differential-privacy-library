@@ -110,3 +110,6 @@ ENV/
 .mypy_cache/
 
 .idea/
+
+# all sub-directories in notebooks
+/notebooks/*/
