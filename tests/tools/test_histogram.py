@@ -6,10 +6,17 @@ from diffprivlib.utils import global_seed
 
 
 class TestHistogram(TestCase):
+    def test_no_params(self):
+        a = np.array([1, 2, 3, 4, 5])
+        with self.assertWarns(RuntimeWarning):
+            res = histogram(a)
+        self.assertIsNotNone(res)
+
     def test_no_range(self):
         a = np.array([1, 2, 3, 4, 5])
-        with self.assertRaises(ValueError):
-            histogram(a, 1)
+        with self.assertWarns(RuntimeWarning):
+            res = histogram(a, epsilon=1)
+        self.assertIsNotNone(res)
 
     def test_same_edges(self):
         a = np.array([1, 2, 3, 4, 5])

@@ -2,6 +2,7 @@
 Differentially private histogram-related functions
 Builds upon the histogram functionality of Numpy
 """
+import warnings
 from sys import maxsize
 
 import numpy as np
@@ -10,7 +11,7 @@ from diffprivlib import mechanisms
 
 
 # noinspection PyShadowingBuiltins
-def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, density=None):
+def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None, density=None):
     """
     Differentially private histogram. Identical functionality to Numpy's `histogram`, but with required `range`
     argument. See numpy.histogram for full help.
@@ -46,7 +47,9 @@ def histogram(sample, epsilon, bins=10, range=None, normed=None, weights=None, d
 
     """
     if range is None:
-        raise ValueError("Range must be specified for dp_histogram, as the tuple (lower, upper)")
+        warnings.warn("Range parameter has not been specified. Falling back to taking range from the data.\n"
+                      "To ensure differential privacy, and no additional privacy leakage, the range must be "
+                      "specified independently of the data (i.e., using domain knowledge).", RuntimeWarning)
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
