@@ -13,7 +13,7 @@ Use the Differential Privacy Library if you are looking to:
 - Explore the impact of differential privacy on machine learning accuracy using basic classification, regression and clustering models 
 - Build your own differential privacy applications, using our extensive collection of mechanisms
 
-DPL is compatible with: __Python 3.0–3.7__.
+DPL is compatible with: __Python 3.4–3.6__.
 
 ## Guiding principles
 
