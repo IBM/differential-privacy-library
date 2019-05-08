@@ -47,6 +47,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
     """
     if range is None:
+        warnings.simplefilter('always', RuntimeWarning)
         warnings.warn("Range parameter has not been specified. Falling back to taking range from the data.\n"
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
                       "specified independently of the data (i.e., using domain knowledge).", RuntimeWarning)
