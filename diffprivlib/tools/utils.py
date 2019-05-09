@@ -33,9 +33,9 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
     else:
         temp_axis = tuple(_range(len(a.shape)))
 
-    n = 1
+    num_datapoints = 1
     for i in temp_axis:
-        n *= a.shape[i]
+        num_datapoints *= a.shape[i]
 
     actual_mean = np.mean(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
@@ -54,7 +54,7 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
         iterator = np.nditer(actual_mean, flags=['multi_index'])
 
         while not iterator.finished:
-            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(ranges[iterator.multi_index] / n)
+            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(ranges[iterator.multi_index] / num_datapoints)
 
             dp_mean[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -62,7 +62,7 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
         return dp_mean
 
     range = np.ravel(ranges)[0]
-    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(range / n)
+    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(range / num_datapoints)
     return dp_mech.randomise(actual_mean)
 
 
@@ -91,9 +91,9 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
     else:
         temp_axis = tuple(_range(len(a.shape)))
 
-    n = 1
+    num_datapoints = 1
     for i in temp_axis:
-        n *= a.shape[i]
+        num_datapoints *= a.shape[i]
 
     actual_var = np.var(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
 
@@ -113,7 +113,7 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
 
         while not iterator.finished:
             dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf"))\
-                .set_sensitivity((ranges[iterator.multi_index] / n) ** 2 * (n - 1))
+                .set_sensitivity((ranges[iterator.multi_index] / num_datapoints) ** 2 * (num_datapoints - 1))
 
             dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -121,5 +121,6 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
         return dp_var
 
     range = np.ravel(ranges)[0]
-    dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")).set_sensitivity(range ** 2 / n)
+    dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")).\
+        set_sensitivity(range ** 2 / num_datapoints)
     return dp_mech.randomise(actual_var)

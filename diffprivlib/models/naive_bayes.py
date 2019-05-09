@@ -3,8 +3,8 @@ Gaussian Naive Bayes classifier satisfying differential privacy
 """
 import warnings
 
-import numpy as np
 from numbers import Real
+import numpy as np
 
 import sklearn.naive_bayes as sk_nb
 

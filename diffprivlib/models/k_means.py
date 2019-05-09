@@ -32,7 +32,7 @@ class KMeans(BaseEstimator):
 
         centers = self._init_centers(dims)
 
-        for i in range(iters):
+        for _ in range(iters):
             distances, labels = self._distances_labels(X, centers)
 
             centers = self._update_centers(X, centers, labels, dims)

@@ -267,12 +267,13 @@ def histogram2d(x, y, epsilon, bins=10, range=None, normed=None, weights=None,
 
     """
     try:
-        n = len(bins)
+        num_bins = len(bins)
     except TypeError:
-        n = 1
+        num_bins = 1
 
-    if n != 1 and n != 2:
+    if num_bins != 1 and num_bins != 2:
         xedges = yedges = np.asarray(bins)
         bins = [xedges, yedges]
+
     hist, edges = histogramdd([x, y], epsilon, bins, range, normed, weights, density)
     return hist, edges[0], edges[1]
