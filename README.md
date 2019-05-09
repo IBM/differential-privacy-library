@@ -16,34 +16,49 @@ DPL is compatible with: __Python 3.4–3.6__.
 
 ## Guiding principles
 
+- __Unifying codebase:__ DPL is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
 - __Wide audience:__ DPL is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
 - __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
-- __Modularity:__
 
-## Getting started: Differential privacy in 30 seconds
-
-```python
-from diffprivlib.models import GaussianNB
-import numpy as np
-
-X = np.zeros((10, 3))
-y = np.round(np.random(10))
-```
-
-To ensure no additional privacy leakage, we must specify the bounds of the data from domain knowledge. If this is not specified, the model will take the bounds from the data and warn you about potential privacy leakage.
-We also specify the epsilon value, in this case `1.0`.
+## Getting started: [Differentially private ML in 30 seconds](notebooks/30seconds.ipynb)
+Let's import `diffprivlib` and other handy functions to get started.
 
 ```python
-epsilon = 1.0
-bounds = [(0, 1), (0, 100), (5, 10)]
+import diffprivlib as dpl
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
 ```
 
-We are now ready to learn a differentially private naive Bayes model on the data.
+We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
 
 ```python
-clf = GaussianNB(epsilon=epsilon, bounds=bounds)
-clf.fit(X, y)
+dataset = datasets.load_iris()
+
+X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 ```
+
+Now, let's train a differentially private naive Bayes classifier and test its accuracy. If you're familiar with `sklearn.naive_bayes.GaussianNB`, you're in luck, because their uses are _almost_ identical.
+
+`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (check out other notebooks for more details). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
+
+```python
+clf = dpl.models.GaussianNB()
+clf.fit(X_train, y_train)
+```
+
+We can now classify unseen examples, knowing that the trained model is differentially private and preserves the privacy of the 'individuals' in the training set (flowers are entitled to their privacy too!).
+
+```python
+clf.predict(X_test)
+```
+
+The accuracy of the model will change if the model is re-trained with the same training data. This is due to the randomness of differential privacy. Try it for yourself to find out!
+
+```python
+(clf.predict(X_test) == y_test).sum() / y_test.shape[0]
+```
+
+Congratulations! You've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
 
 
 ## Setup
