@@ -1,6 +1,8 @@
 """
 Gaussian Naive Bayes classifier satisfying differential privacy
 """
+import warnings
+
 import numpy as np
 from numbers import Real
 
@@ -11,21 +13,26 @@ from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 
 # noinspection PyPep8Naming
 class GaussianNB(sk_nb.GaussianNB):
-    def __init__(self, epsilon, bounds, priors=None, var_smoothing=1e-9):
+    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
         super().__init__(priors, var_smoothing)
 
         if not isinstance(epsilon, Real) or epsilon <= 0.0:
             raise ValueError("Epsilon must be specified as a positive float.")
 
-        if bounds is None or not isinstance(bounds, list):
-            raise ValueError("Bounds must be specified as a list of tuples.")
+        if bounds is None:
+            warnings.warn("Bounds have not been specified and will be calculated on the data when fit() is first "
+                          "called. This will result in additional privacy leakage. To ensure differential privacy and "
+                          "no additional privacy leakage, specify bounds for each dimesion.", RuntimeWarning)
+        else:
+            if not isinstance(bounds, list):
+                raise ValueError("Bounds must be specified as a list of tuples.")
 
-        for bound in bounds:
-            if not isinstance(bound, tuple):
-                raise TypeError("Bounds must be specified as a list of tuples")
-            if not isinstance(bound[0], Real) or not isinstance(bound[1], Real) or bound[0] >= bound[1]:
-                raise ValueError("For each feature bound, lower bound must be strictly lower than upper bound"
-                                 "(error found in bound %s" % str(bound))
+            for bound in bounds:
+                if not isinstance(bound, tuple):
+                    raise TypeError("Bounds must be specified as a list of tuples")
+                if not isinstance(bound[0], Real) or not isinstance(bound[1], Real) or bound[0] >= bound[1]:
+                    raise ValueError("For each feature bound, lower bound must be strictly lower than upper bound"
+                                     "(error found in bound %s" % str(bound))
 
         self.dp_epsilon = epsilon
         self.bounds = bounds
@@ -33,6 +40,9 @@ class GaussianNB(sk_nb.GaussianNB):
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
         # Store size of current X to apply differential privacy later on
         self.new_X_n = X.shape[0]
+
+        if self.bounds is None:
+            self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
         super()._partial_fit(X, y, classes, _refit, sample_weight)
 

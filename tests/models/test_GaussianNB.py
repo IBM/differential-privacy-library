@@ -24,6 +24,15 @@ class TestGaussianNB(TestCase):
         with self.assertRaises(ValueError):
             GaussianNB(epsilon=1, bounds=[(0, 1), (1, 0)])
 
+    def test_no_bounds(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        with self.assertWarns(RuntimeWarning):
+            clf = GaussianNB()
+
+        self.assertIsNotNone(clf.fit(X, y))
+
     def test_missing_bounds(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
@@ -35,7 +44,6 @@ class TestGaussianNB(TestCase):
 
     def test_different_results(self):
         from sklearn.naive_bayes import GaussianNB as sk_nb
-        import numpy as np
         from sklearn import datasets
 
         global_seed(12345)
