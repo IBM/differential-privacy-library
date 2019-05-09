@@ -20,7 +20,7 @@ DPL is compatible with: __Python 3.4–3.6__.
 - __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
 - __Modularity:__
 
-##Getting started: Differential privacy in 30 seconds
+## Getting started: Differential privacy in 30 seconds
 
 ```python
 from diffprivlib.models import GaussianNB
