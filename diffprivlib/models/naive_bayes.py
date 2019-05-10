@@ -34,7 +34,7 @@ class GaussianNB(sk_nb.GaussianNB):
                     raise ValueError("For each feature bound, lower bound must be strictly lower than upper bound"
                                      "(error found in bound %s" % str(bound))
 
-        self.dp_epsilon = epsilon
+        self.epsilon = epsilon
         self.bounds = bounds
 
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
@@ -129,7 +129,7 @@ class GaussianNB(sk_nb.GaussianNB):
     def _randomise(self, mu, var, n):
         features = var.shape[0]
 
-        local_epsilon = self.dp_epsilon / 2
+        local_epsilon = self.epsilon / 2
         local_epsilon /= features
 
         if len(self.bounds) != features:
