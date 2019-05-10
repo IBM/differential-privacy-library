@@ -37,9 +37,9 @@ dataset = datasets.load_iris()
 X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 ```
 
-Now, let's train a differentially private naive Bayes classifier and test its accuracy. You'll notice that our classifier runs like an `sklearn` classifier.
+Now, let's train a differentially private naive Bayes classifier. You'll notice that our classifier runs like an `sklearn` classifier, so you can get up and running quickly.
 
-`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (we need to specify `bounds` to fix this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
+`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=1.0)`). The default is `epsilon = 1.0`.
 
 ```python
 clf = dpl.models.GaussianNB()
@@ -52,13 +52,13 @@ We can now classify unseen examples, knowing that the trained model is different
 clf.predict(X_test)
 ```
 
-The accuracy of the model will change if the model is re-trained with the same training data. This is due to the randomness of differential privacy. Try it for yourself to find out!
+Every time the model is trained with `.fit()`, a different model is produced due to the randomness of differential privacy. The accuracy will therefore change, even if it's re-trained with the same training data. Try it for yourself to find out!
 
 ```python
 (clf.predict(X_test) == y_test).sum() / y_test.shape[0]
 ```
 
-Congratulations! You've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
+Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
 
 
 ## Setup
