@@ -7,7 +7,8 @@ from sys import maxsize
 
 import numpy as np
 
-from diffprivlib import mechanisms
+from diffprivlib.mechanisms import GeometricTruncated
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 # noinspection PyShadowingBuiltins
@@ -47,14 +48,13 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
     """
     if range is None:
-        warnings.simplefilter('always', RuntimeWarning)
         warnings.warn("Range parameter has not been specified. Falling back to taking range from the data.\n"
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
-                      "specified independently of the data (i.e., using domain knowledge).", RuntimeWarning)
+                      "specified independently of the data (i.e., using domain knowledge).", PrivacyLeakWarning)
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
-    dp_mech = mechanisms.GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
+    dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
     dp_hist = np.zeros_like(hist)
 
@@ -72,7 +72,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
 # noinspection PyShadowingBuiltins
 # todo Throw warning if range not specified, and use sample.min() and sample.max() as substitute
-def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None, density=None):
+def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None):
     """
     Compute the differentially private multidimensional histogram of some data. Behaves the same as Numpy's
     `histogramdd`, but parameter `range` is required.
@@ -116,11 +116,15 @@ def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None,
     :rtype: (ndarray, list)
     """
     if range is None or (isinstance(range, list) and None in range):
-        raise ValueError("Range must be specified for each dimension, as tuple of (lower, upper)")
+        warnings.warn("Range parameter has not been specified (or has missing elements). Falling back to taking range "
+                      "from the data.\n "
+                      "To ensure differential privacy, and no additional privacy leakage, the range must be "
+                      "specified for each dimension independently of the data (i.e., using domain knowledge).",
+                      PrivacyLeakWarning)
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
-    dp_mech = mechanisms.GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
+    dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
     dp_hist = np.zeros_like(hist)
     iterator = np.nditer(hist, flags=['multi_index'])
@@ -146,7 +150,7 @@ def histogramdd(sample, epsilon, bins=10, range=None, normed=None, weights=None,
 
 
 # noinspection PyShadowingBuiltins
-def histogram2d(x, y, epsilon, bins=10, range=None, normed=None, weights=None,
+def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=None,
                 density=None):
     """
     Compute the bi-dimensional histogram of two data samples.
@@ -275,5 +279,6 @@ def histogram2d(x, y, epsilon, bins=10, range=None, normed=None, weights=None,
         xedges = yedges = np.asarray(bins)
         bins = [xedges, yedges]
 
-    hist, edges = histogramdd([x, y], epsilon, bins, range, normed, weights, density)
+    hist, edges = histogramdd([x, y], epsilon=epsilon, bins=bins, range=range, normed=normed, weights=weights,
+                              density=density)
     return hist, edges[0], edges[1]

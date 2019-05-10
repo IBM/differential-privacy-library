@@ -5,10 +5,10 @@ import warnings
 
 from numbers import Real
 import numpy as np
-
 import sklearn.naive_bayes as sk_nb
 
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 # noinspection PyPep8Naming
@@ -22,7 +22,7 @@ class GaussianNB(sk_nb.GaussianNB):
         if bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data when fit() is first "
                           "called. This will result in additional privacy leakage. To ensure differential privacy and "
-                          "no additional privacy leakage, specify bounds for each dimesion.", RuntimeWarning)
+                          "no additional privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         else:
             if not isinstance(bounds, list):
                 raise ValueError("Bounds must be specified as a list of tuples.")

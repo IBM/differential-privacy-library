@@ -2,14 +2,21 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.tools.histograms import histogramdd
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import global_seed, PrivacyLeakWarning
 
 
 class TestHistogramdd(TestCase):
+    def test_no_params(self):
+        a = np.array([1, 2, 3, 4, 5])
+        with self.assertWarns(PrivacyLeakWarning):
+            res = histogramdd(a)
+        self.assertIsNotNone(res)
+
     def test_no_range(self):
         a = np.array([1, 2, 3, 4, 5])
-        with self.assertRaises(ValueError):
-            histogramdd(a, 1)
+        with self.assertWarns(PrivacyLeakWarning):
+            res = histogramdd(a, epsilon=2)
+        self.assertIsNotNone(res)
 
     def test_same_edges(self):
         a = np.array([1, 2, 3, 4, 5])

@@ -3,6 +3,7 @@ Basic functions and other utilities for the library
 """
 import abc
 import sys
+import warnings
 
 import numpy as np
 
@@ -22,3 +23,10 @@ def global_seed(seed):
     :return: None
     """
     np.random.seed(seed)
+
+
+class PrivacyLeakWarning(RuntimeWarning):
+    pass
+
+
+warnings.simplefilter('always', PrivacyLeakWarning)

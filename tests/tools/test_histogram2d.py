@@ -2,21 +2,30 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.tools.histograms import histogram2d
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import global_seed, PrivacyLeakWarning
 
 
 class TestHistogram2d(TestCase):
+    def test_no_params(self):
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([5, 7, 1, 5, 9])
+        with self.assertWarns(PrivacyLeakWarning):
+            res = histogram2d(x, y)
+        self.assertIsNotNone(res)
+
     def test_no_range(self):
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([5, 7, 1, 5, 9])
-        with self.assertRaises(ValueError):
-            histogram2d(x, y, epsilon=1)
+        with self.assertWarns(PrivacyLeakWarning):
+            res = histogram2d(x, y, epsilon=1)
+        self.assertIsNotNone(res)
 
     def test_missing_range(self):
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([5, 7, 1, 5, 9])
-        with self.assertRaises(ValueError):
-            histogram2d(x, y, epsilon=1, range=[(0, 10), None])
+        with self.assertWarns(PrivacyLeakWarning):
+            res = histogram2d(x, y, epsilon=1, range=[(0, 10), None])
+        self.assertIsNotNone(res)
 
     def test_same_edges(self):
         x = np.array([1, 2, 3, 4, 5])

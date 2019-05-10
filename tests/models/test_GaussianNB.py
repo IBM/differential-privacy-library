@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import global_seed, PrivacyLeakWarning
 
 
 class TestGaussianNB(TestCase):
@@ -28,7 +28,7 @@ class TestGaussianNB(TestCase):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
 
-        with self.assertWarns(RuntimeWarning):
+        with self.assertWarns(PrivacyLeakWarning):
             clf = GaussianNB()
 
         self.assertIsNotNone(clf.fit(X, y))
