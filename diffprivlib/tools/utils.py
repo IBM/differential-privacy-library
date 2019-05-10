@@ -4,6 +4,8 @@ General utilities and tools for performing differentially private operations on 
 import warnings
 from numbers import Real
 import numpy as np
+from numpy.core import multiarray as mu
+from numpy.core import umath as um
 
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 from diffprivlib.utils import PrivacyLeakWarning
@@ -142,3 +144,29 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
         set_sensitivity(range ** 2 / num_datapoints)
 
     return dp_mech.randomise(actual_var)
+
+
+def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+    """
+    Calculates the differentially private standard deviation of an array.
+
+    :param a:
+    :param epsilon:
+    :param range:
+    :param axis:
+    :param dtype:
+    :param out:
+    :param ddof:
+    :param keepdims:
+    :return:
+    """
+    ret = var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
+
+    if isinstance(ret, mu.ndarray):
+        ret = um.sqrt(ret, out=ret)
+    elif hasattr(ret, 'dtype'):
+        ret = ret.dtype.type(um.sqrt(ret))
+    else:
+        ret = um.sqrt(ret)
+
+    return ret
