@@ -12,6 +12,9 @@ matrix:
         - pylint -rn diffprivlib || exit 0
 
 install:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
+      pip install scikit-learn==0.20.3
+    fi
   - pip install pylint pycodestyle
   - pip install .
 
