@@ -20,7 +20,7 @@ DPL is compatible with: __Python 3.4–3.6__.
 - __Wide audience:__ DPL is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
 - __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
 
-## Getting started: [Differentially private ML in 30 seconds](notebooks/30seconds.ipynb)
+## Getting started: [ML with differential privacy in 30 seconds](notebooks/30seconds.ipynb)
 Let's import `diffprivlib` and other handy functions to get started.
 
 ```python
@@ -37,9 +37,9 @@ dataset = datasets.load_iris()
 X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 ```
 
-Now, let's train a differentially private naive Bayes classifier and test its accuracy. If you're familiar with `sklearn.naive_bayes.GaussianNB`, you're in luck, because their uses are _almost_ identical.
+Now, let's train a differentially private naive Bayes classifier and test its accuracy. You'll notice that our classifier runs like an `sklearn` classifier.
 
-`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (check out other notebooks for more details). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
+`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (we need to specify `bounds` to fix this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
 
 ```python
 clf = dpl.models.GaussianNB()
