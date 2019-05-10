@@ -1,15 +1,17 @@
 """
 General utilities and tools for performing differentially private operations on data.
 """
+import warnings
 from numbers import Real
 import numpy as np
 
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
+from diffprivlib.utils import PrivacyLeakWarning
 
 _range = range
 
 
-def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
     """
     Calculates the differentially private mean of a numpy array. Same functionality as numpy's mean.
 
@@ -39,7 +41,14 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
 
     actual_mean = np.mean(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-    if isinstance(range, Real):
+    if range is None:
+        warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                      "This will result in additional privacy leakage. To ensure differential privacy with no "
+                      "additional privacy loss, specify `range` for each valued returned by np.mean().",
+                      PrivacyLeakWarning)
+
+        ranges = np.maximum(np.max(a, axis=axis) - np.min(a, axis=axis), 1e-5)
+    elif isinstance(range, Real):
         ranges = np.ones_like(actual_mean) * range
     else:
         ranges = np.array(range)
@@ -63,10 +72,11 @@ def mean(a, epsilon, range, axis=None, dtype=None, out=None, keepdims=np._NoValu
 
     range = np.ravel(ranges)[0]
     dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(range / num_datapoints)
+
     return dp_mech.randomise(actual_mean)
 
 
-def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
     """
     Calculates the differentially private variance of a numpy array. Same functionality as numpy's var.
 
@@ -97,7 +107,14 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
 
     actual_var = np.var(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
 
-    if isinstance(range, Real):
+    if range is None:
+        warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                      "This will result in additional privacy leakage. To ensure differential privacy with no "
+                      "additional privacy loss, specify `range` for each valued returned by np.mean().",
+                      PrivacyLeakWarning)
+
+        ranges = np.maximum(np.max(a, axis=axis) - np.min(a, axis=axis), 1e-5)
+    elif isinstance(range, Real):
         ranges = np.ones_like(actual_var) * range
     else:
         ranges = np.array(range)
@@ -123,4 +140,5 @@ def var(a, epsilon, range, axis=None, dtype=None, out=None, ddof=0, keepdims=np.
     range = np.ravel(ranges)[0]
     dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")).\
         set_sensitivity(range ** 2 / num_datapoints)
+
     return dp_mech.randomise(actual_var)

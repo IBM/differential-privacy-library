@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.utils import mean
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 class TestMean(TestCase):
@@ -10,25 +11,32 @@ class TestMean(TestCase):
         mech = mean
         self.assertIsNotNone(mech)
 
+    def test_no_params(self):
+        a = np.array([1, 2, 3])
+        with self.assertWarns(PrivacyLeakWarning):
+            res = mean(a)
+        self.assertIsNotNone(res)
+
     def test_no_epsilon(self):
         a = np.array([1, 2, 3])
-        with self.assertRaises(TypeError):
-            mean(a)
+        self.assertIsNotNone(mean(a, range=1))
 
     def test_no_range(self):
         a = np.array([1, 2, 3])
-        with self.assertRaises(TypeError):
-            mean(a, 1)
+        with self.assertWarns(PrivacyLeakWarning):
+            res = mean(a, epsilon=1)
+        self.assertIsNotNone(res)
 
     def test_negative_range(self):
         a = np.array([1, 2, 3])
         with self.assertRaises(ValueError):
-            mean(a, 1, -1)
+            mean(a, epsilon=1, range=-1)
 
     def test_missing_range(self):
         a = np.array([1, 2, 3])
-        with self.assertRaises(TypeError):
-            mean(a, 1, None)
+        with self.assertWarns(PrivacyLeakWarning):
+            res = mean(a, epsilon=1, range=None)
+        self.assertIsNotNone(res)
 
     def test_large_epsilon(self):
         a = np.random.random(1000)
