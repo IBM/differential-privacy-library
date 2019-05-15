@@ -17,7 +17,8 @@ class Vector(DPMechanism):
     """
     def __init__(self):
         super().__init__()
-        self._sensitivity = None
+        self._function_sensitivity = None
+        self._data_sensitivity = 1
         self._d = None
         self._n = None
         self._lambda = 0.01
@@ -39,22 +40,22 @@ class Vector(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
-    def set_sensitivity(self, sensitivity):
+    def set_sensitivity(self, function_sensitivity, data_sensitivity=1):
         """
-        Set the sensitivity of the mechanism, bounding the second derivative of the loss function. This is the `c`
-        variable in the original ERM paper.
+        Sets the sensitivity of the function and data for use in the mechanism.
 
-        :param sensitivity: The sensitivity of the function being considered, must be > 0.
-        :type sensitivity: `float`
-        :return: self
+        :param function_sensitivity:
+        :param data_sensitivity:
+        :return:
         """
-        if not isinstance(sensitivity, Real):
-            raise TypeError("Sensitivity must be numeric")
+        if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
+            raise TypeError("Sensitivities must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if function_sensitivity <= 0 or data_sensitivity <= 0:
+            raise ValueError("Sensitivities must be strictly positive")
 
-        self._sensitivity = sensitivity
+        self._function_sensitivity = function_sensitivity
+        self._data_sensitivity = data_sensitivity
         return self
 
     def set_lambda(self, lam):
@@ -89,8 +90,8 @@ class Vector(DPMechanism):
         if not callable(value):
             raise TypeError("Value to be randomised must be a function")
 
-        if self._sensitivity is None:
-            raise ValueError("Sensitivity must be set")
+        if self._data_sensitivity is None or self._function_sensitivity is None:
+            raise ValueError("Sensitivities must be set")
 
         if self._n is None or self._d is None:
             raise ValueError("Dimensions n and d must be set")
@@ -129,15 +130,16 @@ class Vector(DPMechanism):
         """
         self.check_inputs(value)
 
-        c = self._sensitivity
-        epsilon_p = self._epsilon - 2 * np.log(1 + c / (self._lambda * self._n))
+        c = self._function_sensitivity
+        g = self._data_sensitivity
+        epsilon_p = self._epsilon - 2 * np.log(1 + c * g / (self._lambda * self._n))
         delta = 0
 
         if epsilon_p <= 0:
-            delta = c / (self._n * (np.exp(self._epsilon / 4) - 1)) - self._lambda
+            delta = c * g / (self._n * (np.exp(self._epsilon / 4) - 1)) - self._lambda
             epsilon_p = self._epsilon / 2
 
-        scale = epsilon_p / 2
+        scale = epsilon_p / 2 / g
 
         normed_noisy_vector = np.random.normal(0, 1, self._d)
         norm = np.linalg.norm(normed_noisy_vector, 2)

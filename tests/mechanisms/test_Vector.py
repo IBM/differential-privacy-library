@@ -3,8 +3,6 @@ from unittest import TestCase
 
 from diffprivlib.mechanisms import Vector
 
-func = lambda x: np.sum(x ** 2)
-
 
 class TestVector(TestCase):
     def setup_method(self, method):
@@ -12,6 +10,9 @@ class TestVector(TestCase):
 
     def teardown_method(self, method):
         del self.mech
+
+    def func(self, x):
+        return np.sum(x ** 2)
 
     def test_not_none(self):
         self.assertIsNotNone(self.mech)
@@ -22,12 +23,12 @@ class TestVector(TestCase):
 
     def test_no_params(self):
         with self.assertRaises(ValueError):
-            self.mech.randomise(func)
+            self.mech.randomise(self.func)
 
     def test_no_epsilon(self):
         self.mech.set_dimensions(3, 10).set_sensitivity(1)
         with self.assertRaises(ValueError):
-            self.mech.randomise(func)
+            self.mech.randomise(self.func)
 
     def test_neg_epsilon(self):
         self.mech.set_dimensions(3, 10).set_sensitivity(1)
@@ -38,14 +39,14 @@ class TestVector(TestCase):
         self.mech.set_dimensions(3, 10).set_sensitivity(1).set_epsilon(float("inf"))
 
         for i in range(100):
-            noisy_func = self.mech.randomise(func)
+            noisy_func = self.mech.randomise(self.func)
             self.assertAlmostEqual(noisy_func(np.zeros(3)), 0)
             self.assertAlmostEqual(noisy_func(np.ones(3)), 3)
 
     def test_no_sensitivity(self):
         self.mech.set_dimensions(3, 10).set_epsilon(1)
         with self.assertRaises(ValueError):
-            self.mech.randomise(func)
+            self.mech.randomise(self.func)
 
     def test_numeric_input(self):
         self.mech.set_dimensions(3, 10).set_epsilon(1).set_sensitivity(1)
@@ -61,11 +62,11 @@ class TestVector(TestCase):
 
     def test_different_result(self):
         self.mech.set_dimensions(3, 10).set_epsilon(1).set_sensitivity(1)
-        noisy_func = self.mech.randomise(func)
+        noisy_func = self.mech.randomise(self.func)
 
         for i in range(10):
             old_noisy_func = noisy_func
-            noisy_func = self.mech.randomise(func)
+            noisy_func = self.mech.randomise(self.func)
 
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), 3)
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), old_noisy_func(np.ones(3)))
