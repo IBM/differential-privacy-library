@@ -71,7 +71,7 @@ plt.ylabel("Accuracy")
 plt.show()
 ```
 
-![Differentially private naive Bayes](https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib/notebooks/30seconds.png)
+![Differentially private naive Bayes](notebooks/30seconds.png)
 
 Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
 
