@@ -14,34 +14,24 @@ Use the Differential Privacy Library if you are looking to:
 
 DPL is compatible with: __Python 3.4–3.6__.
 
-## Guiding principles
-
-- __Unifying codebase:__ DPL is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
-- __Wide audience:__ DPL is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
-- __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
-
 ## Getting started: [ML with differential privacy in 30 seconds](notebooks/30seconds.ipynb)
-Let's import `diffprivlib` and other handy functions to get started.
-
-```python
-import diffprivlib as dpl
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
-```
-
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
 
 ```python
-dataset = datasets.load_iris()
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
 
+dataset = datasets.load_iris()
 X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 ```
 
-Now, let's train a differentially private naive Bayes classifier. You'll notice that our classifier runs like an `sklearn` classifier, so you can get up and running quickly.
+Now, let's train a differentially private naive Bayes classifier. Our classifier __runs just like an `sklearn` classifier__, so you can get up and running quickly.
 
-`dpl.models.GaussianNB` can be run __without any parameters__, but this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=1.0)`). The default is `epsilon = 1.0`.
+`dpl.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=1.0)`). The default is `epsilon = 1.0`.
 
 ```python
+import diffprivlib as dpl
+
 clf = dpl.models.GaussianNB()
 clf.fit(X_train, y_train)
 ```
@@ -57,6 +47,31 @@ Every time the model is trained with `.fit()`, a different model is produced due
 ```python
 (clf.predict(X_test) == y_test).sum() / y_test.shape[0]
 ```
+
+We can easily evaluate the accuracy of the model for various `epsilon` values and plot it with `matplotlib`.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+epsilons = np.logspace(-2, 2, 50)
+bounds = [(4.3, 7.9), (2.0, 4.4), (1.1, 6.9), (0.1, 2.5)]
+accuracy = list()
+
+for epsilon in epsilons:
+    clf = dpl.models.GaussianNB(bounds=bounds, epsilon=epsilon)
+    clf.fit(X_train, y_train)
+    
+    accuracy.append((clf.predict(X_test) == y_test).sum() / y_test.shape[0])
+
+plt.semilogx(epsilons, accuracy)
+plt.title("Differentially private Naive Bayes accuracy")
+plt.xlabel("epsilon")
+plt.ylabel("Accuracy")
+plt.show()
+```
+
+![Differentially private naive Bayes](https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib/notebooks/30seconds.png)
 
 Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
 
@@ -88,3 +103,11 @@ The library comes with a basic set of unit tests for `pytest`. To check your ins
 ```bash
 pytest
 ```
+
+
+## Guiding principles
+
+- __Unifying codebase:__ DPL is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
+- __Wide audience:__ DPL is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
+- __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
+
