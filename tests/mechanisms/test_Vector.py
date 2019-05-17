@@ -11,7 +11,8 @@ class TestVector(TestCase):
     def teardown_method(self, method):
         del self.mech
 
-    def func(self, x):
+    @staticmethod
+    def func(x):
         return np.sum(x ** 2)
 
     def test_not_none(self):
@@ -59,6 +60,14 @@ class TestVector(TestCase):
 
         with self.assertRaises(TypeError):
             self.mech.randomise("1")
+
+    def test_sets_once(self):
+        self.mech.set_dimensions(3, 10).set_epsilon(1).set_sensitivity(1)
+        noisy_func = self.mech.randomise(self.func)
+        answer = noisy_func(np.ones(3))
+
+        for i in range(10):
+            self.assertEqual(noisy_func(np.ones(3)), answer)
 
     def test_different_result(self):
         self.mech.set_dimensions(3, 10).set_epsilon(1).set_sensitivity(1)

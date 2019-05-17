@@ -147,10 +147,12 @@ class Vector(DPMechanism):
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 
-        def output_func(x):
-            val = value(x)
-            val += np.dot(normed_noisy_vector, x) / self._n
-            val += delta / 2 * (np.linalg.norm(x) ** 2)
+        def output_func(*args):
+            w = args[0]
+
+            val = value(*args)
+            val += np.dot(normed_noisy_vector, w) / self._n
+            val += 0.5 * delta * np.dot(w, w)
             return val
 
         return output_func

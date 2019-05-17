@@ -1,67 +1,367 @@
+import numbers
 import warnings
+from numbers import Real
 
 import numpy as np
-from scipy.optimize import minimize
-from sklearn.base import BaseEstimator
-from sklearn.exceptions import NotFittedError
+from scipy import optimize
+from sklearn.exceptions import ConvergenceWarning
+from sklearn import linear_model
+from sklearn.linear_model.logistic import _check_solver, _check_multi_class, _logistic_loss
+from sklearn.utils import check_X_y, check_array, check_consistent_length
+from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.mechanisms import Vector
 
 
-# noinspection PyPep8Naming
-class LogisticRegression(BaseEstimator):
-    def __init__(self, epsilon, lam=0.01, verbose=0):
+class LogisticRegression(linear_model.LogisticRegression):
+    def __init__(self, epsilon=1.0, data_norm=1.0, penalty='l2', dual=False, tol=1e-4, C=1.0, fit_intercept=True,
+                 intercept_scaling=1, class_weight=None, random_state=None, solver='lbfgs', max_iter=100,
+                 multi_class='ovr', verbose=0, warm_start=False, n_jobs=None):
+        super().__init__(penalty=penalty, dual=dual, tol=tol, C=C, fit_intercept=fit_intercept,
+                         intercept_scaling=intercept_scaling, class_weight=class_weight, random_state=random_state,
+                         solver=solver, max_iter=max_iter, multi_class=multi_class, verbose=verbose,
+                         warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
-        self.verbose = verbose
-        self.lam = lam
-        self.beta = None
+        self.data_norm = data_norm
+        self.classes_ = None
 
-    def decision_function(self, X):
-        pass
-
-    def predict_proba(self, X):
-        if self.beta is None:
-            raise NotFittedError("Model not fitted. Call fit() first.")
-
-        return np.exp(- self.loss(self.beta, X, 1))
-
-    @staticmethod
-    def loss(beta, x, label):
-        # TODO: Allow for array-valued x to return losses for multiple inputs
-        exponent = beta[0] + np.dot(beta[1:], x)
-        return np.log(1 + np.exp(exponent)) - label * exponent
-
+    # noinspection PyAttributeOutsideInit
     def fit(self, X, y, sample_weight=None):
-        del sample_weight
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape (n_samples, n_features)
+            Training vector, where n_samples is the number of samples and
+            n_features is the number of features.
+
+        y : array-like, shape (n_samples,)
+            Target vector relative to X.
+
+        sample_weight : array-like, shape (n_samples,) optional
+            Array of weights that are assigned to individual samples.
+            If not provided, then each sample is given unit weight.
+
+            .. versionadded:: 0.17
+               *sample_weight* support to LogisticRegression.
+
+        Returns
+        -------
+        self : object
+        """
+        if not isinstance(self.C, Real) or self.C < 0:
+            raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
+        if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:
+            raise ValueError("Maximum number of iteration must be positive; got (max_iter=%r)" % self.max_iter)
+        if not isinstance(self.tol, Real) or self.tol < 0:
+            raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
+
+        if self.multi_class != 'ovr':
+            warnings.warn("For diffprivlib, multi_class must be 'ovr'", UserWarning)
+            self.multi_class = "ovr"
 
         max_norm = np.linalg.norm(X, axis=1).max()
         if max_norm > 1:
             warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most 1. "
-                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved.",
+                          "Got %f\n"
+                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
+                          % max_norm,
                           RuntimeWarning)
 
-        n, d = X.shape
-        beta0 = np.zeros(d + 1)
+        solver = _check_solver(self.solver, self.penalty, self.dual)
+        self.max_iter = int(self.max_iter)
+        self.tol = float(self.tol)
 
-        def objective(beta):
-            total = 0
+        _dtype = np.float64
 
-            for i in range(n):
-                total += self.loss(beta, X[i, :], y[i])
+        X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C",
+                         accept_large_sparse=solver != 'liblinear')
+        check_classification_targets(y)
+        self.classes_ = np.unique(y)
+        n_samples, n_features = X.shape
 
-            total /= n
-            total += self.lam / 2 * np.linalg.norm(beta) ** 2
+        multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 
-            return total
+        max_squared_sum = None
 
-        vector_mech = Vector().set_dimensions(d + 1, n).set_epsilon(self.epsilon).set_lambda(self.lam).\
-            set_sensitivity(0.25)
-        noisy_objective = vector_mech.randomise(objective)
+        n_classes = len(self.classes_)
+        classes_ = self.classes_
+        if n_classes != 2:
+            raise ValueError("For diffprivlib, the number of classes must be exactly 2, but the data contains %d "
+                             "classes: %s" % (n_classes, str(classes_)))
 
-        noisy_beta = minimize(noisy_objective, beta0, method='Nelder-Mead').x
-        self.beta = noisy_beta
+        n_classes = 1
+        classes_ = classes_[1:]
+
+        if self.warm_start:
+            warm_start_coef = getattr(self, 'coef_', None)
+        else:
+            warm_start_coef = None
+        if warm_start_coef is not None and self.fit_intercept:
+            warm_start_coef = np.append(warm_start_coef, self.intercept_[:, np.newaxis], axis=1)
+
+        self.coef_ = list()
+        self.intercept_ = np.zeros(n_classes)
+
+        if warm_start_coef is None:
+            warm_start_coef = [None] * n_classes
+
+        fold_coefs_ = logistic_regression_path(X, y, epsilon=self.epsilon, data_norm=self.data_norm,
+                                               pos_class=classes_[0], Cs=[self.C], fit_intercept=self.fit_intercept,
+                                               tol=self.tol, verbose=self.verbose, solver=solver,
+                                               multi_class=multi_class, max_iter=self.max_iter,
+                                               class_weight=self.class_weight, check_input=False,
+                                               random_state=self.random_state, coef=warm_start_coef[0],
+                                               penalty=self.penalty, max_squared_sum=max_squared_sum,
+                                               sample_weight=sample_weight)
+
+        # Want fold_coefs_ to be in the same format as if it came from Parallel
+        fold_coefs_ = [fold_coefs_]
+
+        fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
+        self.n_iter_ = np.asarray(n_iter_, dtype=np.int32)[:, 0]
+
+        self.coef_ = np.asarray(fold_coefs_)
+        self.coef_ = self.coef_.reshape(n_classes, n_features + int(self.fit_intercept))
+
+        if self.fit_intercept:
+            self.intercept_ = self.coef_[:, -1]
+            self.coef_ = self.coef_[:, :-1]
 
         return self
 
-    def predict(self, X):
-        return np.int(self.predict_proba(X) > 0.5)
+
+def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
+                             tol=1e-4, verbose=0, solver='lbfgs', coef=None, class_weight=None, dual=False,
+                             penalty='l2', intercept_scaling=1., multi_class='ovr', random_state=None,
+                             check_input=True, max_squared_sum=None, sample_weight=None):
+    """Compute a Logistic Regression model for a list of regularization
+    parameters.
+
+    This is an implementation that uses the result of the previous model
+    to speed up computations along the set of solutions, making it faster
+    than sequentially calling LogisticRegression for the different parameters.
+    Note that there will be no speedup with liblinear solver, since it does
+    not handle warm-starting.
+
+    Read more in the :ref:`User Guide <logistic_regression>`.
+
+    Parameters
+    ----------
+    X : array-like or sparse matrix, shape (n_samples, n_features)
+        Input data.
+
+    y : array-like, shape (n_samples,) or (n_samples, n_targets)
+        Input data, target values.
+
+    epsilon : float
+        Privacy parameter for differential privacy.
+
+    data_norm : float
+        Max norm of the data for which differential privacy is satisfied.
+
+    pos_class : int, None
+        The class with respect to which we perform a one-vs-all fit.
+        If None, then it is assumed that the given problem is binary.
+
+    Cs : int | array-like, shape (n_cs,)
+        List of values for the regularization parameter or integer specifying
+        the number of regularization parameters that should be used. In this
+        case, the parameters will be chosen in a logarithmic scale between
+        1e-4 and 1e4.
+
+    fit_intercept : bool
+        Whether to fit an intercept for the model. In this case the shape of
+        the returned array is (n_cs, n_features + 1).
+
+    max_iter : int
+        Maximum number of iterations for the solver.
+
+    tol : float
+        Stopping criterion. For the newton-cg and lbfgs solvers, the iteration
+        will stop when ``max{|g_i | i = 1, ..., n} <= tol``
+        where ``g_i`` is the i-th component of the gradient.
+
+    verbose : int
+        For the liblinear and lbfgs solvers set verbose to any positive
+        number for verbosity.
+
+    solver : {'lbfgs', 'newton-cg', 'liblinear', 'sag', 'saga'}
+        Numerical solver to use.
+
+    coef : array-like, shape (n_features,), default None
+        Initialization value for coefficients of logistic regression.
+        Useless for liblinear solver.
+
+    class_weight : dict or 'balanced', optional
+        Weights associated with classes in the form ``{class_label: weight}``.
+        If not given, all classes are supposed to have weight one.
+
+        The "balanced" mode uses the values of y to automatically adjust
+        weights inversely proportional to class frequencies in the input data
+        as ``n_samples / (n_classes * np.bincount(y))``.
+
+        Note that these weights will be multiplied with sample_weight (passed
+        through the fit method) if sample_weight is specified.
+
+    dual : bool
+        Dual or primal formulation. Dual formulation is only implemented for
+        l2 penalty with liblinear solver. Prefer dual=False when
+        n_samples > n_features.
+
+    penalty : str, 'l1' or 'l2'
+        Used to specify the norm used in the penalization. The 'newton-cg',
+        'sag' and 'lbfgs' solvers support only l2 penalties.
+
+    intercept_scaling : float, default 1.
+        Useful only when the solver 'liblinear' is used
+        and self.fit_intercept is set to True. In this case, x becomes
+        [x, self.intercept_scaling],
+        i.e. a "synthetic" feature with constant value equal to
+        intercept_scaling is appended to the instance vector.
+        The intercept becomes ``intercept_scaling * synthetic_feature_weight``.
+
+        Note! the synthetic feature weight is subject to l1/l2 regularization
+        as all other features.
+        To lessen the effect of regularization on synthetic feature weight
+        (and therefore on the intercept) intercept_scaling has to be increased.
+
+    multi_class : str, {'ovr', 'multinomial', 'auto'}, default: 'ovr'
+        If the option chosen is 'ovr', then a binary problem is fit for each
+        label. For 'multinomial' the loss minimised is the multinomial loss fit
+        across the entire probability distribution, *even when the data is
+        binary*. 'multinomial' is unavailable when solver='liblinear'.
+        'auto' selects 'ovr' if the data is binary, or if solver='liblinear',
+        and otherwise selects 'multinomial'.
+
+        .. versionadded:: 0.18
+           Stochastic Average Gradient descent solver for 'multinomial' case.
+        .. versionchanged:: 0.20
+            Default will change from 'ovr' to 'auto' in 0.22.
+
+    random_state : int, RandomState instance or None, optional, default None
+        The seed of the pseudo random number generator to use when shuffling
+        the data.  If int, random_state is the seed used by the random number
+        generator; If RandomState instance, random_state is the random number
+        generator; If None, the random number generator is the RandomState
+        instance used by `np.random`. Used when ``solver`` == 'sag' or
+        'liblinear'.
+
+    check_input : bool, default True
+        If False, the input arrays X and y will not be checked.
+
+    max_squared_sum : float, default None
+        Maximum squared sum of X over samples. Used only in SAG solver.
+        If None, it will be computed, going through all the samples.
+        The value should be precomputed to speed up cross validation.
+
+    sample_weight : array-like, shape(n_samples,) optional
+        Array of weights that are assigned to individual samples.
+        If not provided, then each sample is given unit weight.
+
+    Returns
+    -------
+    coefs : ndarray, shape (n_cs, n_features) or (n_cs, n_features + 1)
+        List of coefficients for the Logistic Regression model. If
+        fit_intercept is set to True then the second dimension will be
+        n_features + 1, where the last item represents the intercept. For
+        ``multiclass='multinomial'``, the shape is (n_classes, n_cs,
+        n_features) or (n_classes, n_cs, n_features + 1).
+
+    Cs : ndarray
+        Grid of Cs used for cross-validation.
+
+    n_iter : array, shape (n_cs,)
+        Actual number of iteration for each Cs.
+
+    Notes
+    -----
+    You might get slightly different results with the solver liblinear than
+    with the others since this uses LIBLINEAR which penalizes the intercept.
+
+    .. versionchanged:: 0.19
+        The "copy" parameter was removed.
+    """
+    if penalty != 'l2':
+        warnings.warn("For diffprivlib, penalty must be 'l2'.", UserWarning)
+        penalty = "l2"
+    if solver != 'lbfgs':
+        warnings.warn("For diffprivlib, solver must be 'lbfgs'.", UserWarning)
+        solver = "lbfgs"
+    if multi_class != 'ovr':
+        warnings.warn("For diffprivlib, multi_class must be 'ovr'", UserWarning)
+        multi_class = "ovr"
+
+    if class_weight is not None:
+        warnings.warn("For diffprivlib, class_weight is not used. Set to None to suppress this warning.", UserWarning)
+        del class_weight
+    if sample_weight is not None:
+        warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.", UserWarning)
+        del sample_weight
+    if intercept_scaling != 1.:
+        warnings.warn("For diffprivlib, intercept_scaling is not used. Set to 1.0 to suppress this warning.",
+                      UserWarning)
+        del intercept_scaling
+    if max_squared_sum is not None:
+        warnings.warn("For diffprivlib, max_squared_sum is not used. Set to None to suppress this warning.",
+                      UserWarning)
+        del max_squared_sum
+
+    if isinstance(Cs, numbers.Integral):
+        Cs = np.logspace(-4, 4, int(Cs))
+
+    solver = _check_solver(solver, penalty, dual)
+
+    # Pre-processing.
+    if check_input:
+        X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=solver != 'liblinear')
+        y = check_array(y, ensure_2d=False, dtype=None)
+        check_consistent_length(X, y)
+    n_samples, n_features = X.shape
+
+    classes = np.unique(y)
+
+    multi_class = _check_multi_class(multi_class, solver, len(classes))
+    if pos_class is None and multi_class != 'multinomial':
+        if classes.size > 2:
+            raise ValueError('To fit OvR, use the pos_class argument')
+        # np.unique(y) gives labels in sorted order.
+        pos_class = classes[1]
+
+    sample_weight = np.ones(X.shape[0], dtype=X.dtype)
+
+    # For doing a ovr, we need to mask the labels first.
+    w0 = np.zeros(n_features + int(fit_intercept), dtype=X.dtype)
+    mask = (y == pos_class)
+    y_bin = np.ones(y.shape, dtype=X.dtype)
+    y_bin[~mask] = -1.
+    # for compute_class_weight
+
+    if coef is not None:
+        # it must work both giving the bias term and not
+        if coef.size not in (n_features, w0.size):
+            raise ValueError('Initialization coef is of shape %d, expected shape %d or %d' %
+                             (coef.size, n_features, w0.size))
+        w0[:coef.size] = coef
+
+    target = y_bin
+
+    coefs = list()
+    n_iter = np.zeros(len(Cs), dtype=np.int32)
+    for i, C in enumerate(Cs):
+        vector_mech = Vector().set_dimensions(n_features + int(fit_intercept), n_samples).set_epsilon(epsilon) \
+            .set_lambda(1. / C).set_sensitivity(0.25, data_norm)
+        noisy_logistic_loss = vector_mech.randomise(_logistic_loss)
+
+        iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
+        w0, loss, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
+                                                args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
+                                                maxiter=max_iter, approx_grad=True)
+        if info["warnflag"] == 1:
+            warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
+
+        coefs.append(w0.copy())
+
+        n_iter[i] = info['nit']
+
+    return np.array(coefs), np.array(Cs), n_iter

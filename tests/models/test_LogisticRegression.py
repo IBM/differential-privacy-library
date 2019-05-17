@@ -19,9 +19,20 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(epsilon=10)
+        clf = LogisticRegression()
 
         with self.assertWarns(RuntimeWarning):
+            clf.fit(X, y)
+
+    def test_trinomial(self):
+        X = np.array(
+            [0.50, 0.75, 1.00])
+        y = np.array([0, 1, 2])
+        X = X[:, np.newaxis]
+
+        clf = LogisticRegression()
+
+        with self.assertRaises(ValueError):
             clf.fit(X, y)
 
     def test_simple(self):
@@ -30,13 +41,14 @@ class TestLogisticRegression(TestCase):
              5.00, 5.50])
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
-        X /= 6
+        X -= 3.0
+        X /= 2.5
 
-        clf = LogisticRegression(epsilon=10)
+        clf = LogisticRegression()
         clf.fit(X, y)
 
         # print(clf.predict(np.array([0.5, 2, 5.5])))
 
         self.assertIsNotNone(clf)
-        self.assertFalse(clf.predict(np.array([0.5 / 6])))
-        self.assertTrue(clf.predict(np.array([5.5 / 6])))
+        self.assertFalse(clf.predict(np.array([(0.5 - 3) / 2.5]).reshape(-1, 1)))
+        self.assertTrue(clf.predict(np.array([(5.5 - 3) / 2.5]).reshape(-1, 1)))
