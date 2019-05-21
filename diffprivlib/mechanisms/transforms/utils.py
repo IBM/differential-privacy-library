@@ -1,7 +1,7 @@
 """
 Core utilities for DP transformers.
 """
-from ..utils import DPMachine
+from ..base import DPMachine
 
 
 class DPTransformer(DPMachine):

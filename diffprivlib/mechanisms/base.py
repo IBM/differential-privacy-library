@@ -1,5 +1,5 @@
 """
-Core utilities for differential privacy mechanisms.
+Base classes for differential privacy mechanisms.
 """
 import abc
 import sys
