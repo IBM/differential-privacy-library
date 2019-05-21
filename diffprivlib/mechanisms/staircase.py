@@ -7,7 +7,7 @@ from numbers import Real
 import numpy as np
 from numpy.random import geometric, random
 
-from . import Laplace
+from diffprivlib.mechanisms import Laplace
 
 
 class Staircase(Laplace):

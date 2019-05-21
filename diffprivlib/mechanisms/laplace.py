@@ -6,7 +6,7 @@ from numbers import Real
 import numpy as np
 from numpy.random import random
 
-from . import DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.mechanisms import DPMechanism, TruncationAndFoldingMachine
 
 
 class Laplace(DPMechanism):

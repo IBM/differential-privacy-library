@@ -5,7 +5,7 @@ from numbers import Real
 
 from numpy.random import random
 
-from . import DPMechanism
+from diffprivlib.mechanisms import DPMechanism
 
 
 class Uniform(DPMechanism):

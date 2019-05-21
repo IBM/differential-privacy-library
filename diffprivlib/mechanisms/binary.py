@@ -4,7 +4,7 @@ The binary mechanism for differential privacy.
 import numpy as np
 from numpy.random import random
 
-from . import DPMechanism
+from diffprivlib.mechanisms import DPMechanism
 
 
 class Binary(DPMechanism):

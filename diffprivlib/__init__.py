@@ -1,3 +1,3 @@
-from . import mechanisms
-from . import models
-from . import tools
+from diffprivlib import mechanisms
+from diffprivlib import models
+from diffprivlib import tools

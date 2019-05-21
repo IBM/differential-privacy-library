@@ -1,7 +1,7 @@
 """
 Rounded integer transformer. Rounds the output of the given mechanism to the nearest integer.
 """
-from . import DPTransformer
+from diffprivlib.mechanisms.transforms import DPTransformer
 
 
 class RoundedInteger(DPTransformer):
