@@ -6,11 +6,12 @@ import numpy as np
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
-from sklearn.linear_model.logistic import _check_solver, _check_multi_class, _logistic_loss
+from sklearn.linear_model.logistic import _check_solver, _check_multi_class, _logistic_loss_and_grad
 from sklearn.utils import check_X_y, check_array, check_consistent_length
 from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.mechanisms import Vector
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 class LogisticRegression(linear_model.LogisticRegression):
@@ -61,12 +62,11 @@ class LogisticRegression(linear_model.LogisticRegression):
             self.multi_class = "ovr"
 
         max_norm = np.linalg.norm(X, axis=1).max()
-        if max_norm > 1:
-            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most 1. "
+        if max_norm > self.data_norm:
+            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
                           "Got %f\n"
                           "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
-                          % max_norm,
-                          RuntimeWarning)
+                          % (self.data_norm, max_norm), PrivacyLeakWarning)
 
         solver = _check_solver(self.solver, self.penalty, self.dual)
         self.max_iter = int(self.max_iter)
@@ -312,6 +312,10 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
 
     solver = _check_solver(solver, penalty, dual)
 
+    # Data norm increases if intercept is included
+    if fit_intercept:
+        data_norm = np.sqrt(data_norm ** 2 + 1)
+
     # Pre-processing.
     if check_input:
         X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=solver != 'liblinear')
@@ -349,14 +353,17 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     coefs = list()
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
-        vector_mech = Vector().set_dimensions(n_features + int(fit_intercept), n_samples).set_epsilon(epsilon) \
-            .set_lambda(1. / C).set_sensitivity(0.25, data_norm)
-        noisy_logistic_loss = vector_mech.randomise(_logistic_loss)
+        vector_mech = Vector()\
+            .set_dimension(n_features + int(fit_intercept))\
+            .set_epsilon(epsilon)\
+            .set_alpha(1. / C)\
+            .set_sensitivity(0.25, data_norm)
+        noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         w0, loss, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
                                                 args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
-                                                maxiter=max_iter, approx_grad=True)
+                                                maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 

@@ -20,8 +20,7 @@ class Vector(DPMechanism):
         self._function_sensitivity = None
         self._data_sensitivity = 1
         self._d = None
-        self._n = None
-        self._lambda = 0.01
+        self._alpha = 0.01
 
     def set_epsilon_delta(self, epsilon, delta):
         """
@@ -58,21 +57,21 @@ class Vector(DPMechanism):
         self._data_sensitivity = data_sensitivity
         return self
 
-    def set_lambda(self, lam):
+    def set_alpha(self, alpha):
         """
-        Set the regularisation parameter lambda for the mechanism.
+        Set the regularisation parameter alpha for the mechanism.
 
-        :param lam: Regularisation parameter, default is 0.01
-        :type lam: `float`
+        :param alpha: Regularisation parameter, default is 0.01
+        :type alpha: `float`
         :return: self
         """
-        if not isinstance(lam, Real):
-            raise TypeError("Lambda must be numeric")
+        if not isinstance(alpha, Real):
+            raise TypeError("Alpha must be numeric")
 
-        if lam <= 0:
-            raise ValueError("Lambda must be strictly positive")
+        if alpha <= 0:
+            raise ValueError("Alpha must be strictly positive")
 
-        self._lambda = lam
+        self._alpha = alpha
         return self
 
     def check_inputs(self, value):
@@ -93,29 +92,23 @@ class Vector(DPMechanism):
         if self._data_sensitivity is None or self._function_sensitivity is None:
             raise ValueError("Sensitivities must be set")
 
-        if self._n is None or self._d is None:
-            raise ValueError("Dimensions n and d must be set")
+        if self._d is None:
+            raise ValueError("Dimension d must be set")
 
         return True
 
-    def set_dimensions(self, d, n):
+    def set_dimension(self, d):
         """
-        Set the dimensions of the function output `d` and the number of datapoints `n`.
+        Set the dimension of the function output `d`.
 
         :param d: Function output dimension.
         :type d: `int`
-        :param n: Number of datapoints in the dataset.
-        :type n: `int`
         :return: self
         """
 
         if not isinstance(d, Real) or not d >= 1 or not np.isclose(d, int(d)):
             raise ValueError("d must be a strictly positive integer")
 
-        if not isinstance(n, Real) or not n >= 1 or not np.isclose(n, int(n)):
-            raise ValueError("n must be a strictly positive integer")
-
-        self._n = n
         self._d = d
         return self
 
@@ -132,11 +125,13 @@ class Vector(DPMechanism):
 
         c = self._function_sensitivity
         g = self._data_sensitivity
-        epsilon_p = self._epsilon - 2 * np.log(1 + c * g / (self._lambda * self._n))
+        a = self._alpha
+
+        epsilon_p = self._epsilon - 2 * np.log(1 + c * g / (0.5 * a))
         delta = 0
 
         if epsilon_p <= 0:
-            delta = c * g / (self._n * (np.exp(self._epsilon / 4) - 1)) - self._lambda
+            delta = c * g / (np.exp(self._epsilon / 4) - 1) - 0.5 * a
             epsilon_p = self._epsilon / 2
 
         scale = epsilon_p / 2 / g
@@ -150,9 +145,21 @@ class Vector(DPMechanism):
         def output_func(*args):
             w = args[0]
 
-            val = value(*args)
-            val += np.dot(normed_noisy_vector, w) / self._n
-            val += 0.5 * delta * np.dot(w, w)
-            return val
+            func = value(*args)
+
+            if isinstance(func, tuple):
+                func, grad = func
+            else:
+                grad = None
+
+            func += np.dot(normed_noisy_vector, w)
+            func += 0.5 * delta * np.dot(w, w)
+
+            if grad is not None:
+                grad += normed_noisy_vector + delta * w
+
+                return func, grad
+
+            return func
 
         return output_func

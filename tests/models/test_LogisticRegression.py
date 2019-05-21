@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.logistic_regression import LogisticRegression
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import global_seed, PrivacyLeakWarning
 
 
 class TestLogisticRegression(TestCase):
@@ -21,7 +21,7 @@ class TestLogisticRegression(TestCase):
 
         clf = LogisticRegression()
 
-        with self.assertWarns(RuntimeWarning):
+        with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
 
     def test_trinomial(self):
@@ -44,7 +44,7 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf = LogisticRegression()
+        clf = LogisticRegression(epsilon=2)
         clf.fit(X, y)
 
         # print(clf.predict(np.array([0.5, 2, 5.5])))
