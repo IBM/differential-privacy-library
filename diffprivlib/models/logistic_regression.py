@@ -1,6 +1,5 @@
 import numbers
 import warnings
-from numbers import Real
 
 import numpy as np
 from scipy import optimize
@@ -50,11 +49,11 @@ class LogisticRegression(linear_model.LogisticRegression):
         -------
         self : object
         """
-        if not isinstance(self.C, Real) or self.C < 0:
+        if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
         if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:
             raise ValueError("Maximum number of iteration must be positive; got (max_iter=%r)" % self.max_iter)
-        if not isinstance(self.tol, Real) or self.tol < 0:
+        if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
 
         if self.multi_class != 'ovr':
