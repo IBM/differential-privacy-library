@@ -32,8 +32,53 @@ class TestLogisticRegression(TestCase):
 
         clf = LogisticRegression()
 
-        with self.assertRaises(ValueError):
-            clf.fit(X, y)
+        self.assertIsNotNone(clf.fit(X, y))
+
+    def test_different_results(self):
+        from sklearn import datasets
+        from sklearn import linear_model
+        from sklearn.model_selection import train_test_split
+
+        dataset = datasets.load_iris()
+        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
+
+        clf = LogisticRegression(data_norm=12)
+        clf.fit(X_train, y_train)
+
+        predict1 = clf.predict(X_test)
+
+        clf = LogisticRegression(data_norm=12)
+        clf.fit(X_train, y_train)
+
+        predict2 = clf.predict(X_test)
+
+        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr")
+        clf.fit(X_train, y_train)
+
+        predict3 = clf.predict(X_test)
+
+        self.assertFalse(np.all(predict1 == predict2))
+        self.assertFalse(np.all(predict3 == predict1) and np.all(predict3 == predict2))
+
+    def test_same_results(self):
+        from sklearn import datasets
+        from sklearn.model_selection import train_test_split
+        from sklearn import linear_model
+
+        dataset = datasets.load_iris()
+        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
+
+        clf = LogisticRegression(data_norm=12, epsilon=float("inf"))
+        clf.fit(X_train, y_train)
+
+        predict1 = clf.predict(X_test)
+
+        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr")
+        clf.fit(X_train, y_train)
+
+        predict2 = clf.predict(X_test)
+
+        self.assertTrue(np.all(predict1 == predict2))
 
     def test_simple(self):
         X = np.array(
