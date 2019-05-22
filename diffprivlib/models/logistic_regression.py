@@ -5,8 +5,10 @@ import numpy as np
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
+from sklearn.externals.joblib import delayed, Parallel
 from sklearn.linear_model.logistic import _check_solver, _check_multi_class, _logistic_loss_and_grad
 from sklearn.utils import check_X_y, check_array, check_consistent_length
+from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.mechanisms import Vector
@@ -59,6 +61,9 @@ class LogisticRegression(linear_model.LogisticRegression):
         if self.multi_class != 'ovr':
             warnings.warn("For diffprivlib, multi_class must be 'ovr'", UserWarning)
             self.multi_class = "ovr"
+        if self.solver != 'lbfgs':
+            warnings.warn("For diffprivlib, solver must be 'lbfgs'.", UserWarning)
+            self.solver = "lbfgs"
 
         max_norm = np.linalg.norm(X, axis=1).max()
         if max_norm > self.data_norm:
@@ -68,29 +73,28 @@ class LogisticRegression(linear_model.LogisticRegression):
                           % (self.data_norm, max_norm), PrivacyLeakWarning)
 
         solver = _check_solver(self.solver, self.penalty, self.dual)
+        # todo: may be able to remove when docstring for __init__ is written
         self.max_iter = int(self.max_iter)
         self.tol = float(self.tol)
 
         _dtype = np.float64
 
-        X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C",
-                         accept_large_sparse=solver != 'liblinear')
+        X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C", accept_large_sparse=solver != 'liblinear')
         check_classification_targets(y)
         self.classes_ = np.unique(y)
         n_samples, n_features = X.shape
 
         multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 
-        max_squared_sum = None
-
         n_classes = len(self.classes_)
         classes_ = self.classes_
-        if n_classes != 2:
-            raise ValueError("For diffprivlib, the number of classes must be exactly 2, but the data contains %d "
-                             "classes: %s" % (n_classes, str(classes_)))
+        if n_classes < 2:
+            raise ValueError("This solver needs samples of at least 2 classes in the data, but the data contains only "
+                             "one class: %r" % classes_[0])
 
-        n_classes = 1
-        classes_ = classes_[1:]
+        if len(self.classes_) == 2:
+            n_classes = 1
+            classes_ = classes_[1:]
 
         if self.warm_start:
             warm_start_coef = getattr(self, 'coef_', None)
@@ -105,17 +109,16 @@ class LogisticRegression(linear_model.LogisticRegression):
         if warm_start_coef is None:
             warm_start_coef = [None] * n_classes
 
-        fold_coefs_ = logistic_regression_path(X, y, epsilon=self.epsilon, data_norm=self.data_norm,
-                                               pos_class=classes_[0], Cs=[self.C], fit_intercept=self.fit_intercept,
-                                               tol=self.tol, verbose=self.verbose, solver=solver,
-                                               multi_class=multi_class, max_iter=self.max_iter,
-                                               class_weight=self.class_weight, check_input=False,
-                                               random_state=self.random_state, coef=warm_start_coef[0],
-                                               penalty=self.penalty, max_squared_sum=max_squared_sum,
-                                               sample_weight=sample_weight)
+        path_func = delayed(logistic_regression_path)
 
-        # Want fold_coefs_ to be in the same format as if it came from Parallel
-        fold_coefs_ = [fold_coefs_]
+        fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
+                               **_joblib_parallel_args(prefer='processes'))(
+            path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
+                      fit_intercept=self.fit_intercept, tol=self.tol, verbose=self.verbose, solver=solver,
+                      multi_class=multi_class, max_iter=self.max_iter, class_weight=self.class_weight,
+                      check_input=False, random_state=self.random_state, coef=warm_start_coef_, penalty=self.penalty,
+                      max_squared_sum=None, sample_weight=sample_weight)
+            for class_, warm_start_coef_ in zip(classes_, warm_start_coef))
 
         fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
         self.n_iter_ = np.asarray(n_iter_, dtype=np.int32)[:, 0]
@@ -281,9 +284,6 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     .. versionchanged:: 0.19
         The "copy" parameter was removed.
     """
-    if penalty != 'l2':
-        warnings.warn("For diffprivlib, penalty must be 'l2'.", UserWarning)
-        penalty = "l2"
     if solver != 'lbfgs':
         warnings.warn("For diffprivlib, solver must be 'lbfgs'.", UserWarning)
         solver = "lbfgs"
@@ -343,8 +343,8 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     if coef is not None:
         # it must work both giving the bias term and not
         if coef.size not in (n_features, w0.size):
-            raise ValueError('Initialization coef is of shape %d, expected shape %d or %d' %
-                             (coef.size, n_features, w0.size))
+            raise ValueError('Initialization coef is of shape %d, expected shape %d or %d' % (coef.size, n_features,
+                                                                                              w0.size))
         w0[:coef.size] = coef
 
     target = y_bin
