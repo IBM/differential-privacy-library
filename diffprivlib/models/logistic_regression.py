@@ -6,13 +6,13 @@ from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.externals.joblib import delayed, Parallel
-from sklearn.linear_model.logistic import _check_solver, _check_multi_class, _logistic_loss_and_grad
+from sklearn.linear_model.logistic import _logistic_loss_and_grad
 from sklearn.utils import check_X_y, check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.mechanisms import Vector
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
 class LogisticRegression(linear_model.LogisticRegression):
@@ -57,13 +57,6 @@ class LogisticRegression(linear_model.LogisticRegression):
             raise ValueError("Maximum number of iteration must be positive; got (max_iter=%r)" % self.max_iter)
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
-
-        if self.multi_class != 'ovr':
-            warnings.warn("For diffprivlib, multi_class must be 'ovr'", UserWarning)
-            self.multi_class = "ovr"
-        if self.solver != 'lbfgs':
-            warnings.warn("For diffprivlib, solver must be 'lbfgs'.", UserWarning)
-            self.solver = "lbfgs"
 
         max_norm = np.linalg.norm(X, axis=1).max()
         if max_norm > self.data_norm:
@@ -284,26 +277,21 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     .. versionchanged:: 0.19
         The "copy" parameter was removed.
     """
-    if solver != 'lbfgs':
-        warnings.warn("For diffprivlib, solver must be 'lbfgs'.", UserWarning)
-        solver = "lbfgs"
-    if multi_class != 'ovr':
-        warnings.warn("For diffprivlib, multi_class must be 'ovr'", UserWarning)
-        multi_class = "ovr"
-
     if class_weight is not None:
-        warnings.warn("For diffprivlib, class_weight is not used. Set to None to suppress this warning.", UserWarning)
+        warnings.warn("For diffprivlib, class_weight is not used. Set to None to suppress this warning.",
+                      DiffprivlibCompatibilityWarning)
         del class_weight
     if sample_weight is not None:
-        warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.", UserWarning)
+        warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.",
+                      DiffprivlibCompatibilityWarning)
         del sample_weight
     if intercept_scaling != 1.:
         warnings.warn("For diffprivlib, intercept_scaling is not used. Set to 1.0 to suppress this warning.",
-                      UserWarning)
+                      DiffprivlibCompatibilityWarning)
         del intercept_scaling
     if max_squared_sum is not None:
         warnings.warn("For diffprivlib, max_squared_sum is not used. Set to None to suppress this warning.",
-                      UserWarning)
+                      DiffprivlibCompatibilityWarning)
         del max_squared_sum
 
     if isinstance(Cs, numbers.Integral):
@@ -371,3 +359,25 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
         n_iter[i] = info['nit']
 
     return np.array(coefs), np.array(Cs), n_iter
+
+
+def _check_solver(solver, penalty, dual):
+    if solver != 'lbfgs':
+        warnings.warn("For diffprivlib, solver must be 'lbfgs'.", DiffprivlibCompatibilityWarning)
+        solver = 'lbfgs'
+
+    if penalty != 'l2':
+        raise ValueError("Solver %s supports only l2 penalties, got %s penalty." % (solver, penalty))
+    if dual:
+        raise ValueError("Solver %s supports only dual=False, got dual=%s" % (solver, dual))
+    return solver
+
+
+def _check_multi_class(multi_class, solver, n_classes):
+    del solver, n_classes
+
+    if multi_class != 'ovr':
+        warnings.warn("For diffprivlib, multi_class must be 'ovr'.", DiffprivlibCompatibilityWarning)
+        multi_class = 'ovr'
+
+    return multi_class

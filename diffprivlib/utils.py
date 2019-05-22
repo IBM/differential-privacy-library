@@ -29,4 +29,8 @@ class PrivacyLeakWarning(RuntimeWarning):
     pass
 
 
+class DiffprivlibCompatibilityWarning(RuntimeWarning):
+    pass
+
+
 warnings.simplefilter('always', PrivacyLeakWarning)
