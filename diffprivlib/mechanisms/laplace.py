@@ -7,11 +7,13 @@ import numpy as np
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.utils import copy_docstring
 
 
 class Laplace(DPMechanism):
     """
     The classic Laplace mechanism in differential privacy, as first proposed by Dwork, McSherry, Nissim and Smith.
+
     Paper link: https://link.springer.com/content/pdf/10.1007/11681878_14.pdf
     """
     def __init__(self):
@@ -25,12 +27,17 @@ class Laplace(DPMechanism):
         return output
 
     def set_sensitivity(self, sensitivity):
-        """
-        Set the sensitivity of the mechanism.
+        """Sets the sensitivity of the mechanism.
 
-        :param sensitivity: The sensitivity of the function being considered, must be > 0.
-        :type sensitivity: `float`
-        :return: self
+        Parameters
+        ----------
+        sensitivity : float
+            The sensitivity of the mechanism. Must satisfy `sensitivity` > 0.
+
+        Returns
+        -------
+        self : object
+
         """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
@@ -42,14 +49,22 @@ class Laplace(DPMechanism):
         return self
 
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
+        Parameters
+        ----------
+        value : float
+
+        Returns
+        -------
+        True if the mechanism is ready to be used.
+
+        Raises
+        ------
+        Exception
+            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
+
         """
         super().check_inputs(value)
 
@@ -62,37 +77,52 @@ class Laplace(DPMechanism):
         return True
 
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
+        """Returns the bias of the mechanism at a given `value`.
 
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
+        Parameters
+        ----------
+        value : int or float
+            The value at which the bias of the mechanism is sought.
+
+        Returns
+        -------
+        bias : float or None
+            The bias of the mechanism at `value`.
+
         """
         return 0.0
 
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
+        """Returns the variance of the mechanism at a given `value`.
 
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
+        Parameters
+        ----------
+        value : float
+            The value at which the variance of the mechanism is sought.
+
+        Returns
+        -------
+        bias : float
+            The variance of the mechanism at `value`.
+
         """
         self.check_inputs(0)
 
         return 2 * (self._sensitivity / self._epsilon) ** 2
 
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
+        """Randomise `value` with the mechanism.
 
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
+        Parameters
+        ----------
+        value : float
+            The value to be randomised.
+
+        Returns
+        -------
+        float
+            The randomised value.
+
         """
         self.check_inputs(value)
 
@@ -118,30 +148,16 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
 
         return output
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         shape = self._sensitivity / self._epsilon
 
         return shape / 2 * (np.exp((self._lower_bound - value) / shape) - np.exp((value - self._upper_bound) / shape))
 
+    @copy_docstring(Laplace.get_variance)
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
-
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         shape = self._sensitivity / self._epsilon
@@ -155,30 +171,15 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
 
         return variance
 
+    @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         return True
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
@@ -200,15 +201,8 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
 
         return output
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         shape = self._sensitivity / self._epsilon
@@ -218,41 +212,19 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
 
         return bias
 
+    @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
-
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
-        """
         pass
 
+    @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         return True
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         TruncationAndFoldingMachine.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
@@ -308,26 +280,20 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return 1 - 0.5 * np.exp(-value / self._scale)
 
     def get_effective_epsilon(self):
-        """
-        Gets the effective epsilon of the mechanism.
+        """Gets the effective epsilon of the mechanism.
 
-        :return: Effective epsilon parameter of the mechanism.
-        :rtype: `float`
+        Returns
+        -------
+        float
+            The effective :math:`\epsilon` parameter of the mechanism.
         """
         if self._scale is None:
             self._scale = self._find_scale()
 
         return self._sensitivity / self._scale
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         if self._scale is None:
@@ -340,15 +306,8 @@ class LaplaceBoundedDomain(LaplaceTruncated):
 
         return bias
 
+    @copy_docstring(Laplace.get_variance)
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
-
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         if self._scale is None:
@@ -368,15 +327,8 @@ class LaplaceBoundedDomain(LaplaceTruncated):
 
         return variance
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         if self._scale is None:
@@ -403,23 +355,30 @@ class LaplaceBoundedNoise(Laplace):
         self._noise_bound = None
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        r"""Set the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
-        Epsilon must be strictly positive, epsilon > 0. Delta must be strictly in the interval (0, 0.5).
-         - For zero epsilon, use :class:`.Uniform`.
-         - For zero delta, use :class:`.Laplace`.
+        Epsilon must be strictly positive, `epsilon` > 0. `delta` must be strictly in the interval (0, 0.5).
+         - For zero `epsilon`, use :class:`.Uniform`.
+         - For zero `delta`, use :class:`.Laplace`.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon > 0`.
+        delta : float
+            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `0 < delta < 0.5`.
+
+        Returns
+        -------
+        self : object
+
         """
         if epsilon == 0:
             raise ValueError("Epsilon must be strictly positive. For zero epsilon, use :class:`.Uniform`.")
 
-        if not 0 < delta < 0.5:
+        if isinstance(delta, Real) and not 0 < delta < 0.5:
             raise ValueError("Delta must be strictly in (0,0.5). For zero delta, use :class:`.Laplace`.")
 
         return DPMechanism.set_epsilon_delta(self, epsilon, delta)
@@ -433,37 +392,16 @@ class LaplaceBoundedNoise(Laplace):
 
         return 1 - 0.5 * np.exp(-value / self._shape)
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         return 0.0
 
+    @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
-
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
-        """
         pass
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         if self._shape is None or self._noise_bound is None:

@@ -4,8 +4,10 @@ The vector mechanism in differential privacy, for producing perturbed objectives
 from numbers import Real
 
 import numpy as np
+from diffprivlib.mechanisms.laplace import Laplace
 
 from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Vector(DPMechanism):
@@ -23,16 +25,27 @@ class Vector(DPMechanism):
         self._alpha = 0.01
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
 
-        For the vector mechanism, delta must be zero. Epsilon must be strictly positive, epsilon >= 0.
+        For the vector mechanism, `delta` must be zero and `epsilon` must be strictly positive.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism. For the geometric mechanism, this must be zero.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon > 0`.
+        delta : float
+            For the vector mechanism, `delta` must be zero.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        ValueError
+            If `epsilon` is zero or negative, or if `delta` is non-zero.
+
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
@@ -40,12 +53,22 @@ class Vector(DPMechanism):
         return super().set_epsilon_delta(epsilon, delta)
 
     def set_sensitivity(self, function_sensitivity, data_sensitivity=1):
-        """
-        Sets the sensitivity of the function and data for use in the mechanism.
+        """Sets the sensitivity of the function and data being processed by the mechanism.
 
-        :param function_sensitivity:
-        :param data_sensitivity:
-        :return:
+        - The sensitivity of the function relates to the max of its second derivative. Must be strictly positive.
+        - The sensitivity of the data relates to the max 2-norm of each row. Must be strictly positive.
+
+        Parameters
+        ----------
+        function_sensitivity : float
+            The function sensitivity of the mechanism.
+        data_sensitivity : float, default 1.0
+            The data sensitivity of the mechanism.
+
+        Returns
+        -------
+        self : object
+
         """
         if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
             raise TypeError("Sensitivities must be numeric")
@@ -58,12 +81,19 @@ class Vector(DPMechanism):
         return self
 
     def set_alpha(self, alpha):
-        """
-        Set the regularisation parameter alpha for the mechanism.
+        r"""Set the regularisation parameter :math:`\alpha` for the mechanism.
 
-        :param alpha: Regularisation parameter, default is 0.01
-        :type alpha: `float`
-        :return: self
+        `alpha` must be strictly positive.  Default is 0.01.
+
+        Parameters
+        ----------
+        alpha : float
+            Regularisation parameter.
+
+        Returns
+        -------
+        self : object
+
         """
         if not isinstance(alpha, Real):
             raise TypeError("Alpha must be numeric")
@@ -75,14 +105,22 @@ class Vector(DPMechanism):
         return self
 
     def check_inputs(self, value):
-        """
-        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked.
-        :type value: object
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
+        Parameters
+        ----------
+        value : method
+
+        Returns
+        -------
+        True if the mechanism is ready to be used.
+
+        Raises
+        ------
+        Exception
+            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
+
         """
         super().check_inputs(value)
 
@@ -98,28 +136,44 @@ class Vector(DPMechanism):
         return True
 
     def set_dimension(self, d):
+        """Sets the dimension `d` of the domain of the mechanism.
+
+        This dimension relates to the size of the input vector of the function being considered by the mechanism. This
+        corresponds to the size of the random vector produced by the mechanism.
+
+        Parameters
+        ----------
+        d : int
+            Function input dimension.
+
+        Returns
+        -------
+        self : object
         """
-        Set the dimension of the function output `d`.
+        if not isinstance(d, Real) or not np.isclose(d, int(d)):
+            raise TypeError("d must be integer-valued")
+        elif not d >= 1:
+            raise ValueError("d must be strictly positive")
 
-        :param d: Function output dimension.
-        :type d: `int`
-        :return: self
-        """
-
-        if not isinstance(d, Real) or not d >= 1 or not np.isclose(d, int(d)):
-            raise ValueError("d must be a strictly positive integer")
-
-        self._d = d
+        self._d = int(d)
         return self
 
     def randomise(self, value):
-        """
-        Randomise the given function using the mechanism.
+        """Randomise `value` with the mechanism.
 
-        :param value: Function to be randomised.
-        :type value: method
-        :return: Randomised function.
-        :rtype: method
+        If `value` is a method of two outputs, they are take as `f` and `fprime` (i.e., its gradient), and both are
+        perturbed accordingly.
+
+        Parameters
+        ----------
+        value : method
+            The function to be randomised.
+
+        Returns
+        -------
+        method
+            The randomised method.
+
         """
         self.check_inputs(value)
 

@@ -7,14 +7,17 @@ import numpy as np
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.mechanisms.laplace import Laplace
+from diffprivlib.utils import copy_docstring
 
 
 class Gaussian(DPMechanism):
-    """
-    The Gaussian mechanism in differential privacy.
+    """The Gaussian mechanism in differential privacy.
 
     As first proposed by Dwork and Roth in "The algorithmic foundations of differential privacy".
+
     Paper link: https://www.nowpublishers.com/article/DownloadSummary/TCS-042
+
     """
     def __init__(self):
         super().__init__()
@@ -22,16 +25,21 @@ class Gaussian(DPMechanism):
         self._scale = None
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set privacy parameters epsilon and delta for the mechanism.
+        r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
-        For the Gaussian mechanism, epsilon cannot be greater than 1.
+        For the Gaussian mechanism, `epsilon` cannot be greater than 1, and `delta` must be non-zero.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            Epsilon value of the mechanism. Must satisfy 0 < `epsilon` <= 1.
+        delta : float
+            Delta value of the mechanism. Must satisfy 0 < `delta` <= 1.
+
+        Returns
+        -------
+        self : object
+
         """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
@@ -42,14 +50,8 @@ class Gaussian(DPMechanism):
         self._scale = None
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(Laplace.set_sensitivity)
     def set_sensitivity(self, sensitivity):
-        """
-        Set the sensitivity of the mechanism.
-
-        :param sensitivity: The sensitivity of the function being considered, must be > 0.
-        :type sensitivity: `float`
-        :return: self
-        """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -60,16 +62,8 @@ class Gaussian(DPMechanism):
         self._sensitivity = sensitivity
         return self
 
+    @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
-        """
-        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
 
         if self._delta is None:
@@ -86,39 +80,18 @@ class Gaussian(DPMechanism):
 
         return True
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Get the bias of the mechanism at `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         return 0.0
 
+    @copy_docstring(Laplace.get_variance)
     def get_variance(self, value):
-        """
-        Get the variance of the mechanism at `value`.
-
-        :param value: The value at which the variance is sought.
-        :type value: `float`
-        :return: The variance of the mechanism at `value`.
-        :rtype: `float`
-        """
         self.check_inputs(0)
 
         return self._scale ** 2
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         unif_rv1 = random()

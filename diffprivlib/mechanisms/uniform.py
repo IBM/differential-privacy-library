@@ -3,9 +3,11 @@ The uniform mechanism in differential privacy.
 """
 from numbers import Real
 
+from diffprivlib.mechanisms.laplace import Laplace
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Uniform(DPMechanism):
@@ -20,16 +22,28 @@ class Uniform(DPMechanism):
         self._sensitivity = None
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set privacy parameters epsilon and delta for the mechanism.
+        r"""Set privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
-        For the uniform mechanism, epsilon must be strictly zero and delta must satisfy 0 < delta <= 0.5.
+        For the uniform mechanism, `epsilon` must be strictly zero and `delta` must satisfy 0 < `delta` <= 0.5.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            For the uniform mechanism, `epsilon` must be strictly zero.
+        delta : float
+            For the uniform mechanism, `delta` must satisfy 0 < `delta` <= 0.5.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        ValueError
+            If `epsilon` is non-zero or if `delta` does not satisfy 0 < `delta` <= 0.5.
+        TypeError
+            If `epsilon` or `delta` cannot be cast as floats.
+
         """
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
@@ -39,14 +53,8 @@ class Uniform(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(Laplace.set_sensitivity)
     def set_sensitivity(self, sensitivity):
-        """
-        Set the sensitivity of the mechanism.
-
-        :param sensitivity: The sensitivity of the function being considered, must be > 0.
-        :type sensitivity: `float`
-        :return: self
-        """
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -56,27 +64,12 @@ class Uniform(DPMechanism):
         self._sensitivity = float(sensitivity)
         return self
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Get the bias of the mechanism at `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         return 0.0
 
+    @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
-        """
-        Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
 
         if not isinstance(value, Real):
@@ -87,15 +80,8 @@ class Uniform(DPMechanism):
 
         return True
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         unif_rv = 2 * random() - 1

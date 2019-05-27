@@ -1,5 +1,6 @@
 """
 The binary mechanism for differential privacy.
+
 """
 import numpy as np
 from numpy.random import random
@@ -8,9 +9,13 @@ from diffprivlib.mechanisms import DPMechanism
 
 
 class Binary(DPMechanism):
-    """
-    Classic binary mechanism for differential privacy.
+    """The classic binary mechanism in differential privacy.
+
+    Given a binary input value, the mechanism randomly decides to flip to the other binary value or not, in order to
+    satisfy differential privacy.
+
     Paper link: https://arxiv.org/pdf/1612.05568.pdf
+
     """
     def __init__(self):
         super().__init__()
@@ -25,20 +30,26 @@ class Binary(DPMechanism):
         return output
 
     def set_labels(self, value0, value1):
-        """
-        Set the binary labels of the mechanism. Labels must be unique, non-empty strings.
+        """Sets the binary labels of the mechanism.
 
-        If non-string labels are required, consider using a :class:`.DPTransformer`.
+        Labels must be unique, non-empty strings. If non-string labels are required, consider using a
+        :class:`.DPTransformer`.
 
-        :param value0: Binary label.
-        :type value0: str
-        :param value1: Binary label.
-        :type value1: str
-        :return: self
+        Parameters
+        ----------
+        value0 : str
+            0th binary label.
+        value1 : str
+            1st binary label.
+
+        Returns
+        -------
+        self : object
+
         """
         if not isinstance(value0, str) or not isinstance(value1, str):
-            raise TypeError("Binary labels must be strings. Use a DPTransformer"
-                            " (e.g. transformers.IntToString) for non-string labels")
+            raise TypeError("Binary labels must be strings. Use a DPTransformer  (e.g. transformers.IntToString) for "
+                            "non-string labels")
 
         if len(value0) * len(value1) == 0:
             raise ValueError("Binary labels must be non-empty strings")
@@ -51,14 +62,23 @@ class Binary(DPMechanism):
         return self
 
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked.
-        :type value: `str`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
+        Parameters
+        ----------
+        value : str
+
+
+        Returns
+        -------
+        True if the mechanism is ready to be used.
+
+        Raises
+        ------
+        Exception
+            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
+
         """
         super().check_inputs(value)
 
@@ -69,19 +89,24 @@ class Binary(DPMechanism):
             raise TypeError("Value to be randomised must be a string")
 
         if value not in [self._value0, self._value1]:
-            raise ValueError("Value to be randomised is not in the domain {\"" +
-                             self._value0 + "\", \"" + self._value1 + "\"}")
+            raise ValueError("Value to be randomised is not in the domain {\"" + self._value0 + "\", \"" + self._value1
+                             + "\"}")
 
         return True
 
     def randomise(self, value):
-        """
-        Randomise the given value. The value must be one of the pre-defined binary labels.
+        """Randomise `value` with the mechanism.
 
-        :param value: Value to be randomised.
-        :type value: `string`
-        :return: Randomised value, one of the binary labels.
-        :rtype: `string`
+        Parameters
+        ----------
+        value : str
+            The value to be randomised.
+
+        Returns
+        -------
+        str
+            The randomised value.
+
         """
         self.check_inputs(value)
 

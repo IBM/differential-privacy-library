@@ -1,5 +1,6 @@
 """
 Implementation of the standard exponential mechanism, and its derivative, the hierarchical mechanism.
+
 """
 from numbers import Real
 
@@ -7,11 +8,18 @@ import numpy as np
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.mechanisms.binary import Binary
+from diffprivlib.utils import copy_docstring
 
 
 class Exponential(DPMechanism):
     """
-    The exponential mechanism, as first proposed by McSherry and Talwar.
+    The exponential mechanism for achieving differential privacy on categorical inputs, as first proposed by McSherry
+    and Talwar.
+
+    The exponential mechanism achieves differential privacy by randomly choosing an output value for a given input
+    value, with greater probability given to values 'closer' to the input, as measured by a given utility function.
+
     Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
     """
     def __init__(self):
@@ -29,15 +37,36 @@ class Exponential(DPMechanism):
         return output
 
     def set_utility(self, utility_list):
-        """
-        Set the utility of the mechanism. Utilities define the pairwise distance between two entries of the mechanism's
-        dictionary.
+        """Sets the utility function of the mechanism. The utility function is used to determine the probability of
+        selecting an output for a given input.
 
-        :param utility_list: List of tuples, or list of lists, of the form ("label1", "label2", utility). Labels must
-        be specified as strings (for non-string labels, a :class:`.DPTransformer` can be used), and the utility value
-        must be a strictly positive `float`.
-        :type utility_list: `list`
-        :return: self
+        The utility function is set by `utility_list`, which is a list of pairwise 'distances' between values in the
+        mechanism's domain.  As the mechanisms's domain is set by the values in `utility_list`, all possible pairs in
+        `utility_list` must be accounted for.  The utility function is symmetric, meaning the distance from `a` to
+        `b` is the same as the distance from `b` to `a`.  Setting the second distance will overwrite the first.
+
+        Parameters
+        ----------
+        utility_list : list of tuples
+            The utility list of the mechanism. Must be specified as a list of tuples, of the form ("value1", "value2",
+            utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
+            specified for every pair of values given in the `utility_list`.
+
+            The mechanism's string values cannot contain the substring ``::``, and must not end in ``:``.  If this is a
+            requirement, you can use a :class:`.DPTransformer` as an alternative.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        TypeError
+            If the `value` components of each tuple are not strings of if the `utility` component is not a float.
+        ValueError
+            If any of the `value` components contains the substring ``::`` or ends in ``:``, or if the `utility`
+            component is zero or negative.
+
         """
         if not isinstance(utility_list, list):
             raise ValueError("Utility must be given in a list")
@@ -95,12 +124,14 @@ class Exponential(DPMechanism):
         return True
 
     def get_utility_list(self):
-        """
-        Get the list of utility values of the mechanism. Returned in the same format as accepted by
-        :func:`.set_utility`.
+        """Gets the utility list of the mechanism, in the same form as accepted by `.set_utility_list`.
 
-        :return: Utility list of tuples, of the form ("label1", "label2", utility).
-        :rtype: `list`
+        Returns
+        -------
+        utility_list : list of tuples (str, str, float), or None
+            Returns a list of tuples of the form ("value1", "value2", utility), or `None` if the utility has not yet
+            been set.
+
         """
         if self._utility_values is None:
             return None
@@ -154,16 +185,8 @@ class Exponential(DPMechanism):
         balancing_factor = 1 if self._balanced_tree else 2
         return np.exp(- self._epsilon * self._get_utility(value1, value2) / balancing_factor / self._sensitivity)
 
+    @copy_docstring(Binary.check_inputs)
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `string`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
 
         if self._utility_values is None:
@@ -181,17 +204,27 @@ class Exponential(DPMechanism):
         return True
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
 
-        For the exponential mechanism, delta must be strictly zero.
-        As is normal, epsilon must be strictly positive, epsilon >= 0.
+        For the exponential mechanism, `delta` must be zero and `epsilon` must be strictly positive.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism. Must be zero for the exponential mechanism.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon > 0`.
+        delta : float
+            For the exponential mechanism, `delta` must be zero.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        ValueError
+            If `epsilon` is zero or negative, or if `delta` is non-zero.
+
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
@@ -200,15 +233,8 @@ class Exponential(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(Binary.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism. The value must be an element of the mechanism dictionary.
-
-        :param value: Value to be randomised.
-        :type value: `string`
-        :return: Randomised value.
-        :rtype: `string`
-        """
         self.check_inputs(value)
 
         unif_rv = random() * self._normalising_constant[value]
@@ -227,6 +253,7 @@ class ExponentialHierarchical(Exponential):
     """
     Adaptation of the exponential mechanism to hierarchical data. Simplifies the process of specifying utility values,
     as the values can be inferred from the hierarchy.
+
     """
     def __init__(self):
         super().__init__()
@@ -295,14 +322,21 @@ class ExponentialHierarchical(Exponential):
         return utility_list
 
     def set_hierarchy(self, list_hierarchy):
-        """
-        Set the hierarchy of the mechanism, specified as a list of lists. The hierarchy must have a uniform height, with
-        values specified as strings. For non-string values, a :class:`.DPTransformer` can be used. The exponential
-        mechanism is then invoked, using the height of the closest ancestor as the utility metric.
+        """Sets the hierarchy of the hierarchical exponential mechanism.
 
-        :param list_hierarchy: Hierarchy list.
-        :type list_hierarchy: `list`
-        :return: self
+        The hierarchy is specified as a list of lists, where each leaf node is a string, and lies at the same depth as
+        each other leaf node.  The utility between each leaf node is then calculated as
+
+        Parameters
+        ----------
+        list_hierarchy : nested list of str
+            The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node
+            must lie at the same depth in the hierarchy.
+
+        Returns
+        -------
+        self : object
+
         """
         if not isinstance(list_hierarchy, list):
             raise TypeError("Hierarchy must be a list")

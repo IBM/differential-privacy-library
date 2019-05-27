@@ -19,60 +19,81 @@ class DPMachine(ABC):
     """
     @abc.abstractmethod
     def randomise(self, value):
-        """
-        Randomise the given value using the :class:`.DPMachine`.
+        """Randomise `value` with the mechanism.
 
-        :param value: Value to be randomised.
-        :type value: `int` or `float` or `string`
-        :return: Randomised value, same type as value.
-        :rtype: `int` or `float` or `string`
+        Parameters
+        ----------
+        value : int or float or str or method
+            The value to be randomised.
+
+        Returns
+        -------
+        int or float or str or method
+            The randomised value, same type as `value`.
+
         """
         pass
 
     def copy(self):
-        """
-        Copies the given class.
+        """Produces a copy of the class.
 
-        :return: A copy of the input class.
-        :rtype: `DPMachine`
+        Returns
+        -------
+        self : object
+            Returns the copy.
+
         """
         return copy(self)
 
     def deepcopy(self):
-        """
-        Produces a deep copy of the given class.
+        """Produces a deep copy of the class.
 
-        :return: A deepcopy of the input class.
-        :rtype: `DPMachine`
+        Returns
+        -------
+        self : object
+            Returns the deep copy.
+
         """
         return deepcopy(self)
 
     def set_epsilon(self, epsilon):
-        """
-        Sets the value of epsilon to be used by the mechanism.
+        """Sets the value of epsilon to be used by the mechanism.
 
-        :param epsilon: Epsilon value for differential privacy.
-        :type epsilon: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`\epsilon`-differential privacy with the mechanism.  Must have
+            `epsilon > 0`.
+
+        Returns
+        -------
+        self : object
+
         """
         return self.set_epsilon_delta(epsilon, 0.0)
 
     @abc.abstractmethod
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        """Sets the value of epsilon and delta to be used by the mechanism.
 
-        Epsilon must be non-negative, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
-        one or epsilon and delta must be non-zero.
+        `epsilon` and `delta` cannot both be zero.
 
-        Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given
-        when delta > 0.
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon >= 0`.
+        delta : float
+            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
+            Must have `0 <= delta <= 1`.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+            `delta=0` gives strict (pure) differential privacy (:math:`\epsilon`-differential privacy).  `delta > 0`
+            gives relaxed (approximate) differential privacy.
+
+        Returns
+        -------
+        self : object
+
         """
         pass
 
@@ -80,6 +101,7 @@ class DPMachine(ABC):
 class DPMechanism(DPMachine, ABC):
     """
     Base class for all mechanisms. Instantiated from :class:`.DPMachine`.
+
     """
     def __init__(self):
         self._epsilon = None
@@ -97,45 +119,66 @@ class DPMechanism(DPMachine, ABC):
 
     @abc.abstractmethod
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
+        """Randomise `value` with the mechanism.
 
-        :param value: Value to be randomised.
-        :type value: `int` or `float` or `string`
-        :return: Randomised value, same type as `value`.
-        :rtype: `int` or `float` or `string`
+        Parameters
+        ----------
+        value : int or float or str or method
+            The value to be randomised.
+
+        Returns
+        -------
+        int or float or str or method
+            The randomised value, same type as `value`.
+
         """
         pass
 
     def get_bias(self, value):
-        """
-        Returns the bias of the mechanism at a given `value`.
+        """Returns the bias of the mechanism at a given `value`.
 
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `int` or `float`
-        :return: The bias of the mechanism at `value`. `None` if bias is not implemented or not defined.
-        :rtype: Union[None, float]
+        Parameters
+        ----------
+        value : int or float
+            The value at which the bias of the mechanism is sought.
+
+        Returns
+        -------
+        bias : float or None
+            The bias of the mechanism at `value` if defined, `None` otherwise.
+
         """
         pass
 
     def get_variance(self, value):
-        """
-        Returns the variance of the mechanism at a given `value`.
+        """Returns the variance of the mechanism at a given `value`.
 
-        :param value: The value at which the variance of the mechanism is sought.
-        :type value: Union[int, float]
-        :return: The variance of the mechanism at `value`. `None` if the variance is not implemented or not defined.
-        :rtype: Union[None, float]
+        Parameters
+        ----------
+        value : int or float
+            The value at which the variance of the mechanism is sought.
+
+        Returns
+        -------
+        bias : float or None
+            The variance of the mechanism at `value` if defined, `None` otherwise.
+
         """
         pass
 
     def get_mse(self, value):
-        """
-        Gives the mean squared error (MSE) of the mechanism, if its bias and variance is defined.
+        """Returns the mean squared error (MSE) of the mechanism at a given `value`.
 
-        :param value: The value at which the MSE is sought.
-        :type value: Union[int, float]
-        :return: The MSE of the mechanism at `value`. `None` if either :func:`get_bias` or :func:`get_variance` is None.
+        Parameters
+        ----------
+        value : int or float
+            The value at which the MSE of the mechanism is sought.
+
+        Returns
+        -------
+        bias : float or None
+            The MSE of the mechanism at `value` if defined, `None` otherwise.
+
         """
         if self.get_variance(value) is None or self.get_bias(value) is None:
             pass
@@ -143,38 +186,51 @@ class DPMechanism(DPMachine, ABC):
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
     def set_epsilon(self, epsilon):
-        """
-        Sets the value of epsilon to be used by the mechanism.
+        """Sets the value of epsilon to be used by the mechanism.
 
-        Epsilon be strictly positive, epsilon > 0.
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`\epsilon`-differential privacy with the mechanism.  Must have
+            `epsilon > 0`.
 
-        :param epsilon: Epsilon value for differential privacy.
-        :type epsilon: `float`
-        :return: self
+        Returns
+        -------
+        self : object
+
         """
-        if epsilon <= 0:
-            raise ValueError("Epsilon must be strictly positive")
 
         return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        """Sets the value of epsilon and delta to be used by the mechanism.
 
-        Epsilon must be non-negative, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
-        one or epsilon and delta must be non-zero.
+        `epsilon` and `delta` cannot both be zero.
 
-        Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given
-        when delta > 0.
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon >= 0`.
+        delta : float
+            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
+            Must have `0 <= delta <= 1`.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+            `delta=0` gives strict (pure) differential privacy (:math:`\epsilon`-differential privacy).  `delta > 0`
+            gives relaxed (approximate) differential privacy.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        ValueError
+            If `epsilon` is negative, or if `delta` falls outside [0,1], or if `epsilon` and `delta` are both zero.
+
         """
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
-            raise ValueError("Epsilon and delta must be numeric")
+            raise TypeError("Epsilon and delta must be numeric")
 
         if epsilon < 0:
             raise ValueError("Epsilon must be non-negative")
@@ -191,14 +247,22 @@ class DPMechanism(DPMachine, ABC):
         return self
 
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked.
-        :type value: Union[float, int, str]
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
+        Parameters
+        ----------
+        value : int or float or str or method
+
+        Returns
+        -------
+        True if the mechanism is ready to be used.
+
+        Raises
+        ------
+        Exception
+            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
+
         """
         del value
         if self._epsilon is None:
@@ -224,14 +288,20 @@ class TruncationAndFoldingMachine:
         return output
 
     def set_bounds(self, lower, upper):
-        """
-        Set the lower and upper bounds of the mechanism. Must satisfy lower <= upper.
+        """Sets the lower and upper bounds of the mechanism.
 
-        :param lower: Lower bound value.
-        :type lower: float
-        :param upper: Upper bound value.
-        :type upper: float
-        :return: self
+        Must have lower <= upper.
+
+        Parameters
+        ----------
+        lower : float
+            The lower bound of the mechanism.
+        upper : float
+            The upper bound of the mechanism.
+
+        Returns
+        -------
+        self : object
         """
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")
@@ -245,14 +315,17 @@ class TruncationAndFoldingMachine:
         return self
 
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
+        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is ready to be used.
-        :rtype: `bool`
+        Parameters
+        ----------
+        value : float
+
+        Returns
+        -------
+        True if the mechanism is ready to be used.
+
         """
         del value
         if (self._lower_bound is None) or (self._upper_bound is None):

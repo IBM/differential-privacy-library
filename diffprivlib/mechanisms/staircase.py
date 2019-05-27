@@ -7,7 +7,8 @@ from numbers import Real
 import numpy as np
 from numpy.random import geometric, random
 
-from diffprivlib.mechanisms import Laplace
+from diffprivlib.mechanisms.laplace import Laplace
+from diffprivlib.utils import copy_docstring
 
 
 class Staircase(Laplace):
@@ -23,15 +24,28 @@ class Staircase(Laplace):
         self._gamma = None
 
     def set_gamma(self, gamma):
-        """
-        Set tuning parameter gamma for the mechanism.
+        r"""Sets the tuning parameter :math:`\gamma` for the mechanism.
 
-        If not set, gamma defaults to minimise the expectation of the amplitude of noise,
-        gamma = 1 / (1 + exp(epsilon/2)) .
+        Must satisfy 0 <= `gamma` <= 1.  If not set, gamma defaults to minimise the expectation of the amplitude of
+        noise,
+        .. math:: \gamma = \frac{1}{1 + e^{\epsilon / 2}}
 
-        :param gamma: Gamma value of the mechanism.
-        :type gamma: `float`
-        :return: self
+        Parameters
+        ----------
+        gamma : float
+            Value of the tuning parameter gamma for the mechanism.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        TypeError
+            If `gamma` is not a float.
+        ValueError
+            If `gamma` is does not satisfy 0 <= `gamma` <= 1.
+
         """
         if not isinstance(gamma, Real):
             raise TypeError("Gamma must be numeric")
@@ -41,16 +55,8 @@ class Staircase(Laplace):
         self._gamma = float(gamma)
         return self
 
+    @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
-        """
-        Check that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        :param value: Value to be checked.
-        :type value: `float`
-        :return: True if the mechanism is correctly initialised.
-        :rtype: `bool`
-        """
         super().check_inputs(value)
 
         if self._gamma is None:
@@ -60,42 +66,39 @@ class Staircase(Laplace):
         return True
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set privacy parameters epsilon and delta for the mechanism.
+        r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
 
-        For the staircase mechanism, delta must be strictly zero.
+        For the staircase mechanism, `delta` must be zero and `epsilon` must be strictly positive.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
+        Parameters
+        ----------
+        epsilon : float
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            have `epsilon > 0`.
+        delta : float
+            For the staircase mechanism, `delta` must be zero.
+
+        Returns
+        -------
+        self : object
+
+        Raises
+        ------
+        ValueError
+            If `epsilon` is zero or negative, or if `delta` is non-zero.
+
         """
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
-        """
-        Get the bias of the mechanism at a given `value`.
-
-        :param value: The value at which the bias of the mechanism is sought.
-        :type value: `float`
-        :return: The bias of the mechanism at `value`.
-        :rtype: `float`
-        """
         return 0.0
 
+    @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        """
-        Randomise the given value using the mechanism.
-
-        :param value: Value to be randomised.
-        :type value: `float`
-        :return: Randomised value.
-        :rtype: `float`
-        """
         self.check_inputs(value)
 
         sign = -1 if random() < 0.5 else 1
