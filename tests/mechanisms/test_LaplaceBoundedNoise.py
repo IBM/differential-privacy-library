@@ -8,7 +8,7 @@ global_seed(3141592653)
 mech = LaplaceBoundedNoise()
 
 
-class TestLaplaceBoundedDomain(TestCase):
+class TestLaplaceBoundedNoise(TestCase):
     def test_not_none(self):
         self.assertIsNotNone(mech)
         _mech = mech.copy()
@@ -52,12 +52,12 @@ class TestLaplaceBoundedDomain(TestCase):
     def test_complex_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(TypeError):
-            _mech.set_epsilon(1+2j)
+            _mech.set_epsilon_delta(1+2j, 0.25)
 
     def test_string_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(TypeError):
-            _mech.set_epsilon("Two")
+            _mech.set_epsilon_delta("Two", 0.25)
 
     def test_no_delta(self):
         _mech = mech.copy().set_sensitivity(1)

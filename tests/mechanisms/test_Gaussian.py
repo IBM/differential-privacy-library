@@ -46,12 +46,12 @@ class TestGaussian(TestCase):
     def test_complex_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(TypeError):
-            _mech.set_epsilon(1+2j)
+            _mech.set_epsilon_delta(1+2j, 0.1)
 
     def test_string_epsilon(self):
         _mech = mech.copy()
         with self.assertRaises(TypeError):
-            _mech.set_epsilon("Two")
+            _mech.set_epsilon_delta("Two", 0.1)
 
     def test_non_numeric(self):
         _mech = mech.copy().set_sensitivity(1).set_epsilon_delta(0.5, 0.1)
