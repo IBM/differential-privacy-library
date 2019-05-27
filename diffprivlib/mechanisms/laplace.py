@@ -36,7 +36,7 @@ class Laplace(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(sensitivity, Real):
@@ -372,7 +372,7 @@ class LaplaceBoundedNoise(Laplace):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if epsilon == 0:

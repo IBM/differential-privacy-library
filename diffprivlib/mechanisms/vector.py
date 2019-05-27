@@ -39,7 +39,7 @@ class Vector(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -67,7 +67,7 @@ class Vector(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
@@ -92,7 +92,7 @@ class Vector(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(alpha, Real):
@@ -148,7 +148,8 @@ class Vector(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
+
         """
         if not isinstance(d, Real) or not np.isclose(d, int(d)):
             raise TypeError("d must be integer-valued")

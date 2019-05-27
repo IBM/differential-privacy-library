@@ -57,7 +57,7 @@ class Exponential(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -218,7 +218,7 @@ class Exponential(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -335,7 +335,7 @@ class ExponentialHierarchical(Exponential):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(list_hierarchy, list):

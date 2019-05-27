@@ -37,7 +37,7 @@ class Staircase(Laplace):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -80,7 +80,7 @@ class Staircase(Laplace):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------

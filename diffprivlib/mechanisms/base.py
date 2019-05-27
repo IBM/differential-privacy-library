@@ -39,7 +39,7 @@ class DPMachine(ABC):
 
         Returns
         -------
-        self : object
+        self : class
             Returns the copy.
 
         """
@@ -50,7 +50,7 @@ class DPMachine(ABC):
 
         Returns
         -------
-        self : object
+        self : class
             Returns the deep copy.
 
         """
@@ -67,7 +67,7 @@ class DPMachine(ABC):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         return self.set_epsilon_delta(epsilon, 0.0)
@@ -92,7 +92,7 @@ class DPMachine(ABC):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         pass
@@ -196,7 +196,7 @@ class DPMechanism(DPMachine, ABC):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
 
@@ -221,7 +221,7 @@ class DPMechanism(DPMachine, ABC):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -301,7 +301,8 @@ class TruncationAndFoldingMachine:
 
         Returns
         -------
-        self : object
+        self : class
+
         """
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")

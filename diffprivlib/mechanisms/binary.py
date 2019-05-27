@@ -44,7 +44,7 @@ class Binary(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(value0, str) or not isinstance(value1, str):

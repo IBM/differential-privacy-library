@@ -38,7 +38,7 @@ class Geometric(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(sensitivity, Integral):
@@ -91,7 +91,7 @@ class Geometric(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------
@@ -161,7 +161,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(lower, Integral) or not isinstance(upper, Integral):
@@ -208,7 +208,7 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):

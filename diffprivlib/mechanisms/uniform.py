@@ -35,7 +35,7 @@ class Uniform(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         Raises
         ------

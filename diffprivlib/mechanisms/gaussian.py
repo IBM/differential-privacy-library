@@ -38,7 +38,7 @@ class Gaussian(DPMechanism):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if epsilon == 0 or delta == 0:
