@@ -25,6 +25,15 @@ def global_seed(seed):
     np.random.seed(seed)
 
 
+def copy_docstring(source):
+    """Copy a docstring from another source function (if present)"""
+    def do_copy(target):
+        if source.__doc__:
+            target.__doc__ = source.__doc__
+        return target
+    return do_copy
+
+
 class PrivacyLeakWarning(RuntimeWarning):
     pass
 
