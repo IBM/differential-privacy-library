@@ -3,10 +3,10 @@ The uniform mechanism in differential privacy.
 """
 from numbers import Real
 
-from diffprivlib.mechanisms.laplace import Laplace
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.mechanisms.laplace import Laplace
 from diffprivlib.utils import copy_docstring
 
 

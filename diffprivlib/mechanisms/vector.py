@@ -4,10 +4,8 @@ The vector mechanism in differential privacy, for producing perturbed objectives
 from numbers import Real
 
 import numpy as np
-from diffprivlib.mechanisms.laplace import Laplace
 
 from diffprivlib.mechanisms import DPMechanism
-from diffprivlib.utils import copy_docstring
 
 
 class Vector(DPMechanism):

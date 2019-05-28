@@ -280,7 +280,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return 1 - 0.5 * np.exp(-value / self._scale)
 
     def get_effective_epsilon(self):
-        """Gets the effective epsilon of the mechanism.
+        r"""Gets the effective epsilon of the mechanism.
 
         Returns
         -------

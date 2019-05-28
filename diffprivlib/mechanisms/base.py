@@ -32,7 +32,6 @@ class DPMachine(ABC):
             The randomised value, same type as `value`.
 
         """
-        pass
 
     def copy(self):
         """Produces a copy of the class.
@@ -57,7 +56,7 @@ class DPMachine(ABC):
         return deepcopy(self)
 
     def set_epsilon(self, epsilon):
-        """Sets the value of epsilon to be used by the mechanism.
+        r"""Sets the value of epsilon to be used by the mechanism.
 
         Parameters
         ----------
@@ -74,7 +73,7 @@ class DPMachine(ABC):
 
     @abc.abstractmethod
     def set_epsilon_delta(self, epsilon, delta):
-        """Sets the value of epsilon and delta to be used by the mechanism.
+        r"""Sets the value of epsilon and delta to be used by the mechanism.
 
         `epsilon` and `delta` cannot both be zero.
 
@@ -95,7 +94,6 @@ class DPMachine(ABC):
         self : class
 
         """
-        pass
 
 
 class DPMechanism(DPMachine, ABC):
@@ -132,7 +130,6 @@ class DPMechanism(DPMachine, ABC):
             The randomised value, same type as `value`.
 
         """
-        pass
 
     def get_bias(self, value):
         """Returns the bias of the mechanism at a given `value`.
@@ -148,7 +145,6 @@ class DPMechanism(DPMachine, ABC):
             The bias of the mechanism at `value` if defined, `None` otherwise.
 
         """
-        pass
 
     def get_variance(self, value):
         """Returns the variance of the mechanism at a given `value`.
@@ -164,7 +160,6 @@ class DPMechanism(DPMachine, ABC):
             The variance of the mechanism at `value` if defined, `None` otherwise.
 
         """
-        pass
 
     def get_mse(self, value):
         """Returns the mean squared error (MSE) of the mechanism at a given `value`.
@@ -186,7 +181,7 @@ class DPMechanism(DPMachine, ABC):
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
     def set_epsilon(self, epsilon):
-        """Sets the value of epsilon to be used by the mechanism.
+        r"""Sets the value of epsilon to be used by the mechanism.
 
         Parameters
         ----------
@@ -203,7 +198,7 @@ class DPMechanism(DPMachine, ABC):
         return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
-        """Sets the value of epsilon and delta to be used by the mechanism.
+        r"""Sets the value of epsilon and delta to be used by the mechanism.
 
         `epsilon` and `delta` cannot both be zero.
 
