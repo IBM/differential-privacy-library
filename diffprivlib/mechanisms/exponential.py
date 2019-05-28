@@ -294,7 +294,6 @@ class ExponentialHierarchical(Exponential):
                 raise ValueError("Leaves of the hierarchy must all be at the same level " +
                                  "(node %s is at level %d instead of hierarchy height %d)" %
                                  (_hierarchy_locator.__str__(), len(_hierarchy_locator), hierarchy_height))
-        return None
 
     @staticmethod
     def _build_utility_list(hierarchy):

@@ -19,7 +19,7 @@ class Vector(DPMechanism):
         super().__init__()
         self._function_sensitivity = None
         self._data_sensitivity = 1
-        self._d = None
+        self._vector_dim = None
         self._alpha = 0.01
 
     def set_epsilon_delta(self, epsilon, delta):
@@ -128,20 +128,20 @@ class Vector(DPMechanism):
         if self._data_sensitivity is None or self._function_sensitivity is None:
             raise ValueError("Sensitivities must be set")
 
-        if self._d is None:
+        if self._vector_dim is None:
             raise ValueError("Dimension d must be set")
 
         return True
 
-    def set_dimension(self, d):
-        """Sets the dimension `d` of the domain of the mechanism.
+    def set_dimension(self, vector_dim):
+        """Sets the dimension `vector_dim` of the domain of the mechanism.
 
         This dimension relates to the size of the input vector of the function being considered by the mechanism. This
         corresponds to the size of the random vector produced by the mechanism.
 
         Parameters
         ----------
-        d : int
+        vector_dim : int
             Function input dimension.
 
         Returns
@@ -149,12 +149,12 @@ class Vector(DPMechanism):
         self : class
 
         """
-        if not isinstance(d, Real) or not np.isclose(d, int(d)):
+        if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
             raise TypeError("d must be integer-valued")
-        if not d >= 1:
+        if not vector_dim >= 1:
             raise ValueError("d must be strictly positive")
 
-        self._d = int(d)
+        self._vector_dim = int(vector_dim)
         return self
 
     def randomise(self, value):
@@ -176,22 +176,20 @@ class Vector(DPMechanism):
         """
         self.check_inputs(value)
 
-        c = self._function_sensitivity
-        g = self._data_sensitivity
-        a = self._alpha
-
-        epsilon_p = self._epsilon - 2 * np.log(1 + c * g / (0.5 * a))
+        epsilon_p = self._epsilon - 2 * np.log(1 + self._function_sensitivity * self._data_sensitivity /
+                                               (0.5 * self._alpha))
         delta = 0
 
         if epsilon_p <= 0:
-            delta = c * g / (np.exp(self._epsilon / 4) - 1) - 0.5 * a
+            delta = (self._function_sensitivity * self._data_sensitivity / (np.exp(self._epsilon / 4) - 1)
+                     - 0.5 * self._alpha)
             epsilon_p = self._epsilon / 2
 
-        scale = epsilon_p / 2 / g
+        scale = epsilon_p / 2 / self._data_sensitivity
 
-        normed_noisy_vector = np.random.normal(0, 1, self._d)
+        normed_noisy_vector = np.random.normal(0, 1, self._vector_dim)
         norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = np.random.gamma(self._d, 1 / scale, 1)
+        noisy_norm = np.random.gamma(self._vector_dim, 1 / scale, 1)
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 

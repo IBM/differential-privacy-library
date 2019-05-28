@@ -35,10 +35,27 @@ def copy_docstring(source):
 
 
 class PrivacyLeakWarning(RuntimeWarning):
+    """Custom warning to capture privacy leaks resulting from incorrect parameter setting.
+
+    For example, this warning may occur when the user
+        - fails to specify the bounds or range of data to a model where required (e.g., `bounds=None` to
+        :class:`.GaussianNB`).
+        - inputs data to a model that falls outside the bounds or range originally specified.
+
+    """
     pass
 
 
 class DiffprivlibCompatibilityWarning(RuntimeWarning):
+    """Custom warning to capture inherited class arguments that are not compatible with diffprivlib.
+
+    For example, this warning may occur when the user
+        - passes a parameter value that is not compatible with diffprivlib (e.g., `solver='liblinear'` to
+        :class:`.LogisticRegression`)
+        - specifies a non-default value for a parameter that is ignored by diffprivlib (e.g., `intercept_scaling=0.5`
+        to :class:`.LogisticRegression`.
+
+    """
     pass
 
 

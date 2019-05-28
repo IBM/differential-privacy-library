@@ -509,6 +509,10 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
         warnings.warn("For diffprivlib, max_squared_sum is not used. Set to None to suppress this warning.",
                       DiffprivlibCompatibilityWarning)
         del max_squared_sum
+    if random_state is not None:
+        warnings.warn("For diffprivlib, random_state is not used. Set to None to suppress this warning.",
+                      DiffprivlibCompatibilityWarning)
+        del random_state
 
     if isinstance(Cs, numbers.Integral):
         Cs = np.logspace(-4, 4, int(Cs))
@@ -524,7 +528,7 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
         X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=solver != 'liblinear')
         y = check_array(y, ensure_2d=False, dtype=None)
         check_consistent_length(X, y)
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
 
     classes = np.unique(y)
 
@@ -564,9 +568,9 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
         noisy_logistic_loss = vector_mech.randomise(linear_model.logistic._logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
-        w0, loss, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
-                                                args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
-                                                maxiter=max_iter)
+        w0, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
+                                             args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
+                                             maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 
