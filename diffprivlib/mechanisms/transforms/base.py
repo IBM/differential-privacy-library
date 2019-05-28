@@ -1,7 +1,7 @@
 """
 Core utilities for DP transformers.
 """
-from ..base import DPMachine
+from diffprivlib.mechanisms.base import DPMachine
 
 
 class DPTransformer(DPMachine):

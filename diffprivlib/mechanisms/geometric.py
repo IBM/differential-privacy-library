@@ -6,7 +6,7 @@ from numbers import Integral
 import numpy as np
 from numpy.random import random
 
-from diffprivlib.mechanisms import DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMachine
 from diffprivlib.utils import copy_docstring
 
 

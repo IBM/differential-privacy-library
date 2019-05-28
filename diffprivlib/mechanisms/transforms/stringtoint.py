@@ -1,7 +1,7 @@
 """
 StringToInt DP transformer, for using string-valued data with integer-valued mechanisms.
 """
-from diffprivlib.mechanisms.transforms import DPTransformer
+from diffprivlib.mechanisms.transforms.base import DPTransformer
 
 
 class StringToInt(DPTransformer):

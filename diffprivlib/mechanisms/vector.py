@@ -5,7 +5,7 @@ from numbers import Real
 
 import numpy as np
 
-from diffprivlib.mechanisms import DPMechanism
+from diffprivlib.mechanisms.base import DPMechanism
 
 
 class Vector(DPMechanism):
