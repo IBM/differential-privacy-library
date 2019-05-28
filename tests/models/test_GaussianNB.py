@@ -13,12 +13,20 @@ class TestGaussianNB(TestCase):
         self.assertIsNotNone(clf)
 
     def test_zero_epsilon(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+        clf = GaussianNB(epsilon=0, bounds=[(0, 1)])
+
         with self.assertRaises(ValueError):
-            GaussianNB(epsilon=0, bounds=[(0, 1)])
+            clf.fit(X, y)
 
     def test_neg_epsilon(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+        clf = GaussianNB(epsilon=-1, bounds=[(0, 1)])
+
         with self.assertRaises(ValueError):
-            GaussianNB(epsilon=-1, bounds=[(0, 1)])
+            clf.fit(X, y)
 
     def test_mis_ordered_bounds(self):
         with self.assertRaises(ValueError):
@@ -27,11 +35,12 @@ class TestGaussianNB(TestCase):
     def test_no_bounds(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
+        clf = GaussianNB()
 
         with self.assertWarns(PrivacyLeakWarning):
-            clf = GaussianNB()
+            clf.fit(X, y)
 
-        self.assertIsNotNone(clf.fit(X, y))
+        self.assertIsNotNone(clf)
 
     def test_missing_bounds(self):
         X = np.random.random((10, 2))

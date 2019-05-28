@@ -16,14 +16,7 @@ class GaussianNB(sk_nb.GaussianNB):
     def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
         super().__init__(priors, var_smoothing)
 
-        if not isinstance(epsilon, Real) or epsilon <= 0.0:
-            raise ValueError("Epsilon must be specified as a positive float.")
-
-        if bounds is None:
-            warnings.warn("Bounds have not been specified and will be calculated on the data when fit() is first "
-                          "called. This will result in additional privacy leakage. To ensure differential privacy and "
-                          "no additional privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        else:
+        if bounds is not None:
             if not isinstance(bounds, list):
                 raise ValueError("Bounds must be specified as a list of tuples.")
 
@@ -39,14 +32,17 @@ class GaussianNB(sk_nb.GaussianNB):
 
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
         # Store size of current X to apply differential privacy later on
-        self.new_X_n = X.shape[0]
+        self.new_n_samples = X.shape[0]
 
         if self.bounds is None:
+            warnings.warn("Bounds have not been specified and will be calculated on the data when fit() is first "
+                          "called. This will result in additional privacy leakage. To ensure differential privacy and "
+                          "no additional privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
         super()._partial_fit(X, y, classes, _refit, sample_weight)
 
-        del self.new_X_n
+        del self.new_n_samples
         return self
 
     def _update_mean_variance(self, n_past, mu, var, X, sample_weight=None):
@@ -95,15 +91,14 @@ class GaussianNB(sk_nb.GaussianNB):
         if sample_weight is not None:
             n_new = float(sample_weight.sum())
             new_mu = np.average(X, axis=0, weights=sample_weight / n_new)
-            new_var = np.average((X - new_mu) ** 2, axis=0,
-                                 weights=sample_weight / n_new)
+            new_var = np.average((X - new_mu) ** 2, axis=0, weights=sample_weight / n_new)
         else:
             n_new = X.shape[0]
             new_var = np.var(X, axis=0)
             new_mu = np.mean(X, axis=0)
 
         # Apply differential privacy to the new means and variances
-        new_mu, new_var = self._randomise(new_mu, new_var, self.new_X_n)
+        new_mu, new_var = self._randomise(new_mu, new_var, self.new_n_samples)
 
         if n_past == 0:
             return new_mu, new_var
@@ -119,14 +114,12 @@ class GaussianNB(sk_nb.GaussianNB):
         # the sum-of-squared-differences (ssd)
         old_ssd = n_past * var
         new_ssd = n_new * new_var
-        total_ssd = (old_ssd + new_ssd +
-                     (n_past / float(n_new * n_total)) *
-                     (n_new * mu - n_new * new_mu) ** 2)
+        total_ssd = old_ssd + new_ssd + (n_past / float(n_new * n_total)) * (n_new * mu - n_new * new_mu) ** 2
         total_var = total_ssd / n_total
 
         return total_mu, total_var
 
-    def _randomise(self, mu, var, n):
+    def _randomise(self, mu, var, n_samples):
         features = var.shape[0]
 
         local_epsilon = self.epsilon / 2
@@ -135,13 +128,14 @@ class GaussianNB(sk_nb.GaussianNB):
         if len(self.bounds) != features:
             raise ValueError("Bounds must be specified for each feature dimension")
 
-        new_mu = np.zeros_like(mu)
-        new_var = np.zeros_like(var)
+        # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+        new_mu = np.array(np.zeros_like(mu))
+        new_var = np.array(np.zeros_like(var))
 
         for feature in range(features):
             local_diameter = self.bounds[feature][1] - self.bounds[feature][0]
-            mech_mu = Laplace().set_sensitivity(local_diameter / n).set_epsilon(local_epsilon)
-            mech_var = LaplaceBoundedDomain().set_sensitivity((n - 1) * local_diameter ** 2 / n ** 2)\
+            mech_mu = Laplace().set_sensitivity(local_diameter / n_samples).set_epsilon(local_epsilon)
+            mech_var = LaplaceBoundedDomain().set_sensitivity((n_samples - 1) * local_diameter ** 2 / n_samples ** 2)\
                 .set_epsilon(local_epsilon).set_bounds(0, float("inf"))
 
             new_mu[feature] = mech_mu.randomise(mu[feature])

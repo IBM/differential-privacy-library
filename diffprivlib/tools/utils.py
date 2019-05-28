@@ -61,7 +61,8 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
         raise ValueError("Shape of range must be same as shape of np.mean")
 
     if isinstance(actual_mean, np.ndarray):
-        dp_mean = np.zeros_like(actual_mean)
+        # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+        dp_mean = np.array(np.zeros_like(actual_mean))
         iterator = np.nditer(actual_mean, flags=['multi_index'])
 
         while not iterator.finished:
@@ -127,7 +128,8 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
         raise ValueError("Shape of range must be same as shape of np.var()")
 
     if isinstance(actual_var, np.ndarray):
-        dp_var = np.zeros_like(actual_var)
+        # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+        dp_var = np.array(np.zeros_like(actual_var))
         iterator = np.nditer(actual_var, flags=['multi_index'])
 
         while not iterator.finished:

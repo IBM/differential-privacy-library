@@ -292,7 +292,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C", accept_large_sparse=solver != 'liblinear')
         check_classification_targets(y)
         self.classes_ = np.unique(y)
-        n_samples, n_features = X.shape
+        _, n_features = X.shape
 
         multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 

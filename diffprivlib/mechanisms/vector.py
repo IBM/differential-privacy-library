@@ -151,7 +151,7 @@ class Vector(DPMechanism):
         """
         if not isinstance(d, Real) or not np.isclose(d, int(d)):
             raise TypeError("d must be integer-valued")
-        elif not d >= 1:
+        if not d >= 1:
             raise ValueError("d must be strictly positive")
 
         self._d = int(d)

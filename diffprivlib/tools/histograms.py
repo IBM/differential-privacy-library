@@ -56,7 +56,8 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
     dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
-    dp_hist = np.zeros_like(hist)
+    # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+    dp_hist = np.array(np.zeros_like(hist))
 
     for i in np.arange(dp_hist.shape[0]):
         dp_hist[i] = dp_mech.randomise(int(hist[i]))
@@ -126,7 +127,8 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
 
     dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
-    dp_hist = np.zeros_like(hist)
+    # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+    dp_hist = np.array(np.zeros_like(hist))
     iterator = np.nditer(hist, flags=['multi_index'])
 
     while not iterator.finished:
@@ -275,7 +277,7 @@ def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=Non
     except TypeError:
         num_bins = 1
 
-    if num_bins != 1 and num_bins != 2:
+    if num_bins not in (1, 2):
         xedges = yedges = np.asarray(bins)
         bins = [xedges, yedges]
 

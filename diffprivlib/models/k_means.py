@@ -33,7 +33,7 @@ class KMeans(BaseEstimator):
         centers = self._init_centers(dims)
 
         for _ in range(iters):
-            distances, labels = self._distances_labels(X, centers)
+            labels = self._distances_labels(X, centers)[1]
 
             centers = self._update_centers(X, centers, labels, dims)
 
@@ -98,8 +98,8 @@ class KMeans(BaseEstimator):
 
             if cluster >= self.n_clusters:
                 return centers
-            else:
-                cluster_proximity /= 2.0
+
+            cluster_proximity /= 2.0
 
         return None
 

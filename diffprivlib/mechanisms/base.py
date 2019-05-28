@@ -331,7 +331,7 @@ class TruncationAndFoldingMachine:
     def _truncate(self, value):
         if value > self._upper_bound:
             return self._upper_bound
-        elif value < self._lower_bound:
+        if value < self._lower_bound:
             return self._lower_bound
 
         return value
