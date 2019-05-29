@@ -5,10 +5,58 @@ from sklearn import cluster as skcluster
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 from diffprivlib.models.utils import _check_bounds
-from diffprivlib.utils import DiffprivlibCompatibilityWarning, PrivacyLeakWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 class KMeans(skcluster.KMeans):
+    """K-Means clustering with differential privacy
+
+    Parameters
+    ----------
+    epsilon : float, optional, default: 1.0
+
+    bounds : list or None, optional, default: None
+
+    n_clusters : int, optional, default: 8
+        The number of clusters to form as well as the number of centroids to generate.
+
+    unused_args :
+        Placeholder for arguments used by sklearn.KMeans, but not used by diffprivlib. Specifying any of these
+        parameters will result in a DiffprivlibCompatibilityWarning.
+
+    Attributes
+    ----------
+    cluster_centers_ : array, [n_clusters, n_features]
+        Coordinates of cluster centers. If the algorithm stops before fully
+        converging (see ``tol`` and ``max_iter``), these will not be
+        consistent with ``labels_``.
+
+    labels_ :
+        Labels of each point
+
+    inertia_ : float
+        Sum of squared distances of samples to their closest cluster center.
+
+    n_iter_ : int
+        Number of iterations run.
+
+    Examples
+    --------
+
+    >>> from diffprivlib.models import KMeans
+    >>> import numpy as np
+    >>> X = np.array([[1, 2], [1, 4], [0, 3],
+    ...               [10, 2], [10, 4], [9, 3]])
+    >>> kmeans = KMeans(bounds=[(0,10), (2, 4)], n_clusters=2).fit(X)
+    >>> kmeans.labels_
+    array([1, 1, 1, 0, 0, 0], dtype=int32)
+    >>> kmeans.predict([[0, 0], [12, 3]])
+    array([1, 0], dtype=int32)
+    >>> kmeans.cluster_centers_
+    array([[10.,  2.],
+           [ 1.,  2.]])
+
+    """
     def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, **unused_args):
         self.epsilon = epsilon
         self.bounds = bounds
@@ -22,25 +70,29 @@ class KMeans(skcluster.KMeans):
         self.inertia_ = None
         self.n_iter_ = None
 
-    def fit(self, X, y=None, sample_weight=None):
-        """
+    def fit(self, X, y=None, **unused_args):
+        """Computes k-means clustering with differential privacy.
 
         Parameters
         ----------
-        X : array-like
-        y
-        sample_weight
+        X : array-like, shape=(n_samples, n_features)
+            Training instances to cluster.
+
+        y : Ignored
+            not used, present here for API consistency by convention.
+
+        unused_args :
+            Placeholder for arguments present in sklearn.KMeans, but not used in diffprivlib.  Specifying any of these
+            parameters will result in a DiffprivlibCompatibilityWarning.
 
         Returns
         -------
+        self : class
 
         """
-        if sample_weight is not None:
-            warnings.warn("For diffprivlib, sample_weight is not used. Remove or set to None to suppress this warning.",
-                          DiffprivlibCompatibilityWarning)
-            del sample_weight
-
+        warn_unused_args(unused_args)
         del y
+
         # Todo: Determine iters on-the-fly as a function of epsilon
         iters = 7
 
@@ -55,7 +107,6 @@ class KMeans(skcluster.KMeans):
             warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
-            # Add slack to guard against features with
             self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
         self.bounds = _check_bounds(self.bounds, dims)
@@ -67,7 +118,7 @@ class KMeans(skcluster.KMeans):
         for _ in range(iters):
             distances, labels = self._distances_labels(X, centers)
 
-            centers = self._update_centers(X, centers, labels, dims)
+            centers = self._update_centers(X, centers=centers, labels=labels, dims=dims, total_iters=iters)
 
         self.cluster_centers_ = centers
         self.labels_ = labels
@@ -132,8 +183,15 @@ class KMeans(skcluster.KMeans):
         labels = np.argmin(distances, axis=1)
         return distances, labels
 
-    def _update_centers(self, X, centers, labels, dims):
-        epsilon_0, epsilon_i = self._split_epsilon(dims)
+    def _update_centers(self, X, centers, labels, dims, total_iters):
+        """Updates the centers of the KMeans algorithm for the current iteration, while satisfying differential
+        privacy.
+
+        Differential privacy is satisfied by adding (geometric) random noise to the count of nearest neighbours to the
+        previous cluster centers, and adding (Laplacian) random noise to the sum of values per dimension.
+
+        """
+        epsilon_0, epsilon_i = self._split_epsilon(dims, total_iters)
         geometric_mech = GeometricFolded().set_sensitivity(1).set_bounds(0.5, float("inf")).set_epsilon(epsilon_0)
         laplace_mech = LaplaceBoundedDomain().set_epsilon(epsilon_i)
 
@@ -156,13 +214,15 @@ class KMeans(skcluster.KMeans):
 
         return centers
 
-    def _split_epsilon(self, dims, rho=0.225):
+    def _split_epsilon(self, dims, total_iters, rho=0.225):
         """Split epsilon between sum perturbation and count perturbation, as proposed by Su et al.
 
         Parameters
         ----------
         dims : int
             Number of dimensions to split epsilon across.
+        total_iters : int
+            Total number of iterations to split epsilon across.
         rho : float, default 0.225
             Coordinate normalisation factor.
 
@@ -177,6 +237,6 @@ class KMeans(skcluster.KMeans):
         epsilon_i = 1
         epsilon_0 = np.cbrt(4 * dims * rho ** 2)
 
-        normaliser = self.epsilon / (epsilon_i * dims + epsilon_0)
+        normaliser = self.epsilon / total_iters / (epsilon_i * dims + epsilon_0)
 
         return epsilon_i * normaliser, epsilon_0 * normaliser

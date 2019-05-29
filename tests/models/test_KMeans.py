@@ -12,7 +12,7 @@ class TestKMeans(TestCase):
         self.assertIsNotNone(KMeans)
 
     def test_simple(self):
-        clf = KMeans(1, [(0, 1)], 3)
+        clf = KMeans(5, [(0, 1)], 3)
 
         X = np.zeros(1000) + 0.1
         X[:666] = 0.5
@@ -47,7 +47,7 @@ class TestKMeans(TestCase):
             clf.fit(X)
 
     def test_predict(self):
-        clf = KMeans(10, [(0, 1)], 3)
+        clf = KMeans(30, [(0, 1)], 3)
 
         X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
         clf.fit(X)
