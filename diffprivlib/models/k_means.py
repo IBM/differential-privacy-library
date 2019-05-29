@@ -1,60 +1,79 @@
+import warnings
+
 import numpy as np
+from sklearn import cluster as skcluster
 
-from sklearn.base import BaseEstimator
-
-
-# noinspection PyPep8Naming
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
+from diffprivlib.utils import DiffprivlibCompatibilityWarning, PrivacyLeakWarning, warn_unused_args
 
 
-# noinspection PyPep8Naming
-class KMeans(BaseEstimator):
-    def __init__(self, epsilon, bounds, n_clusters=8, verbose=0):
+class KMeans(skcluster.KMeans):
+    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, **unused_args):
         self.epsilon = epsilon
         self.bounds = bounds
-        self.bounds_processed = None
         self.n_clusters = n_clusters
-        self.verbose = verbose
-        self.fitted_centers = None
+
+        warn_unused_args(unused_args)
+
+        self.cluster_centers_ = None
+        self.bounds_processed = None
+        self.labels_ = None
+        self.inertia_ = None
+        self.n_iter_ = None
 
     def fit(self, X, y=None, sample_weight=None):
-        del y, sample_weight
+        """
+
+        Parameters
+        ----------
+        X : array-like
+        y
+        sample_weight
+
+        Returns
+        -------
+
+        """
+        if sample_weight is not None:
+            warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.",
+                          DiffprivlibCompatibilityWarning)
+            del sample_weight
+
+        del y
         # Todo: Determine iters on-the-fly as a function of epsilon
         iters = 7
 
-        if len(X.shape) == 1:
-            X = X.reshape(X.shape[0], 1)
+        if X.ndim != 2:
+            raise ValueError(
+                "Expected 2D array, got array with %d dimensions instead. Reshape your data using array.reshape(-1, 1),"
+                "or array.reshape(1, -1) if your data contains only one sample." % X.ndim)
 
         dims = X.shape[1]
+
+        if self.bounds is None:
+            warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
+            self.bounds = list(zip(np.min(X, axis=0) - 1e-5, np.max(X, axis=0) + 1e-5))
 
         if len(self.bounds) != dims:
             raise ValueError("Number of dimensions of X must match number of bounds")
 
         centers = self._init_centers(dims)
+        labels = None
+        distances = None
 
         for _ in range(iters):
-            labels = self._distances_labels(X, centers)[1]
+            distances, labels = self._distances_labels(X, centers)
 
             centers = self._update_centers(X, centers, labels, dims)
 
-        self.fitted_centers = centers
+        self.cluster_centers_ = centers
+        self.labels_ = labels
+        self.inertia_ = distances[np.arange(len(labels)), labels].sum()
+        self.n_iter_ = iters
 
-        return centers
-
-    def fit_predict(self, X, y=None, sample_weight=None):
-        del y, sample_weight
-        self.fit(X)
-        return self.predict(X)
-
-    def predict(self, X, sample_weight=None):
-        del sample_weight
-        if self.fitted_centers is None:
-            raise ValueError("Classifier not fitted yet. Run `.fit()` with training data first.")
-
-        if len(X.shape) == 1:
-            X = X.reshape(X.shape[0], 1)
-
-        return self._distances_labels(X, self.fitted_centers)[1]
+        return self
 
     def _init_centers(self, dims):
         # Todo: Fix to ensure initialised centers are at least a distance d from the domain boundaries, and 2d from
@@ -114,15 +133,8 @@ class KMeans(BaseEstimator):
 
     def _update_centers(self, X, centers, labels, dims):
         epsilon_0, epsilon_i = self._split_epsilon(dims)
-        # laplace_mechs = []
         geometric_mech = GeometricFolded().set_sensitivity(1).set_bounds(0.5, float("inf")).set_epsilon(epsilon_0)
         laplace_mech = LaplaceBoundedDomain().set_epsilon(epsilon_i)
-
-        # for i in range(dims):
-        #     laplace_mechs.append(LaplaceBoundedDomain()
-        #                          .set_sensitivity(self.bounds[i][1] - self.bounds[i][0])
-        #                          .set_bounds(self.bounds[i][0], self.bounds[i][1])
-        #                          .set_epsilon(epsilon_i))
 
         for cluster in range(self.n_clusters):
             if cluster not in labels:
@@ -135,26 +147,32 @@ class KMeans(BaseEstimator):
             noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
-                _mech = laplace_mech.copy().set_sensitivity(self.bounds[i][1] - self.bounds[i][0])\
+                laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0])\
                     .set_bounds(noisy_count * self.bounds[i][0], noisy_count * self.bounds[i][1])
-                noisy_sum[i] = _mech.randomise(cluster_sum[i])
+                noisy_sum[i] = laplace_mech.randomise(cluster_sum[i])
 
             centers[cluster, :] = noisy_sum / noisy_count
 
         return centers
 
     def _split_epsilon(self, dims, rho=0.225):
-        """
-        Split epsilon between sum perturbation and count perturbation, as proposed by Su et al.
+        """Split epsilon between sum perturbation and count perturbation, as proposed by Su et al.
 
-        Paper link: http://delivery.acm.org/10.1145/2860000/2857708/p26-su.pdf
-        :param dims: Number of dimensions to split epsilon between
-        :type dims: int
-        :param rho: Coordinate normalisation factor, default 0.225
-        :type rho: float
-        :return: (epsilon_0, epsilon_i)
-        """
+        Parameters
+        ----------
+        dims : int
+            Number of dimensions to split epsilon across.
+        rho : float, default 0.225
+            Coordinate normalisation factor.
 
+        Returns
+        -------
+        epsilon_0 : float
+            The epsilon value for satisfying differential privacy on the count of a cluster.
+        epsilon_i : float
+            The epsilon value for satisfying differential privacy on each dimension of the center of a cluster.
+
+        """
         epsilon_i = 1
         epsilon_0 = np.cbrt(4 * dims * rho ** 2)
 
