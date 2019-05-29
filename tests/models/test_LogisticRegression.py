@@ -35,26 +35,12 @@ class TestLogisticRegression(TestCase):
         self.assertIsNotNone(clf.fit(X, y))
 
     def test_solver_warning(self):
-        X = np.array(
-            [0.50, 0.75, 1.00])
-        y = np.array([0, 1, 2])
-        X = X[:, np.newaxis]
-
-        clf = LogisticRegression(solver="newton-cg")
-
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            clf.fit(X, y)
+            clf = LogisticRegression(solver="newton-cg")
 
     def test_multi_class_warning(self):
-        X = np.array(
-            [0.50, 0.75, 1.00])
-        y = np.array([0, 1, 2])
-        X = X[:, np.newaxis]
-
-        clf = LogisticRegression(multi_class="multinomial")
-
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            clf.fit(X, y)
+            clf = LogisticRegression(multi_class="multinomial")
 
     def test_different_results(self):
         from sklearn import datasets

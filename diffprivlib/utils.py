@@ -28,10 +28,18 @@ def global_seed(seed):
 def copy_docstring(source):
     """Copy a docstring from another source function (if present)"""
     def do_copy(target):
-        if source.__doc__:
+        if source.__doc__ and not target.__doc__:
             target.__doc__ = source.__doc__
         return target
     return do_copy
+
+
+def warn_unused_args(args_dict):
+    """Warn the user about supplying unused args to a diffprivlib model."""
+
+    for key in args_dict:
+        warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
+                      "warning." % key, DiffprivlibCompatibilityWarning)
 
 
 class PrivacyLeakWarning(RuntimeWarning):
@@ -43,7 +51,6 @@ class PrivacyLeakWarning(RuntimeWarning):
         - inputs data to a model that falls outside the bounds or range originally specified.
 
     """
-    pass
 
 
 class DiffprivlibCompatibilityWarning(RuntimeWarning):
@@ -56,7 +63,6 @@ class DiffprivlibCompatibilityWarning(RuntimeWarning):
         to :class:`.LogisticRegression`.
 
     """
-    pass
 
 
 warnings.simplefilter('always', PrivacyLeakWarning)
