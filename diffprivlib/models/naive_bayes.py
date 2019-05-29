@@ -35,9 +35,9 @@ class GaussianNB(sk_nb.GaussianNB):
         self.new_n_samples = X.shape[0]
 
         if self.bounds is None:
-            warnings.warn("Bounds have not been specified and will be calculated on the data when fit() is first "
-                          "called. This will result in additional privacy leakage. To ensure differential privacy and "
-                          "no additional privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+            warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
         super()._partial_fit(X, y, classes, _refit, sample_weight)
