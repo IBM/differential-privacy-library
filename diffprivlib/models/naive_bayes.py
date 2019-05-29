@@ -11,8 +11,46 @@ from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning
 
 
-# noinspection PyPep8Naming
 class GaussianNB(sk_nb.GaussianNB):
+    """Gaussian Naive Bayes (GaussianNB) with differential privacy
+
+    Can perform online updates to model parameters via `partial_fit` method.
+    For details on algorithm used to update feature means and variance online,
+    see Stanford CS tech report STAN-CS-79-773 by Chan, Golub, and LeVeque:
+
+        http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
+
+    Parameters
+    ----------
+    epsilon : float, default: 1.0
+
+    priors : array-like, shape (n_classes,)
+        Prior probabilities of the classes. If specified the priors are not
+        adjusted according to the data.
+
+    var_smoothing : float, optional (default=1e-9)
+        Portion of the largest variance of all features that is added to
+        variances for calculation stability.
+
+    Attributes
+    ----------
+    class_prior_ : array, shape (n_classes,)
+        probability of each class.
+
+    class_count_ : array, shape (n_classes,)
+        number of training samples observed in each class.
+
+    theta_ : array, shape (n_classes, n_features)
+        mean of each feature per class
+
+    sigma_ : array, shape (n_classes, n_features)
+        variance of each feature per class
+
+    epsilon_ : float
+        absolute additive value to variances
+
+    """
+
     def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
         super().__init__(priors, var_smoothing)
 
@@ -111,6 +149,7 @@ class GaussianNB(sk_nb.GaussianNB):
         return total_mu, total_var
 
     def _randomise(self, mu, var, n_samples):
+        """Randomises the learned means and variances subject to differential privacy."""
         features = var.shape[0]
 
         local_epsilon = self.epsilon / 2

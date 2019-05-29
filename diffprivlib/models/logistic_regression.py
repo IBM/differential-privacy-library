@@ -1,3 +1,6 @@
+"""
+Logistic Regression classifier satisfying differential privacy.
+"""
 import numbers
 import warnings
 
@@ -38,7 +41,8 @@ class LogisticRegression(linear_model.LogisticRegression):
     Parameters
     ----------
     epsilon : float, default 1.0
-        Privacy parameter epsilon
+        Privacy parameter epsilon.
+
     penalty : 'l2', default: 'l2'
         Used to specify the norm used in the penalization. For diffprivlib, penalty must be 'l2'.
 
@@ -160,6 +164,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         Machine Learning 85(1-2):41-75.
         https://www.csie.ntu.edu.tw/~cjlin/papers/maxent_dual.pdf
     """
+
     def __init__(self, epsilon=1.0, data_norm=1.0, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
                  warm_start=False, n_jobs=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,

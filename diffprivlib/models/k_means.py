@@ -1,3 +1,6 @@
+"""
+K-means clustering algorithm satisfying differential privacy.
+"""
 import warnings
 
 import numpy as np
@@ -14,8 +17,11 @@ class KMeans(skcluster.KMeans):
     Parameters
     ----------
     epsilon : float, optional, default: 1.0
+        Privacy parameter epsilon.
 
     bounds : list or None, optional, default: None
+        Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
+        are computed on the data when .fit() is first called, resulting in a `PrivacyLeakWarning`.
 
     n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of centroids to generate.
@@ -57,10 +63,12 @@ class KMeans(skcluster.KMeans):
            [ 1.,  2.]])
 
     """
+
     def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, **unused_args):
+        super().__init__(n_clusters=n_clusters)
+
         self.epsilon = epsilon
         self.bounds = bounds
-        self.n_clusters = n_clusters
 
         warn_unused_args(unused_args)
 
@@ -203,7 +211,8 @@ class KMeans(skcluster.KMeans):
             noisy_count = geometric_mech.randomise(cluster_count)
 
             cluster_sum = np.sum(X[labels == cluster], axis=0)
-            noisy_sum = np.zeros_like(cluster_sum)
+            # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
+            noisy_sum = np.array(np.zeros_like(cluster_sum))
 
             for i in range(dims):
                 laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0])\

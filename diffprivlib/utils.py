@@ -1,5 +1,5 @@
 """
-Basic functions and other utilities for the library
+Basic functions and other utilities for the differential privacy library
 """
 import abc
 import sys
