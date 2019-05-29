@@ -3,11 +3,11 @@ Gaussian Naive Bayes classifier satisfying differential privacy
 """
 import warnings
 
-from numbers import Real
 import numpy as np
 import sklearn.naive_bayes as sk_nb
 
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
+from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning
 
 
@@ -15,17 +15,6 @@ from diffprivlib.utils import PrivacyLeakWarning
 class GaussianNB(sk_nb.GaussianNB):
     def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
         super().__init__(priors, var_smoothing)
-
-        if bounds is not None:
-            if not isinstance(bounds, list):
-                raise ValueError("Bounds must be specified as a list of tuples.")
-
-            for bound in bounds:
-                if not isinstance(bound, tuple):
-                    raise TypeError("Bounds must be specified as a list of tuples")
-                if not isinstance(bound[0], Real) or not isinstance(bound[1], Real) or bound[0] >= bound[1]:
-                    raise ValueError("For each feature bound, lower bound must be strictly lower than upper bound"
-                                     "(error found in bound %s" % str(bound))
 
         self.epsilon = epsilon
         self.bounds = bounds
@@ -39,6 +28,8 @@ class GaussianNB(sk_nb.GaussianNB):
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
+
+        self.bounds = _check_bounds(self.bounds, X.shape[1])
 
         super()._partial_fit(X, y, classes, _refit, sample_weight)
 

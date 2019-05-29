@@ -4,6 +4,7 @@ import numpy as np
 from sklearn import cluster as skcluster
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
+from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import DiffprivlibCompatibilityWarning, PrivacyLeakWarning, warn_unused_args
 
 
@@ -35,7 +36,7 @@ class KMeans(skcluster.KMeans):
 
         """
         if sample_weight is not None:
-            warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.",
+            warnings.warn("For diffprivlib, sample_weight is not used. Remove or set to None to suppress this warning.",
                           DiffprivlibCompatibilityWarning)
             del sample_weight
 
@@ -54,10 +55,10 @@ class KMeans(skcluster.KMeans):
             warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
-            self.bounds = list(zip(np.min(X, axis=0) - 1e-5, np.max(X, axis=0) + 1e-5))
+            # Add slack to guard against features with
+            self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
-        if len(self.bounds) != dims:
-            raise ValueError("Number of dimensions of X must match number of bounds")
+        self.bounds = _check_bounds(self.bounds, dims)
 
         centers = self._init_centers(dims)
         labels = None

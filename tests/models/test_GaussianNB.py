@@ -29,8 +29,13 @@ class TestGaussianNB(TestCase):
             clf.fit(X, y)
 
     def test_mis_ordered_bounds(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=[(0, 1), (1, 0)])
+
         with self.assertRaises(ValueError):
-            GaussianNB(epsilon=1, bounds=[(0, 1), (1, 0)])
+            clf.fit(X, y)
 
     def test_no_bounds(self):
         X = np.random.random((10, 2))
