@@ -11,12 +11,13 @@ Its purpose is to allow experimentation, simulation, and implementation of diffe
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Modules
 
    modules/mechanisms
    modules/tools
    modules/models
+   modules/utils
 
 
 

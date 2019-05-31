@@ -26,12 +26,27 @@ def global_seed(seed):
 
 
 def copy_docstring(source):
-    """Copy a docstring from another source function (if present)"""
-    def do_copy(target):
+    """Decorator function to copy a docstring from a `source` function to a `target` function.
+
+    The docstring is only copied if a docstring is present in `source`, and if none is present in `target`.  Takes
+    inspiration from similar in ``matplotlib``.
+
+    Parameters
+    ----------
+    source : method
+        Source function from which to copy the docstring.  If `source.__doc__` is empty, do nothing.
+
+    Returns
+    -------
+    target : method
+        Target function with new docstring.
+
+    """
+    def copy_func(target):
         if source.__doc__ and not target.__doc__:
             target.__doc__ = source.__doc__
         return target
-    return do_copy
+    return copy_func
 
 
 def warn_unused_args(args_dict):
@@ -45,9 +60,10 @@ def warn_unused_args(args_dict):
 class PrivacyLeakWarning(RuntimeWarning):
     """Custom warning to capture privacy leaks resulting from incorrect parameter setting.
 
-    For example, this warning may occur when the user
+    For example, this warning may occur when the user:
+
         - fails to specify the bounds or range of data to a model where required (e.g., `bounds=None` to
-        :class:`.GaussianNB`).
+          :class:`.GaussianNB`).
         - inputs data to a model that falls outside the bounds or range originally specified.
 
     """
@@ -56,11 +72,12 @@ class PrivacyLeakWarning(RuntimeWarning):
 class DiffprivlibCompatibilityWarning(RuntimeWarning):
     """Custom warning to capture inherited class arguments that are not compatible with diffprivlib.
 
-    For example, this warning may occur when the user
+    For example, this warning may occur when the user:
+
         - passes a parameter value that is not compatible with diffprivlib (e.g., `solver='liblinear'` to
-        :class:`.LogisticRegression`)
+          :class:`.LogisticRegression`)
         - specifies a non-default value for a parameter that is ignored by diffprivlib (e.g., `intercept_scaling=0.5`
-        to :class:`.LogisticRegression`.
+          to :class:`.LogisticRegression`.
 
     """
 

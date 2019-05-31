@@ -5,10 +5,10 @@ import numbers
 import warnings
 
 import numpy as np
+from joblib import delayed, Parallel
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
-from sklearn.externals.joblib import delayed, Parallel
 from sklearn.utils import check_X_y, check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
@@ -18,33 +18,33 @@ from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarnin
 
 
 class LogisticRegression(linear_model.LogisticRegression):
-    """Logistic Regression (aka logit, MaxEnt) classifier.
+    r"""Logistic Regression (aka logit, MaxEnt) classifier with differential privacy.
 
-    In the multiclass case, the training algorithm uses the one-vs-rest (OvR)
-    scheme if the 'multi_class' option is set to 'ovr', and uses the cross-
-    entropy loss if the 'multi_class' option is set to 'multinomial'.
-    (Currently the 'multinomial' option is supported only by the 'lbfgs',
-    'sag' and 'newton-cg' solvers.)
+    This class implements regularised logistic regression using :ref:`Scipy's L-BFGS-B algorithm
+    <scipy:optimize.minimize-lbfgsb>`.  :math:`\epsilon`-Differential privacy is achieved relative to the maximum norm
+    of the data, as determined by `data_norm`, by the :class:`.Vector` mechanism, which adds a Laplace-distributed random
+    vector to the objective.
 
-    This class implements regularized logistic regression using the
-    'liblinear' library, 'newton-cg', 'sag' and 'lbfgs' solvers. It can handle
-    both dense and sparse input. Use C-ordered arrays or CSR matrices
-    containing 64-bit floats for optimal performance; any other input format
-    will be converted (and copied).
+    This class is a child of :obj:`sklearn.linear_model.LogisticRegression`, with amendments to allow for the
+    implementation of differential privacy.  Some parameters of sklearn's model have therefore had to be fixed,
+    including:
 
-    The 'newton-cg', 'sag', and 'lbfgs' solvers support only L2 regularization
-    with primal formulation. The 'liblinear' solver supports both L1 and L2
-    regularization, with a dual formulation only for the L2 penalty.
-
-    Read more in the :ref:`User Guide <logistic_regression>`.
+        - The only permitted `solver` is 'lbfgs'.  Specifying the `solver` option will result in a warning.
+        - Consequently, the only permitted `penalty` is 'l2'. Specifying the `penalty` option will result in a warning.
+        - In the multiclass case, only the one-vs-rest (OvR) scheme is permitted.  Specifying the `multi_class` option
+          will result in a warning.
 
     Parameters
     ----------
-    epsilon : float, default 1.0
+    epsilon : float, default: 1.0
         Privacy parameter epsilon.
 
-    penalty : 'l2', default: 'l2'
-        Used to specify the norm used in the penalization. For diffprivlib, penalty must be 'l2'.
+    data_norm : float, default: None The max l2 norm of any row of the data.  This defines the spread of data that
+        will be protected by differential privacy.
+
+        If not specified, the max norm is taken from the data when `.fit()` is first called, but will result in a
+        :obj:`PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
     tol : float, default: 1e-4
         Tolerance for stopping criteria.
@@ -57,28 +57,19 @@ class LogisticRegression(linear_model.LogisticRegression):
         Specifies if a constant (a.k.a. bias or intercept) should be added to the decision function.
 
     max_iter : int, default: 100
-        Useful only for the newton-cg, sag and lbfgs solvers.
-        Maximum number of iterations taken for the solvers to converge.
+        Maximum number of iterations taken for the solver to converge.  For smaller `epsilon` (more noise), `max_iter`
+        may need to be increased.
 
     verbose : int, default: 0
-        For the liblinear and lbfgs solvers set verbose to any positive
-        number for verbosity.
+        Set to any positive number for verbosity.
 
     warm_start : bool, default: False
-        When set to True, reuse the solution of the previous call to fit as
-        initialization, otherwise, just erase the previous solution.
-        Useless for liblinear solver. See :term:`the Glossary <warm_start>`.
+        When set to True, reuse the solution of the previous call to fit as initialization, otherwise, just erase the
+        previous solution.
 
-        .. versionadded:: 0.17
-           *warm_start* to support *lbfgs*, *newton-cg*, *sag*, *saga* solvers.
-
-    n_jobs : int or None, optional (default=None)
-        Number of CPU cores used when parallelizing over classes if
-        multi_class='ovr'". This parameter is ignored when the ``solver`` is
-        set to 'liblinear' regardless of whether 'multi_class' is specified or
-        not. ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
-        context. ``-1`` means using all processors.
-        See :term:`Glossary <n_jobs>` for more details.
+    n_jobs : int or None, default: None
+        Number of CPU cores used when parallelizing over classes.  ``None`` means 1 unless in a context. ``-1`` means
+        using all processors.
 
     Attributes
     ----------
@@ -90,27 +81,15 @@ class LogisticRegression(linear_model.LogisticRegression):
         Coefficient of the features in the decision function.
 
         `coef_` is of shape (1, n_features) when the given problem is binary.
-        In particular, when `multi_class='multinomial'`, `coef_` corresponds
-        to outcome 1 (True) and `-coef_` corresponds to outcome 0 (False).
 
     intercept_ : array, shape (1,) or (n_classes,)
         Intercept (a.k.a. bias) added to the decision function.
 
-        If `fit_intercept` is set to False, the intercept is set to zero.
-        `intercept_` is of shape (1,) when the given problem is binary.
-        In particular, when `multi_class='multinomial'`, `intercept_`
-        corresponds to outcome 1 (True) and `-intercept_` corresponds to
-        outcome 0 (False).
+        If `fit_intercept` is set to False, the intercept is set to zero. `intercept_` is of shape (1,) when the
+        given problem is binary.
 
     n_iter_ : array, shape (n_classes,) or (1, )
-        Actual number of iterations for all classes. If binary or multinomial,
-        it returns only 1 element. For liblinear solver, only the maximum
-        number of iteration across all classes is given.
-
-        .. versionchanged:: 0.20
-
-            In SciPy <= 1.0.0 the number of lbfgs iterations may exceed
-            ``max_iter``. ``n_iter_`` will now report at most ``max_iter``.
+        Actual number of iterations for all classes. If binary, it returns only 1 element.
 
     Examples
     --------
@@ -129,40 +108,10 @@ class LogisticRegression(linear_model.LogisticRegression):
 
     See also
     --------
-    SGDClassifier : incrementally trained logistic regression (when given
-        the parameter ``loss="log"``).
-    LogisticRegressionCV : Logistic regression with built-in cross validation
+    sklearn.linear_model.LogisticRegression : The implementation of logistic regression in scikit-learn, upon which this
+        implementation is built.
+    .Vector : The mechanism used by the model to achieve differential privacy.
 
-    Notes
-    -----
-    The underlying C implementation uses a random number generator to
-    select features when fitting the model. It is thus not uncommon,
-    to have slightly different results for the same input data. If
-    that happens, try with a smaller tol parameter.
-
-    Predict output may not match that of standalone liblinear in certain
-    cases. See :ref:`differences from liblinear <liblinear_differences>`
-    in the narrative documentation.
-
-    References
-    ----------
-
-    LIBLINEAR -- A Library for Large Linear Classification
-        https://www.csie.ntu.edu.tw/~cjlin/liblinear/
-
-    SAG -- Mark Schmidt, Nicolas Le Roux, and Francis Bach
-        Minimizing Finite Sums with the Stochastic Average Gradient
-        https://hal.inria.fr/hal-00860051/document
-
-    SAGA -- Defazio, A., Bach F. & Lacoste-Julien S. (2014).
-        SAGA: A Fast Incremental Gradient Method With Support
-        for Non-Strongly Convex Composite Objectives
-        https://arxiv.org/abs/1407.0202
-
-    Hsiang-Fu Yu, Fang-Lan Huang, Chih-Jen Lin (2011). Dual coordinate descent
-        methods for logistic regression and maximum entropy models.
-        Machine Learning 85(1-2):41-75.
-        https://www.csie.ntu.edu.tw/~cjlin/papers/maxent_dual.pdf
     """
 
     def __init__(self, epsilon=1.0, data_norm=1.0, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
@@ -248,7 +197,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         if warm_start_coef is None:
             warm_start_coef = [None] * n_classes
 
-        path_func = delayed(logistic_regression_path)
+        path_func = delayed(_logistic_regression_path)
 
         fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
             path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
@@ -271,20 +220,13 @@ class LogisticRegression(linear_model.LogisticRegression):
         return self
 
 
-def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
-                             tol=1e-4, verbose=0, solver='lbfgs', coef=None, class_weight=None, dual=False,
-                             penalty='l2', intercept_scaling=1., multi_class='ovr', random_state=None,
-                             check_input=True, max_squared_sum=None, sample_weight=None):
-    """Compute a Logistic Regression model for a list of regularization
-    parameters.
-
-    This is an implementation that uses the result of the previous model
-    to speed up computations along the set of solutions, making it faster
-    than sequentially calling LogisticRegression for the different parameters.
-    Note that there will be no speedup with liblinear solver, since it does
-    not handle warm-starting.
-
-    Read more in the :ref:`User Guide <logistic_regression>`.
+def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
+                              tol=1e-4, verbose=0, solver='lbfgs', coef=None, class_weight=None, dual=False,
+                              penalty='l2', intercept_scaling=1., multi_class='ovr', random_state=None,
+                              check_input=True, max_squared_sum=None, sample_weight=None):
+    """Compute a Logistic Regression model with differential privacy for a list of regularization parameters.  Takes
+    inspiration from ``_logistic_regression_path`` in scikit-learn, specified to the LBFGS solver and one-vs-rest
+    multi class fitting.
 
     Parameters
     ----------
@@ -300,113 +242,66 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     data_norm : float
         Max norm of the data for which differential privacy is satisfied.
 
-    pos_class : int, None
-        The class with respect to which we perform a one-vs-all fit.
-        If None, then it is assumed that the given problem is binary.
+    pos_class : int, None The class with respect to which we perform a one-vs-all fit. If None, then it is assumed
+        that the given problem is binary.
 
     Cs : int | array-like, shape (n_cs,)
-        List of values for the regularization parameter or integer specifying
-        the number of regularization parameters that should be used. In this
-        case, the parameters will be chosen in a logarithmic scale between
-        1e-4 and 1e4.
+        List of values for the regularization parameter or integer specifying the number of regularization parameters
+        that should be used. In this case, the parameters will be chosen in a logarithmic scale between 1e-4 and 1e4.
 
     fit_intercept : bool
-        Whether to fit an intercept for the model. In this case the shape of
-        the returned array is (n_cs, n_features + 1).
+        Whether to fit an intercept for the model. In this case the shape of the returned array is (n_cs, n_features + 1).
 
     max_iter : int
         Maximum number of iterations for the solver.
 
     tol : float
-        Stopping criterion. For the newton-cg and lbfgs solvers, the iteration
-        will stop when ``max{|g_i | i = 1, ..., n} <= tol``
-        where ``g_i`` is the i-th component of the gradient.
+        Stopping criterion. For the newton-cg and lbfgs solvers, the iteration will stop when ``max{|g_i | i = 1,
+        ..., n} <= tol`` where ``g_i`` is the i-th component of the gradient.
 
     verbose : int
-        For the liblinear and lbfgs solvers set verbose to any positive
-        number for verbosity.
+        For the liblinear and lbfgs solvers set verbose to any positive number for verbosity.
 
-    solver : {'lbfgs', 'newton-cg', 'liblinear', 'sag', 'saga'}
+    solver : {'lbfgs'}
         Numerical solver to use.
 
     coef : array-like, shape (n_features,), default None
-        Initialization value for coefficients of logistic regression.
-        Useless for liblinear solver.
+        Initialization value for coefficients of logistic regression. Useless for liblinear solver.
 
-    class_weight : dict or 'balanced', optional
-        Weights associated with classes in the form ``{class_label: weight}``.
-        If not given, all classes are supposed to have weight one.
-
-        The "balanced" mode uses the values of y to automatically adjust
-        weights inversely proportional to class frequencies in the input data
-        as ``n_samples / (n_classes * np.bincount(y))``.
-
-        Note that these weights will be multiplied with sample_weight (passed
-        through the fit method) if sample_weight is specified.
+    class_weight : None
+        Weights associated with classes in the form ``{class_label: weight}``. For diffprivlib, only ``None`` is
+        permitted. Specifying any other value will throw a warning.
 
     dual : bool
-        Dual or primal formulation. Dual formulation is only implemented for
-        l2 penalty with liblinear solver. Prefer dual=False when
-        n_samples > n_features.
+        Dual or primal formulation. Only `False` is permitted for diffprivlib.
 
-    penalty : str, 'l1' or 'l2'
-        Used to specify the norm used in the penalization. The 'newton-cg',
-        'sag' and 'lbfgs' solvers support only l2 penalties.
+    penalty : str, 'l2'
+        Used to specify the norm used in the penalization. For diffprivlib, only l2 penalties are permitted.
 
     intercept_scaling : float, default 1.
-        Useful only when the solver 'liblinear' is used
-        and self.fit_intercept is set to True. In this case, x becomes
-        [x, self.intercept_scaling],
-        i.e. a "synthetic" feature with constant value equal to
-        intercept_scaling is appended to the instance vector.
-        The intercept becomes ``intercept_scaling * synthetic_feature_weight``.
+        For diffprivlib, only intercept_scaling=1 is permitted.
 
-        Note! the synthetic feature weight is subject to l1/l2 regularization
-        as all other features.
-        To lessen the effect of regularization on synthetic feature weight
-        (and therefore on the intercept) intercept_scaling has to be increased.
+    multi_class : str, {'ovr'}, default: 'ovr'
+        For diffprivlib, only 'ovr' is permitted.
 
-    multi_class : str, {'ovr', 'multinomial', 'auto'}, default: 'ovr'
-        If the option chosen is 'ovr', then a binary problem is fit for each
-        label. For 'multinomial' the loss minimised is the multinomial loss fit
-        across the entire probability distribution, *even when the data is
-        binary*. 'multinomial' is unavailable when solver='liblinear'.
-        'auto' selects 'ovr' if the data is binary, or if solver='liblinear',
-        and otherwise selects 'multinomial'.
-
-        .. versionadded:: 0.18
-           Stochastic Average Gradient descent solver for 'multinomial' case.
-        .. versionchanged:: 0.20
-            Default will change from 'ovr' to 'auto' in 0.22.
-
-    random_state : int, RandomState instance or None, optional, default None
-        The seed of the pseudo random number generator to use when shuffling
-        the data.  If int, random_state is the seed used by the random number
-        generator; If RandomState instance, random_state is the random number
-        generator; If None, the random number generator is the RandomState
-        instance used by `np.random`. Used when ``solver`` == 'sag' or
-        'liblinear'.
+    random_state : None
+        For diffprivlib, only None is permitted.
 
     check_input : bool, default True
         If False, the input arrays X and y will not be checked.
 
-    max_squared_sum : float, default None
-        Maximum squared sum of X over samples. Used only in SAG solver.
-        If None, it will be computed, going through all the samples.
-        The value should be precomputed to speed up cross validation.
+    max_squared_sum : None
+        For diffprivlib, only None is permitted.
 
-    sample_weight : array-like, shape(n_samples,) optional
-        Array of weights that are assigned to individual samples.
-        If not provided, then each sample is given unit weight.
+    sample_weight : None
+        For diffprivlib, only None is permitted.
 
     Returns
     -------
     coefs : ndarray, shape (n_cs, n_features) or (n_cs, n_features + 1)
-        List of coefficients for the Logistic Regression model. If
-        fit_intercept is set to True then the second dimension will be
-        n_features + 1, where the last item represents the intercept. For
-        ``multiclass='multinomial'``, the shape is (n_classes, n_cs,
-        n_features) or (n_classes, n_cs, n_features + 1).
+        List of coefficients for the Logistic Regression model. If fit_intercept is set to True then the second
+        dimension will be n_features + 1, where the last item represents the intercept. For
+        ``multiclass='multinomial'``, the shape is (n_classes, n_cs, n_features) or (n_classes, n_cs, n_features + 1).
 
     Cs : ndarray
         Grid of Cs used for cross-validation.
@@ -414,13 +309,6 @@ def logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, C
     n_iter : array, shape (n_cs,)
         Actual number of iteration for each Cs.
 
-    Notes
-    -----
-    You might get slightly different results with the solver liblinear than
-    with the others since this uses LIBLINEAR which penalizes the intercept.
-
-    .. versionchanged:: 0.19
-        The "copy" parameter was removed.
     """
     if class_weight is not None:
         warnings.warn("For diffprivlib, class_weight is not used. Set to None to suppress this warning.",

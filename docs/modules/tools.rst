@@ -14,4 +14,6 @@ General Utilities
 -----------------------------
 .. autofunction:: mean
 
+.. autofunction:: std
+
 .. autofunction:: var

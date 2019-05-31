@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from diffprivlib.models.logistic_regression import logistic_regression_path
+from diffprivlib.models.logistic_regression import _logistic_regression_path
 
 
 class TestLogisticRegression(TestCase):
@@ -17,9 +17,9 @@ class TestLogisticRegression(TestCase):
         self.y = y
 
     def test_not_none(self):
-        self.assertIsNotNone(logistic_regression_path)
+        self.assertIsNotNone(_logistic_regression_path)
 
     def test_with_dataset(self):
-        output = logistic_regression_path(self.X, self.y, Cs=[1e5])
+        output = _logistic_regression_path(self.X, self.y, Cs=[1e5])
 
         self.assertTrue(isinstance(output, tuple))

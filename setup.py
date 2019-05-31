@@ -6,7 +6,9 @@ with open("README.md", "r") as fh:
 install_requires = ['numpy >= 1.15.0',
                     'setuptools >= 39.0.1',
                     'scikit-learn >= 0.20.3',
-                    'scipy >= 1.2.1']
+                    'scipy >= 1.2.1',
+                    'joblib',
+                    ]
 
 # tests_require = ['mxnet',
 #                  'h5py',
