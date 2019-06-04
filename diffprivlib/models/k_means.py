@@ -30,8 +30,8 @@ class KMeans(skcluster.KMeans):
         The number of clusters to form as well as the number of centroids to generate.
 
     **unused_args :
-        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any of
-        these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
+        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any
+        of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
     Attributes
     ----------

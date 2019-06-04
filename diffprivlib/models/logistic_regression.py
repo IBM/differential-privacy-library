@@ -65,8 +65,8 @@ class LogisticRegression(linear_model.LogisticRegression):
         Set to any positive number for verbosity.
 
     warm_start : bool, default: False
-        When set to ``True``, reuse the solution of the previous call to fit as initialization, otherwise, just erase the
-        previous solution.
+        When set to ``True``, reuse the solution of the previous call to fit as initialization, otherwise, just erase
+        the previous solution.
 
     n_jobs : int or None, default: None
         Number of CPU cores used when parallelising over classes.  ``None`` means 1 unless in a context. ``-1`` means
