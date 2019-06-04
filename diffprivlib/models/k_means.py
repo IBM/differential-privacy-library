@@ -26,7 +26,7 @@ class KMeans(skcluster.KMeans):
     n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of centroids to generate.
 
-    unused_args :
+    **unused_args :
         Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any of
         these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
@@ -138,8 +138,6 @@ class KMeans(skcluster.KMeans):
         return self
 
     def _init_centers(self, dims):
-        # Todo: Fix to ensure initialised centers are at least a distance d from the domain boundaries, and 2d from
-        #  other custer centres
         if self.bounds_processed is None:
             bounds_processed = np.zeros(shape=(dims, 2))
 
@@ -161,7 +159,8 @@ class KMeans(skcluster.KMeans):
                 if cluster >= self.n_clusters:
                     break
 
-                temp_center = np.random.random(dims) * self.bounds_processed[:, 0] + self.bounds_processed[:, 1]
+                temp_center = np.random.random(dims) * (self.bounds_processed[:, 0] - 2 * cluster_proximity) + \
+                    self.bounds_processed[:, 1] + cluster_proximity
 
                 if cluster == 0:
                     centers[0, :] = temp_center
@@ -170,7 +169,7 @@ class KMeans(skcluster.KMeans):
 
                 min_distance = ((centers[:cluster, :] - temp_center) ** 2).sum(axis=1).min()
 
-                if np.sqrt(min_distance) >= cluster_proximity:
+                if np.sqrt(min_distance) >= 2 * cluster_proximity:
                     centers[cluster, :] = temp_center
                     cluster += 1
                     retry = 0
@@ -188,7 +187,7 @@ class KMeans(skcluster.KMeans):
         distances = np.zeros((X.shape[0], self.n_clusters))
 
         for cluster in range(self.n_clusters):
-            distances[:, cluster] = ((X - centers[cluster, :])**2).sum(axis=1)
+            distances[:, cluster] = ((X - centers[cluster, :]) ** 2).sum(axis=1)
 
         labels = np.argmin(distances, axis=1)
         return distances, labels
@@ -218,7 +217,7 @@ class KMeans(skcluster.KMeans):
             noisy_sum = np.array(np.zeros_like(cluster_sum))
 
             for i in range(dims):
-                laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0])\
+                laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0]) \
                     .set_bounds(noisy_count * self.bounds[i][0], noisy_count * self.bounds[i][1])
                 noisy_sum[i] = laplace_mech.randomise(cluster_sum[i])
 
