@@ -12,6 +12,18 @@ class TestLogisticRegression(TestCase):
     def test_not_none(self):
         self.assertIsNotNone(LogisticRegression)
 
+    def test_no_params(self):
+        clf = LogisticRegression()
+
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+
+        with self.assertWarns(PrivacyLeakWarning):
+            clf.fit(X, y)
+
     def test_large_norm(self):
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -19,7 +31,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression()
+        clf = LogisticRegression(data_norm=1.0)
 
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
@@ -30,17 +42,17 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression()
+        clf = LogisticRegression(data_norm=1.0)
 
         self.assertIsNotNone(clf.fit(X, y))
 
     def test_solver_warning(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            clf = LogisticRegression(solver="newton-cg")
+            LogisticRegression(solver="newton-cg")
 
     def test_multi_class_warning(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            clf = LogisticRegression(multi_class="multinomial")
+            LogisticRegression(multi_class="multinomial")
 
     def test_different_results(self):
         from sklearn import datasets
@@ -97,7 +109,7 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf = LogisticRegression(epsilon=2)
+        clf = LogisticRegression(epsilon=2, data_norm=1.0)
         clf.fit(X, y)
 
         # print(clf.predict(np.array([0.5, 2, 5.5])))
