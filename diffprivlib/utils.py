@@ -29,12 +29,12 @@ def copy_docstring(source):
     """Decorator function to copy a docstring from a `source` function to a `target` function.
 
     The docstring is only copied if a docstring is present in `source`, and if none is present in `target`.  Takes
-    inspiration from similar in ``matplotlib``.
+    inspiration from similar in `matplotlib`.
 
     Parameters
     ----------
     source : method
-        Source function from which to copy the docstring.  If `source.__doc__` is empty, do nothing.
+        Source function from which to copy the docstring.  If ``source.__doc__`` is empty, do nothing.
 
     Returns
     -------
@@ -71,6 +71,9 @@ class PrivacyLeakWarning(RuntimeWarning):
 
 class DiffprivlibCompatibilityWarning(RuntimeWarning):
     """Custom warning to capture inherited class arguments that are not compatible with diffprivlib.
+
+    The purpose of the warning is to alert the user of the incompatibility, but to continue execution having fixed the
+    incompatibility at runtime.
 
     For example, this warning may occur when the user:
 
