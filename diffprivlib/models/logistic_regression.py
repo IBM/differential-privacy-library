@@ -22,8 +22,8 @@ class LogisticRegression(linear_model.LogisticRegression):
 
     This class implements regularised logistic regression using :ref:`Scipy's L-BFGS-B algorithm
     <scipy:optimize.minimize-lbfgsb>`.  :math:`\epsilon`-Differential privacy is achieved relative to the maximum norm
-    of the data, as determined by `data_norm`, by the :class:`.Vector` mechanism, which adds a Laplace-distributed random
-    vector to the objective.
+    of the data, as determined by `data_norm`, by the :class:`.Vector` mechanism, which adds a Laplace-distributed
+    random vector to the objective.
 
     This class is a child of :obj:`sklearn.linear_model.LogisticRegression`, with amendments to allow for the
     implementation of differential privacy.  Some parameters of sklearn's model have therefore had to be fixed,
@@ -37,13 +37,14 @@ class LogisticRegression(linear_model.LogisticRegression):
     Parameters
     ----------
     epsilon : float, default: 1.0
-        Privacy parameter epsilon.
+        Privacy parameter :math:`\epsilon`.
 
-    data_norm : float, default: None The max l2 norm of any row of the data.  This defines the spread of data that
-        will be protected by differential privacy.
+    data_norm : float, default: None
+        The max l2 norm of any row of the data.  This defines the spread of data that will be protected by
+        differential privacy.
 
-        If not specified, the max norm is taken from the data when `.fit()` is first called, but will result in a
-        :obj:`PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
     tol : float, default: 1e-4
@@ -64,16 +65,19 @@ class LogisticRegression(linear_model.LogisticRegression):
         Set to any positive number for verbosity.
 
     warm_start : bool, default: False
-        When set to True, reuse the solution of the previous call to fit as initialization, otherwise, just erase the
+        When set to ``True``, reuse the solution of the previous call to fit as initialization, otherwise, just erase the
         previous solution.
 
     n_jobs : int or None, default: None
-        Number of CPU cores used when parallelizing over classes.  ``None`` means 1 unless in a context. ``-1`` means
+        Number of CPU cores used when parallelising over classes.  ``None`` means 1 unless in a context. ``-1`` means
         using all processors.
+
+    **unused_args : kwargs
+        Placeholder for parameters of :obj:`sklearn.linear_model.LogisticRegression` that are not used in
+        `diffprivlib`.  Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
 
     Attributes
     ----------
-
     classes_ : array, shape (n_classes, )
         A list of class labels known to the classifier.
 
@@ -114,7 +118,7 @@ class LogisticRegression(linear_model.LogisticRegression):
 
     """
 
-    def __init__(self, epsilon=1.0, data_norm=1.0, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
+    def __init__(self, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
                  warm_start=False, n_jobs=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=None, solver='lbfgs', max_iter=max_iter, multi_class='ovr',
@@ -142,12 +146,10 @@ class LogisticRegression(linear_model.LogisticRegression):
             Array of weights that are assigned to individual samples.
             If not provided, then each sample is given unit weight.
 
-            .. versionadded:: 0.17
-               *sample_weight* support to LogisticRegression.
-
         Returns
         -------
         self : object
+
         """
         if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
@@ -157,6 +159,13 @@ class LogisticRegression(linear_model.LogisticRegression):
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
 
         max_norm = np.linalg.norm(X, axis=1).max()
+
+        if self.data_norm is None:
+            warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
+            self.data_norm = max_norm
+
         if max_norm > self.data_norm:
             warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
                           "Got %f\n"
@@ -250,7 +259,8 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
         that should be used. In this case, the parameters will be chosen in a logarithmic scale between 1e-4 and 1e4.
 
     fit_intercept : bool
-        Whether to fit an intercept for the model. In this case the shape of the returned array is (n_cs, n_features + 1).
+        Whether to fit an intercept for the model. In this case the shape of the returned array is
+        (n_cs, n_features + 1).
 
     max_iter : int
         Maximum number of iterations for the solver.
