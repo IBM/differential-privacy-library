@@ -12,7 +12,10 @@ from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 class KMeans(skcluster.KMeans):
-    r"""K-Means clustering with differential privacy
+    r"""K-Means clustering with differential privacy.
+
+    Implements the DPLloyd approach presented in [1]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
+    integration with Scikit Learn.
 
     Parameters
     ----------
@@ -33,7 +36,6 @@ class KMeans(skcluster.KMeans):
     Attributes
     ----------
     cluster_centers_ : array, [n_clusters, n_features]
-
         Coordinates of cluster centers. If the algorithm stops before fully converging, these will not be consistent
         with ``labels_``.
 
@@ -46,21 +48,11 @@ class KMeans(skcluster.KMeans):
     n_iter_ : int
         Number of iterations run.
 
-    Examples
-    --------
-
-    >>> from diffprivlib.models import KMeans
-    >>> import numpy as np
-    >>> X = np.array([[1, 2], [1, 4], [0, 3],
-    ...               [10, 2], [10, 4], [9, 3]])
-    >>> kmeans = KMeans(bounds=[(0,10), (2, 4)], n_clusters=2).fit(X)
-    >>> kmeans.labels_
-    array([1, 1, 1, 0, 0, 0], dtype=int32)
-    >>> kmeans.predict([[0, 0], [12, 3]])
-    array([1, 0], dtype=int32)
-    >>> kmeans.cluster_centers_
-    array([[10.,  2.],
-           [ 1.,  2.]])
+    References
+    ----------
+    .. [1] Su, Dong, Jianneng Cao, Ninghui Li, Elisa Bertino, and Hongxia Jin. "Differentially private k-means
+        clustering." In Proceedings of the sixth ACM conference on data and application security and privacy, pp. 26-37.
+        ACM, 2016.
 
     """
 
@@ -101,15 +93,14 @@ class KMeans(skcluster.KMeans):
         warn_unused_args(unused_args)
         del y
 
-        # Todo: Determine iters on-the-fly as a function of epsilon
-        iters = 7
-
         if X.ndim != 2:
             raise ValueError(
                 "Expected 2D array, got array with %d dimensions instead. Reshape your data using array.reshape(-1, 1),"
                 "or array.reshape(1, -1) if your data contains only one sample." % X.ndim)
 
-        dims = X.shape[1]
+        n_samples, n_dims = X.shape
+
+        iters = self._calc_iters(n_dims, n_samples)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
@@ -117,16 +108,16 @@ class KMeans(skcluster.KMeans):
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
             self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
 
-        self.bounds = _check_bounds(self.bounds, dims)
+        self.bounds = _check_bounds(self.bounds, n_dims)
 
-        centers = self._init_centers(dims)
+        centers = self._init_centers(n_dims)
         labels = None
         distances = None
 
         # Run _update_centers first to ensure consistency of `labels` and `centers`, since convergence unlikely
         for _ in range(-1, iters):
             if labels is not None:
-                centers = self._update_centers(X, centers=centers, labels=labels, dims=dims, total_iters=iters)
+                centers = self._update_centers(X, centers=centers, labels=labels, dims=n_dims, total_iters=iters)
 
             distances, labels = self._distances_labels(X, centers)
 
@@ -236,7 +227,7 @@ class KMeans(skcluster.KMeans):
         total_iters : int
             Total number of iterations to split `epsilon` across.
 
-        rho : float, default 0.225
+        rho : float, default: 0.225
             Coordinate normalisation factor.
 
         Returns
@@ -254,3 +245,13 @@ class KMeans(skcluster.KMeans):
         normaliser = self.epsilon / total_iters / (epsilon_i * dims + epsilon_0)
 
         return epsilon_i * normaliser, epsilon_0 * normaliser
+
+    def _calc_iters(self, n_dims, n_samples, rho=0.225):
+        """Calculate the number of iterations to allow for the KMeans algorithm."""
+
+        epsilon_m = np.sqrt(500 * (self.n_clusters ** 3) / (n_samples ** 2) *
+                            (n_dims + np.cbrt(4 * n_dims * (rho ** 2))) ** 3)
+
+        iters = max(min(self.epsilon / epsilon_m, 7), 2)
+
+        return int(iters)
