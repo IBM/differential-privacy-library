@@ -26,12 +26,12 @@ class LogisticRegression(linear_model.LogisticRegression):
     random vector to the objective.  Adapted from the work presented in [CMS11]_.
 
     This class is a child of :obj:`sklearn.linear_model.LogisticRegression`, with amendments to allow for the
-    implementation of differential privacy.  Some parameters of sklearn's model have therefore had to be fixed,
+    implementation of differential privacy.  Some parameters of `Scikit Learn`'s model have therefore had to be fixed,
     including:
 
-        - The only permitted `solver` is 'lbfgs'.  Specifying the `solver` option will result in a warning.
-        - Consequently, the only permitted `penalty` is 'l2'. Specifying the `penalty` option will result in a warning.
-        - In the multiclass case, only the one-vs-rest (OvR) scheme is permitted.  Specifying the `multi_class` option
+        - The only permitted solver is 'lbfgs'.  Specifying the ``solver`` option will result in a warning.
+        - Consequently, the only permitted penalty is 'l2'. Specifying the ``penalty`` option will result in a warning.
+        - In the multiclass case, only the one-vs-rest (OvR) scheme is permitted.  Specifying the ``multi_class`` option
           will result in a warning.
 
     Parameters
@@ -98,17 +98,16 @@ class LogisticRegression(linear_model.LogisticRegression):
     Examples
     --------
     >>> from sklearn.datasets import load_iris
-    >>> from sklearn.linear_model import LogisticRegression
+    >>> from diffprivlib.models import LogisticRegression
     >>> X, y = load_iris(return_X_y=True)
-    >>> clf = LogisticRegression(random_state=0, solver='lbfgs',
-    ...                          multi_class='multinomial').fit(X, y)
+    >>> clf = LogisticRegression(data_norm=12, epsilon=2).fit(X, y)
     >>> clf.predict(X[:2, :])
     array([0, 0])
-    >>> clf.predict_proba(X[:2, :]) # doctest: +ELLIPSIS
-    array([[9.8...e-01, 1.8...e-02, 1.4...e-08],
-           [9.7...e-01, 2.8...e-02, ...e-08]])
+    >>> clf.predict_proba(X[:2, :])
+    array([[7.35362932e-01, 2.16667422e-14, 2.64637068e-01],
+           [9.08384378e-01, 3.47767052e-13, 9.16156215e-02]])
     >>> clf.score(X, y)
-    0.97...
+    0.5266666666666666
 
     See also
     --------
@@ -153,7 +152,7 @@ class LogisticRegression(linear_model.LogisticRegression):
 
         Returns
         -------
-        self : object
+        self : class
 
         """
         if not isinstance(self.C, numbers.Real) or self.C < 0:
