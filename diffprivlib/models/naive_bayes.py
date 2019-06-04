@@ -12,17 +12,19 @@ from diffprivlib.utils import PrivacyLeakWarning
 
 
 class GaussianNB(sk_nb.GaussianNB):
-    """Gaussian Naive Bayes (GaussianNB) with differential privacy
+    r"""Gaussian Naive Bayes (GaussianNB) with differential privacy
 
-    Can perform online updates to model parameters via `partial_fit` method.
-    For details on algorithm used to update feature means and variance online,
-    see Stanford CS tech report STAN-CS-79-773 by Chan, Golub, and LeVeque:
-
-        http://i.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf
+    Inherits the :class:`sklearn.naive_bayes.GaussianNB` class from Scikit Learn and adds noise to satisfy differential
+    privacy to the learned means and variances.
 
     Parameters
     ----------
     epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon` for the model.
+
+    bounds : list or None, default: None
+        Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
+        are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     priors : array-like, shape (n_classes,)
         Prior probabilities of the classes. If specified the priors are not
@@ -47,7 +49,7 @@ class GaussianNB(sk_nb.GaussianNB):
         variance of each feature per class
 
     epsilon_ : float
-        absolute additive value to variances
+        absolute additive value to variances (unrelated to ``epsilon`` parameter for differential privacy)
 
     """
 
