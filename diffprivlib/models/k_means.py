@@ -14,7 +14,7 @@ from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 class KMeans(skcluster.KMeans):
     r"""K-Means clustering with differential privacy.
 
-    Implements the DPLloyd approach presented in [1]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
+    Implements the DPLloyd approach presented in [SCL16]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
     integration with Scikit Learn.
 
     Parameters
@@ -50,7 +50,7 @@ class KMeans(skcluster.KMeans):
 
     References
     ----------
-    .. [1] Su, Dong, Jianneng Cao, Ninghui Li, Elisa Bertino, and Hongxia Jin. "Differentially private k-means
+    .. [SCL16] Su, Dong, Jianneng Cao, Ninghui Li, Elisa Bertino, and Hongxia Jin. "Differentially private k-means
         clustering." In Proceedings of the sixth ACM conference on data and application security and privacy, pp. 26-37.
         ACM, 2016.
 

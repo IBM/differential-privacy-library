@@ -23,7 +23,7 @@ class LogisticRegression(linear_model.LogisticRegression):
     This class implements regularised logistic regression using :ref:`Scipy's L-BFGS-B algorithm
     <scipy:optimize.minimize-lbfgsb>`.  :math:`\epsilon`-Differential privacy is achieved relative to the maximum norm
     of the data, as determined by `data_norm`, by the :class:`.Vector` mechanism, which adds a Laplace-distributed
-    random vector to the objective.
+    random vector to the objective.  Adapted from the work presented in [CMS11]_.
 
     This class is a child of :obj:`sklearn.linear_model.LogisticRegression`, with amendments to allow for the
     implementation of differential privacy.  Some parameters of sklearn's model have therefore had to be fixed,
@@ -115,6 +115,11 @@ class LogisticRegression(linear_model.LogisticRegression):
     sklearn.linear_model.LogisticRegression : The implementation of logistic regression in scikit-learn, upon which this
         implementation is built.
     .Vector : The mechanism used by the model to achieve differential privacy.
+
+    References
+    ----------
+    .. [CMS11] Chaudhuri, Kamalika, Claire Monteleoni, and Anand D. Sarwate. "Differentially private empirical risk
+        minimization." Journal of Machine Learning Research 12, no. Mar (2011): 1069-1109.
 
     """
 

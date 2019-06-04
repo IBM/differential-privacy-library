@@ -15,7 +15,7 @@ class GaussianNB(sk_nb.GaussianNB):
     r"""Gaussian Naive Bayes (GaussianNB) with differential privacy
 
     Inherits the :class:`sklearn.naive_bayes.GaussianNB` class from Scikit Learn and adds noise to satisfy differential
-    privacy to the learned means and variances.
+    privacy to the learned means and variances.  Adapted from the work presented in [VSB13]_.
 
     Parameters
     ----------
@@ -50,6 +50,12 @@ class GaussianNB(sk_nb.GaussianNB):
 
     epsilon_ : float
         absolute additive value to variances (unrelated to ``epsilon`` parameter for differential privacy)
+
+    References
+    ----------
+    .. [VSB13] Vaidya, Jaideep, Basit Shafiq, Anirban Basu, and Yuan Hong. "Differentially private naive bayes
+        classification." In 2013 IEEE/WIC/ACM International Joint Conferences on Web Intelligence (WI) and Intelligent
+        Agent Technologies (IAT), vol. 1, pp. 571-576. IEEE, 2013.
 
     """
 
