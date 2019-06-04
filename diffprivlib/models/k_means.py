@@ -12,30 +12,30 @@ from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 class KMeans(skcluster.KMeans):
-    """K-Means clustering with differential privacy
+    r"""K-Means clustering with differential privacy
 
     Parameters
     ----------
     epsilon : float, optional, default: 1.0
-        Privacy parameter epsilon.
+        Privacy parameter :math:`\epsilon`.
 
     bounds : list or None, optional, default: None
         Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
-        are computed on the data when .fit() is first called, resulting in a `PrivacyLeakWarning`.
+        are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of centroids to generate.
 
     unused_args :
-        Placeholder for arguments used by sklearn.KMeans, but not used by diffprivlib. Specifying any of these
-        parameters will result in a DiffprivlibCompatibilityWarning.
+        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any of
+        these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
     Attributes
     ----------
     cluster_centers_ : array, [n_clusters, n_features]
-        Coordinates of cluster centers. If the algorithm stops before fully
-        converging (see ``tol`` and ``max_iter``), these will not be
-        consistent with ``labels_``.
+
+        Coordinates of cluster centers. If the algorithm stops before fully converging, these will not be consistent
+        with ``labels_``.
 
     labels_ :
         Labels of each point
@@ -90,8 +90,8 @@ class KMeans(skcluster.KMeans):
             not used, present here for API consistency by convention.
 
         unused_args :
-            Placeholder for arguments present in sklearn.KMeans, but not used in diffprivlib.  Specifying any of these
-            parameters will result in a DiffprivlibCompatibilityWarning.
+            Placeholder for arguments present in :obj:`sklearn.cluster.KMeans`, but not used in diffprivlib.  Specifying
+            any of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
         Returns
         -------
@@ -123,10 +123,12 @@ class KMeans(skcluster.KMeans):
         labels = None
         distances = None
 
-        for _ in range(iters):
-            distances, labels = self._distances_labels(X, centers)
+        # Run _update_centers first to ensure consistency of `labels` and `centers`, since convergence unlikely
+        for _ in range(-1, iters):
+            if labels is not None:
+                centers = self._update_centers(X, centers=centers, labels=labels, dims=dims, total_iters=iters)
 
-            centers = self._update_centers(X, centers=centers, labels=labels, dims=dims, total_iters=iters)
+            distances, labels = self._distances_labels(X, centers)
 
         self.cluster_centers_ = centers
         self.labels_ = labels
@@ -195,8 +197,9 @@ class KMeans(skcluster.KMeans):
         """Updates the centers of the KMeans algorithm for the current iteration, while satisfying differential
         privacy.
 
-        Differential privacy is satisfied by adding (geometric) random noise to the count of nearest neighbours to the
-        previous cluster centers, and adding (Laplacian) random noise to the sum of values per dimension.
+        Differential privacy is satisfied by adding (integer-valued, using :class:`.GeometricFolded`) random noise to
+        the count of nearest neighbours to the previous cluster centers, and adding (real-valued, using
+        :class:`.LaplaceBoundedDomain`) random noise to the sum of values per dimension.
 
         """
         epsilon_0, epsilon_i = self._split_epsilon(dims, total_iters)
@@ -229,9 +232,11 @@ class KMeans(skcluster.KMeans):
         Parameters
         ----------
         dims : int
-            Number of dimensions to split epsilon across.
+            Number of dimensions to split `epsilon` across.
+
         total_iters : int
-            Total number of iterations to split epsilon across.
+            Total number of iterations to split `epsilon` across.
+
         rho : float, default 0.225
             Coordinate normalisation factor.
 
@@ -239,6 +244,7 @@ class KMeans(skcluster.KMeans):
         -------
         epsilon_0 : float
             The epsilon value for satisfying differential privacy on the count of a cluster.
+
         epsilon_i : float
             The epsilon value for satisfying differential privacy on each dimension of the center of a cluster.
 
