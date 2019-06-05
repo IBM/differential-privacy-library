@@ -104,6 +104,10 @@ class Geometric(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        return 0.0
+
     def randomise(self, value):
         """Randomise `value` with the mechanism.
 
@@ -169,6 +173,10 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
 
         return super().set_bounds(lower, upper)
 
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        pass
+
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
         TruncationAndFoldingMachine.check_inputs(self, value)
@@ -218,6 +226,10 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
 
     def _fold(self, value):
         return super()._fold(int(np.round(value)))
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        pass
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
