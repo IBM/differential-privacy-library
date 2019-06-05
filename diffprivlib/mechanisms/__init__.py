@@ -1,7 +1,7 @@
 """
 Basic mechanisms for achieving differential privacy, the basic building blocks of the library.
 """
-from diffprivlib.mechanisms.base import DPMachine, DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.mechanisms.base import DPMachine, DPMechanism, TruncationAndFoldingMixin
 
 from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.mechanisms.exponential import Exponential, ExponentialHierarchical

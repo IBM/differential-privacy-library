@@ -6,7 +6,7 @@ from numbers import Real
 import numpy as np
 from numpy.random import random
 
-from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMixin
 from diffprivlib.utils import copy_docstring
 
 
@@ -138,18 +138,18 @@ class Laplace(DPMechanism):
         return value - scale * np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv))
 
 
-class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
+class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     """
     The truncated Laplace mechanism, where values outside a pre-described domain are mapped to the closest point
     within the domain.
     """
     def __init__(self):
         super().__init__()
-        TruncationAndFoldingMachine.__init__(self)
+        TruncationAndFoldingMixin.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += TruncationAndFoldingMachine.__repr__(self)
+        output += TruncationAndFoldingMixin.__repr__(self)
 
         return output
 
@@ -179,30 +179,30 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMachine):
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
         super().check_inputs(value)
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         return True
 
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
         return self._truncate(noisy_value)
 
 
-class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
+class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     """
     The folded Laplace mechanism, where values outside a pre-described domain are folded around the domain until they
     fall within.
     """
     def __init__(self):
         super().__init__()
-        TruncationAndFoldingMachine.__init__(self)
+        TruncationAndFoldingMixin.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += TruncationAndFoldingMachine.__repr__(self)
+        output += TruncationAndFoldingMixin.__repr__(self)
 
         return output
 
@@ -224,13 +224,13 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMachine):
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
         super().check_inputs(value)
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         return True
 
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
         return self._fold(noisy_value)

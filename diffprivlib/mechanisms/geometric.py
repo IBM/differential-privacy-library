@@ -6,7 +6,7 @@ from numbers import Integral
 import numpy as np
 from numpy.random import random
 
-from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMachine
+from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMixin
 from diffprivlib.utils import copy_docstring
 
 
@@ -136,18 +136,18 @@ class Geometric(DPMechanism):
         return int(np.round(value + sgn * np.floor(np.log(sgn * unif_rv) / self._scale)))
 
 
-class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
+class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     """
     The truncated geometric mechanism, where values that fall outside a pre-described range are mapped back to the
     closest point within the range.
     """
     def __init__(self):
         super().__init__()
-        TruncationAndFoldingMachine.__init__(self)
+        TruncationAndFoldingMixin.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += TruncationAndFoldingMachine.__repr__(self)
+        output += TruncationAndFoldingMixin.__repr__(self)
 
         return output
 
@@ -179,13 +179,13 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMachine):
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
         return int(np.round(self._truncate(noisy_value)))
 
 
-class GeometricFolded(Geometric, TruncationAndFoldingMachine):
+class GeometricFolded(Geometric, TruncationAndFoldingMixin):
     """
     The folded geometric mechanism, where values outside a pre-described range are folded back toward the domain around
     the closest point within the domain.
@@ -193,11 +193,11 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
     """
     def __init__(self):
         super().__init__()
-        TruncationAndFoldingMachine.__init__(self)
+        TruncationAndFoldingMixin.__init__(self)
 
     def __repr__(self):
         output = super().__repr__()
-        output += TruncationAndFoldingMachine.__repr__(self)
+        output += TruncationAndFoldingMixin.__repr__(self)
 
         return output
 
@@ -233,7 +233,7 @@ class GeometricFolded(Geometric, TruncationAndFoldingMachine):
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMachine.check_inputs(self, value)
+        TruncationAndFoldingMixin.check_inputs(self, value)
 
         noisy_value = super().randomise(value)
         return int(np.round(self._fold(noisy_value)))

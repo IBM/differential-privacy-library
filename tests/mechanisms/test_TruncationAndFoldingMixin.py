@@ -1,18 +1,18 @@
 from unittest import TestCase
 
-from diffprivlib.mechanisms import TruncationAndFoldingMachine, DPMechanism
+from diffprivlib.mechanisms import TruncationAndFoldingMixin, DPMechanism
 
 
-class TestTruncationAndFoldingMachine(TestCase):
+class TestTruncationAndFoldingMixin(TestCase):
     def test_not_none(self):
-        self.assertIsNotNone(TruncationAndFoldingMachine)
+        self.assertIsNotNone(TruncationAndFoldingMixin)
 
     def test_lone_instantiation(self):
         with self.assertRaises(TypeError):
-            TruncationAndFoldingMachine()
+            TruncationAndFoldingMixin()
 
     def test_dummy_instantiation(self):
-        class TestClass(DPMechanism, TruncationAndFoldingMachine):
+        class TestClass(DPMechanism, TruncationAndFoldingMixin):
             def randomise(self, value):
                 return 0
 

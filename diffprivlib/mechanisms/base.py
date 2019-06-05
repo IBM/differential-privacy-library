@@ -265,9 +265,9 @@ class DPMechanism(DPMachine, ABC):
         return True
 
 
-class TruncationAndFoldingMachine:
+class TruncationAndFoldingMixin:
     """
-    Base class for truncating or folding the outputs of a mechanism. Must be instantiated with a :class:`.DPMechanism`.
+    Mixin for truncating or folding the outputs of a mechanism. Must be instantiated with a :class:`.DPMechanism`.
     """
     def __init__(self):
         if not isinstance(self, DPMechanism):
@@ -277,7 +277,7 @@ class TruncationAndFoldingMachine:
         self._upper_bound = None
 
     def __repr__(self):
-        output = ".setBounds(" + str(self._lower_bound) + ", " + str(self._upper_bound) + ")" \
+        output = ".set_bounds(" + str(self._lower_bound) + ", " + str(self._upper_bound) + ")" \
             if self._lower_bound is not None else ""
 
         return output
