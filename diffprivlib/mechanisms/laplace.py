@@ -11,10 +11,15 @@ from diffprivlib.utils import copy_docstring
 
 
 class Laplace(DPMechanism):
-    """
+    r"""
     The classic Laplace mechanism in differential privacy, as first proposed by Dwork, McSherry, Nissim and Smith.
 
     Paper link: https://link.springer.com/content/pdf/10.1007/11681878_14.pdf
+
+    Includes extension to (relaxed) :math:`(\epsilon,\delta)`-differential privacy, as proposed by Holohan et al.
+
+    Paper link: https://arxiv.org/pdf/1402.6124.pdf
+
     """
     def __init__(self):
         super().__init__()
@@ -126,7 +131,7 @@ class Laplace(DPMechanism):
         """
         self.check_inputs(value)
 
-        scale = self._sensitivity / self._epsilon
+        scale = self._sensitivity / (self._epsilon - np.log(1 - self._delta))
 
         unif_rv = random() - 0.5
 
@@ -241,8 +246,11 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         self._scale = None
 
     def _find_scale(self):
+        if self._epsilon is None or self._delta is None:
+            raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
+
         eps = self._epsilon
-        delta = 0.0
+        delta = self._delta
         diam = self._upper_bound - self._lower_bound
         delta_q = self._sensitivity
 
@@ -280,15 +288,19 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         return 1 - 0.5 * np.exp(-value / self._scale)
 
     def get_effective_epsilon(self):
-        r"""Gets the effective epsilon of the mechanism.
+        r"""Gets the effective epsilon of the mechanism, only for strict :math:`\epsilon`-differential privacy.  Returns
+        ``None`` if :math:`\delta` is non-zero.
 
         Returns
         -------
         float
-            The effective :math:`\epsilon` parameter of the mechanism.
+            The effective :math:`\epsilon` parameter of the mechanism.  Returns ``None`` if `delta` is non-zero.
         """
         if self._scale is None:
             self._scale = self._find_scale()
+
+        if self._delta > 0.0:
+            return None
 
         return self._sensitivity / self._scale
 
@@ -351,7 +363,7 @@ class LaplaceBoundedNoise(Laplace):
     """
     def __init__(self):
         super().__init__()
-        self._shape = None
+        self._scale = None
         self._noise_bound = None
 
     def set_epsilon_delta(self, epsilon, delta):
@@ -384,13 +396,13 @@ class LaplaceBoundedNoise(Laplace):
         return DPMechanism.set_epsilon_delta(self, epsilon, delta)
 
     def _cdf(self, value):
-        if self._shape == 0:
+        if self._scale == 0:
             return 0 if value < 0 else 1
 
         if value < 0:
-            return 0.5 * np.exp(value / self._shape)
+            return 0.5 * np.exp(value / self._scale)
 
-        return 1 - 0.5 * np.exp(-value / self._shape)
+        return 1 - 0.5 * np.exp(-value / self._scale)
 
     @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
@@ -404,14 +416,14 @@ class LaplaceBoundedNoise(Laplace):
     def randomise(self, value):
         self.check_inputs(value)
 
-        if self._shape is None or self._noise_bound is None:
-            self._shape = self._sensitivity / self._epsilon
-            self._noise_bound = -1 if self._shape == 0 else\
-                self._shape * np.log(1 + (np.exp(self._epsilon) - 1) / 2 / self._delta)
+        if self._scale is None or self._noise_bound is None:
+            self._scale = self._sensitivity / self._epsilon
+            self._noise_bound = -1 if self._scale == 0 else \
+                self._scale * np.log(1 + (np.exp(self._epsilon) - 1) / 2 / self._delta)
 
         unif_rv = random()
         unif_rv *= self._cdf(self._noise_bound) - self._cdf(- self._noise_bound)
         unif_rv += self._cdf(- self._noise_bound)
         unif_rv -= 0.5
 
-        return value - self._shape * (np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv)))
+        return value - self._scale * (np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv)))

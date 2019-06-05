@@ -52,6 +52,14 @@ class TestLaplace(TestCase):
         with self.assertRaises(TypeError):
             _mech.set_epsilon("Two")
 
+    def test_zero_epsilon_with_delta(self):
+        mech = Laplace().set_sensitivity(1).set_epsilon_delta(0, 0.5)
+        self.assertIsNotNone(mech.randomise(1))
+
+    def test_epsilon_delta(self):
+        mech = Laplace().set_sensitivity(1).set_epsilon_delta(1, 0.01)
+        self.assertIsNotNone(mech.randomise(1))
+
     def test_non_numeric(self):
         _mech = mech.copy().set_sensitivity(1).set_epsilon(1)
         with self.assertRaises(TypeError):
