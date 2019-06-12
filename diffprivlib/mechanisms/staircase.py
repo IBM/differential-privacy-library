@@ -23,6 +23,12 @@ class Staircase(Laplace):
         super().__init__()
         self._gamma = None
 
+    def __repr__(self):
+        output = super().__repr__()
+        output += ".set_gamma(" + str(self._gamma) + ")" if self._gamma is not None else ""
+
+        return output
+
     def set_gamma(self, gamma):
         r"""Sets the tuning parameter :math:`\gamma` for the mechanism.
 

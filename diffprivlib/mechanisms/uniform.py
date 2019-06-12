@@ -21,6 +21,12 @@ class Uniform(DPMechanism):
         super().__init__()
         self._sensitivity = None
 
+    def __repr__(self):
+        output = super().__repr__()
+        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
+
+        return output
+
     def set_epsilon_delta(self, epsilon, delta):
         r"""Set privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 

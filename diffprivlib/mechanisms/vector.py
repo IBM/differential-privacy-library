@@ -22,6 +22,15 @@ class Vector(DPMechanism):
         self._vector_dim = None
         self._alpha = 0.01
 
+    def __repr__(self):
+        output = super().__repr__()
+        output += ".set_alpha(" + str(self._alpha) + ")" if self._alpha != 0.01 else ""
+        output += ".set_sensitivity(" + str(self._function_sensitivity) + ", " + str(self._data_sensitivity) + ")" \
+            if self._function_sensitivity is not None or self._data_sensitivity != 1 else ""
+        output += ".set_dimension(" + str(self._vector_dim) + ")" if self._vector_dim is not None else ""
+
+        return output
+
     def set_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
 
@@ -50,6 +59,54 @@ class Vector(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    def set_alpha(self, alpha):
+        r"""Set the regularisation parameter :math:`\alpha` for the mechanism.
+
+        `alpha` must be strictly positive.  Default is 0.01.
+
+        Parameters
+        ----------
+        alpha : float
+            Regularisation parameter.
+
+        Returns
+        -------
+        self : class
+
+        """
+        if not isinstance(alpha, Real):
+            raise TypeError("Alpha must be numeric")
+
+        if alpha <= 0:
+            raise ValueError("Alpha must be strictly positive")
+
+        self._alpha = alpha
+        return self
+
+    def set_dimension(self, vector_dim):
+        """Sets the dimension `vector_dim` of the domain of the mechanism.
+
+        This dimension relates to the size of the input vector of the function being considered by the mechanism. This
+        corresponds to the size of the random vector produced by the mechanism.
+
+        Parameters
+        ----------
+        vector_dim : int
+            Function input dimension.
+
+        Returns
+        -------
+        self : class
+
+        """
+        if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
+            raise TypeError("d must be integer-valued")
+        if not vector_dim >= 1:
+            raise ValueError("d must be strictly positive")
+
+        self._vector_dim = int(vector_dim)
+        return self
+
     def set_sensitivity(self, function_sensitivity, data_sensitivity=1):
         """Sets the sensitivity of the function and data being processed by the mechanism.
 
@@ -76,30 +133,6 @@ class Vector(DPMechanism):
 
         self._function_sensitivity = function_sensitivity
         self._data_sensitivity = data_sensitivity
-        return self
-
-    def set_alpha(self, alpha):
-        r"""Set the regularisation parameter :math:`\alpha` for the mechanism.
-
-        `alpha` must be strictly positive.  Default is 0.01.
-
-        Parameters
-        ----------
-        alpha : float
-            Regularisation parameter.
-
-        Returns
-        -------
-        self : class
-
-        """
-        if not isinstance(alpha, Real):
-            raise TypeError("Alpha must be numeric")
-
-        if alpha <= 0:
-            raise ValueError("Alpha must be strictly positive")
-
-        self._alpha = alpha
         return self
 
     def check_inputs(self, value):
@@ -132,30 +165,6 @@ class Vector(DPMechanism):
             raise ValueError("Dimension d must be set")
 
         return True
-
-    def set_dimension(self, vector_dim):
-        """Sets the dimension `vector_dim` of the domain of the mechanism.
-
-        This dimension relates to the size of the input vector of the function being considered by the mechanism. This
-        corresponds to the size of the random vector produced by the mechanism.
-
-        Parameters
-        ----------
-        vector_dim : int
-            Function input dimension.
-
-        Returns
-        -------
-        self : class
-
-        """
-        if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
-            raise TypeError("d must be integer-valued")
-        if not vector_dim >= 1:
-            raise ValueError("d must be strictly positive")
-
-        self._vector_dim = int(vector_dim)
-        return self
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.

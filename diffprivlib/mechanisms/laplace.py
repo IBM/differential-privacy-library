@@ -27,7 +27,7 @@ class Laplace(DPMechanism):
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".setSensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
+        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
 
         return output
 

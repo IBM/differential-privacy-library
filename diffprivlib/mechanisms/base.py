@@ -101,7 +101,7 @@ class DPMechanism(DPMachine, abc.ABC):
     def __repr__(self):
         output = str(self.__module__) + "." + str(self.__class__.__name__) + "()"
 
-        if self._epsilon is not None and self._delta is not None:
+        if self._epsilon is not None and self._delta is not None and self._delta > 0.0:
             output += ".set_epsilon_delta(" + str(self._epsilon) + "," + str(self._delta) + ")"
         elif self._epsilon is not None:
             output += ".set_epsilon(" + str(self._epsilon) + ")"
