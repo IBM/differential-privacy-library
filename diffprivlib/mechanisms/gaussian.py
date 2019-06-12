@@ -23,6 +23,7 @@ class Gaussian(DPMechanism):
         super().__init__()
         self._sensitivity = None
         self._scale = None
+        self._stored_gaussian = None
 
     def __repr__(self):
         output = super().__repr__()
@@ -100,7 +101,14 @@ class Gaussian(DPMechanism):
     def randomise(self, value):
         self.check_inputs(value)
 
-        unif_rv1 = random()
-        unif_rv2 = random()
+        if self._stored_gaussian is None:
+            unif_rv1 = random()
+            unif_rv2 = random()
 
-        return np.sqrt(- 2 * np.log(unif_rv1)) * np.cos(2 * np.pi * unif_rv2) * self._scale + value
+            self._stored_gaussian = np.sqrt(- 2 * np.log(unif_rv1)) * np.sin(2 * np.pi * unif_rv2)
+            standard_normal = np.sqrt(- 2 * np.log(unif_rv1)) * np.cos(2 * np.pi * unif_rv2)
+        else:
+            standard_normal = self._stored_gaussian
+            self._stored_gaussian = None
+
+        return standard_normal * self._scale + value
