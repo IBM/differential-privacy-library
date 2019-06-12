@@ -10,14 +10,6 @@ install_requires = ['numpy >= 1.15.0',
                     'joblib >= 0.13.2',
                     ]
 
-# tests_require = ['mxnet',
-#                  'h5py',
-#                  'keras',
-#                  'Pillow',
-#                  'requests',
-#                  'tensorflow',
-#                  'torch == 0.4.0']
-
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
@@ -29,7 +21,7 @@ setup(name='diffprivlib',
       author='Naoise Holohan',
       author_email='naoise@ibm.com',
       url='https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib',
-      license='Apache 2.0',
+      license='MIT',
       install_requires=install_requires,
       # tests_require=tests_require,
       extras_require={
