@@ -9,10 +9,10 @@ The IBM Differential Privacy Library is a general-purpose library for experiment
 Use the Differential Privacy Library if you are looking to:
 
 - Experiment with differential privacy
-- Explore the impact of differential privacy on machine learning accuracy using basic classification, regression and clustering models 
+- Explore the impact of differential privacy on machine learning accuracy using basic classification and clustering models 
 - Build your own differential privacy applications, using our extensive collection of mechanisms
 
-DPL is compatible with: __Python 3.4–3.6__.
+Diffprivlib is compatible with: __Python 3.4–3.7__.
 
 ## Getting started: [ML with differential privacy in 30 seconds](notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
@@ -27,7 +27,7 @@ X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target
 
 Now, let's train a differentially private naive Bayes classifier. Our classifier __runs just like an `sklearn` classifier__, so you can get up and running quickly.
 
-`dpl.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `dpl.models.GaussianNB(epsilon=1.0)`). The default is `epsilon = 1.0`.
+`diffprivlib.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
 
 ```python
 import diffprivlib as dpl
@@ -77,10 +77,10 @@ Congratulations, you've completed your first differentially private machine lear
 
 ## Contents
 
-DPL is comprised of three main modules:
+Diffprivlib is comprised of three modules:
 1. __Mechanisms:__ These are the building blocks of differential privacy, and are used in all models that implement differential privacy. Mechanisms have little or no default settings, and are intended for use by experts implementing their own models. They can, however, be used outside models for separate investigations, etc.
+1. __Models:__ This module includes machine learning models with differential privacy. Diffprivlib currently has models for clustering and classification.
 1. __Tools:__ DPL comes with a number of generic tools for differentially private data analysis. This includes differentially private histograms, following the same format as [Numpy's histogram function](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html).
-1. __Models:__ This module includes machine learning models with differential privacy. DPL currently has models for clustering and classification.
 
 
 ## Setup
@@ -93,9 +93,9 @@ For the most recent version of the library, either download the source code or c
 git clone https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib
 ```
 
-To install DPL, do the following in the project folder:
+To install `diffprivlib`, do the following in the project folder (alternatively, you can run `python3 -m pip install .`):
 ```bash
-pip install .
+pip3 install .
 ```
 
 The library comes with a basic set of unit tests for `pytest`. To check your install, you can run all the unit tests by calling `pytest` in the install folder:
@@ -107,7 +107,7 @@ pytest
 
 ## Guiding principles
 
-- __Unifying codebase:__ DPL is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
-- __Wide audience:__ DPL is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
-- __Extensibility:__ DPL comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
+- __Unifying codebase:__ Diffprivlib is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
+- __Wide audience:__ Diffprivlib is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
+- __Extensibility:__ Diffprivlib comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
 
