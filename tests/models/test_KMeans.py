@@ -4,14 +4,13 @@ from unittest import TestCase
 from diffprivlib.models.k_means import KMeans
 from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
-global_seed(3141592653)
-
 
 class TestKMeans(TestCase):
     def test_not_none(self):
         self.assertIsNotNone(KMeans)
 
     def test_simple(self):
+        global_seed(3141592653)
         clf = KMeans(5, [(0, 1)], 3)
 
         X = np.zeros(1000) + 0.1
@@ -59,6 +58,13 @@ class TestKMeans(TestCase):
         self.assertNotEqual(predicted[0], predicted[1])
         self.assertNotEqual(predicted[0], predicted[2])
         self.assertNotEqual(predicted[2], predicted[1])
+
+    def test_sample_weights(self):
+        clf = KMeans(30, [(0, 1)], 3)
+
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            clf.fit(X, None, 1)
 
     def test_inf_epsilon(self):
         global_seed(3141592653)

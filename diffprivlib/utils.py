@@ -1,26 +1,23 @@
 """
 Basic functions and other utilities for the differential privacy library
 """
-import abc
-import sys
 import warnings
 
 import numpy as np
 
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
-
 
 def global_seed(seed):
-    """
-    Sets the seed for all random number generators, to guarantee reproducibility in experiments.
+    """Sets the seed for all random number generators, to guarantee reproducibility in experiments.
 
-    :param seed: The seed value for the random number generators.
-    :type seed: `int`
-    :return: None
+    Parameters
+    ----------
+    seed : int
+        The seed value for the random number generators.
+
+    Returns
+    -------
+    None
+
     """
     np.random.seed(seed)
 
@@ -49,12 +46,30 @@ def copy_docstring(source):
     return copy_func
 
 
-def warn_unused_args(args_dict):
-    """Warn the user about supplying unused args to a diffprivlib model."""
+def warn_unused_args(args):
+    """Warn the user about supplying unused `args` to a diffprivlib model.
 
-    for key in args_dict:
+    Arguments can be supplied as a string, a list of strings, or a dictionary as supplied to kwargs.
+
+    Parameters
+    ----------
+    args : str or list or dict
+        Arguments for which warnings should be thrown.
+
+    Returns
+    -------
+    None
+
+    """
+    if isinstance(args, str):
+        args = [args]
+
+    if not isinstance(args, (dict, list)):
+        raise ValueError("args must be a string, a list of strings or a dictionary, got type '%s'." % type(args))
+
+    for arg in args:
         warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
-                      "warning." % key, DiffprivlibCompatibilityWarning)
+                      "warning." % arg, DiffprivlibCompatibilityWarning)
 
 
 class PrivacyLeakWarning(RuntimeWarning):

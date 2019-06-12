@@ -70,7 +70,7 @@ class KMeans(skcluster.KMeans):
         self.inertia_ = None
         self.n_iter_ = None
 
-    def fit(self, X, y=None, **unused_args):
+    def fit(self, X, y=None, sample_weight=None):
         """Computes k-means clustering with differential privacy.
 
         Parameters
@@ -81,16 +81,18 @@ class KMeans(skcluster.KMeans):
         y : Ignored
             not used, present here for API consistency by convention.
 
-        unused_args :
-            Placeholder for arguments present in :obj:`sklearn.cluster.KMeans`, but not used in diffprivlib.  Specifying
-            any of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
+        sample_weight : Ignored
+            Not used in diffprivlib, present here for consistency with :obj:`sklearn.cluster.KMeans`. Specifying this
+            parameter will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
         Returns
         -------
         self : class
 
         """
-        warn_unused_args(unused_args)
+        if sample_weight is not None:
+            warn_unused_args("sample_weight")
+
         del y
 
         if X.ndim != 2:
