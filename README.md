@@ -80,7 +80,7 @@ Congratulations, you've completed your first differentially private machine lear
 Diffprivlib is comprised of three modules:
 1. __Mechanisms:__ These are the building blocks of differential privacy, and are used in all models that implement differential privacy. Mechanisms have little or no default settings, and are intended for use by experts implementing their own models. They can, however, be used outside models for separate investigations, etc.
 1. __Models:__ This module includes machine learning models with differential privacy. Diffprivlib currently has models for clustering and classification.
-1. __Tools:__ DPL comes with a number of generic tools for differentially private data analysis. This includes differentially private histograms, following the same format as [Numpy's histogram function](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html).
+1. __Tools:__ Diffprivlib comes with a number of generic tools for differentially private data analysis. This includes differentially private histograms, following the same format as [Numpy's histogram function](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html).
 
 
 ## Setup
