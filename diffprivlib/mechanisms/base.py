@@ -2,18 +2,11 @@
 Base classes for differential privacy mechanisms.
 """
 import abc
-import sys
 from copy import copy, deepcopy
 from numbers import Real
 
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
 
-
-class DPMachine(ABC):
+class DPMachine(abc.ABC):
     """
     Parent class for :class:`.DPMechanism` and :class:`.DPTransformer`, providing and specifying basic functionality.
     """
@@ -96,7 +89,7 @@ class DPMachine(ABC):
         """
 
 
-class DPMechanism(DPMachine, ABC):
+class DPMechanism(DPMachine, abc.ABC):
     """
     Base class for all mechanisms. Instantiated from :class:`.DPMachine`.
 
