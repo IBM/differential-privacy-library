@@ -4,7 +4,7 @@ Basic functions and other utilities for machine learning models in the different
 from numbers import Real
 
 
-def _check_bounds(bounds, dims=1, min_seperation=1e-5):
+def _check_bounds(bounds, dims=1, min_separation=1e-5):
     if bounds is None:
         return None
 
@@ -26,8 +26,8 @@ def _check_bounds(bounds, dims=1, min_seperation=1e-5):
             raise ValueError("For each feature bound, lower bound must be smaller than upper bound"
                              "(error found in bound %s" % str(bound))
 
-        if upper - lower <= min_seperation:
-            bound = (lower - min_seperation, upper + min_seperation)
+        if upper - lower <= min_separation:
+            bound = (lower - min_separation, upper + min_separation)
 
         new_bounds.append(bound)
 
