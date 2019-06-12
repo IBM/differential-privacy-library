@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
+import pytest
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
@@ -56,6 +57,7 @@ class TestGaussianNB(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
+    @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn.naive_bayes import GaussianNB as sk_nb
         from sklearn import datasets
