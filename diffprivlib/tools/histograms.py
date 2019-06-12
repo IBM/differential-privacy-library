@@ -72,7 +72,6 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
 
 # noinspection PyShadowingBuiltins
-# todo Throw warning if range not specified, and use sample.min() and sample.max() as substitute
 def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None):
     """
     Compute the differentially private multidimensional histogram of some data. Behaves the same as Numpy's
