@@ -2,10 +2,14 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Vector
+from diffprivlib.utils import global_seed
 
 
 class TestVector(TestCase):
     def setup_method(self, method):
+        if method.__name__ .endswith("prob"):
+            global_seed(314159)
+
         self.mech = Vector()
 
     def teardown_method(self, method):

@@ -21,6 +21,6 @@ class TestDPMechanism(TestCase):
             def randomise(self, value):
                 return random()
 
-        _mech = BaseDPMechanism()
+        mech = BaseDPMechanism()
         with self.assertRaises(ValueError):
-            _mech.set_epsilon(-1)
+            mech.set_epsilon(-1)

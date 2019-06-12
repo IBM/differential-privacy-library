@@ -1,15 +1,9 @@
 import abc
-import sys
 from unittest import TestCase
 
 from numpy.random import random
 
 from diffprivlib.mechanisms import DPMachine
-
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
 
 
 class TestDPMachine(TestCase):
@@ -17,7 +11,7 @@ class TestDPMachine(TestCase):
         self.assertIsNotNone(DPMachine)
 
     def test_class(self):
-        self.assertTrue(issubclass(DPMachine, ABC))
+        self.assertTrue(issubclass(DPMachine, abc.ABC))
 
     def test_instantiation(self):
         with self.assertRaises(TypeError):
@@ -28,7 +22,7 @@ class TestDPMachine(TestCase):
             def set_epsilon(self, epsilon):
                 return self
 
-            def set_epsilon_delta(self, epsilon):
+            def set_epsilon_delta(self, epsilon, delta):
                 return self
 
             def randomise(self, value):
