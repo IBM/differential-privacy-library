@@ -5,14 +5,14 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
-  - "3.8"
+  - "3.8-dev"
 matrix:
   include:
     - python: 3.7
       script:
         - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0)
   allow_failures:
-    - python: 3.8
+    - python: 3.8-dev
       script:
         - pytest
 
