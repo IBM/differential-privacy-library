@@ -12,7 +12,7 @@ Base classes
    :members:
    :inherited-members:
 
-.. autoclass:: TruncationAndFoldingMachine
+.. autoclass:: TruncationAndFoldingMixin
    :members:
    :inherited-members:
 
@@ -35,9 +35,14 @@ Exponential mechanisms
    :inherited-members:
    :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta,set_utility
 
-Gaussian mechanism
+Gaussian mechanisms
 -----------------------------
 .. autoclass:: Gaussian
+   :members:
+   :inherited-members:
+   :exclude-members: copy,deepcopy,set_epsilon
+
+.. autoclass:: GaussianAnalytic
    :members:
    :inherited-members:
    :exclude-members: copy,deepcopy,set_epsilon
