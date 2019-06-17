@@ -145,7 +145,7 @@ class GaussianAnalytic(Gaussian):
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
         self._scale = None
-        return super(Gaussian, self).set_epsilon_delta(epsilon, delta)
+        return DPMechanism.set_epsilon_delta(self, epsilon, delta)
 
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
