@@ -30,9 +30,9 @@ Now, let's train a differentially private naive Bayes classifier. Our classifier
 `diffprivlib.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
 
 ```python
-import diffprivlib as dpl
+import diffprivlib.models as dp
 
-clf = dpl.models.GaussianNB()
+clf = dp.GaussianNB()
 clf.fit(X_train, y_train)
 ```
 
@@ -59,7 +59,7 @@ bounds = [(4.3, 7.9), (2.0, 4.4), (1.1, 6.9), (0.1, 2.5)]
 accuracy = list()
 
 for epsilon in epsilons:
-    clf = dpl.models.GaussianNB(bounds=bounds, epsilon=epsilon)
+    clf = dp.GaussianNB(bounds=bounds, epsilon=epsilon)
     clf.fit(X_train, y_train)
     
     accuracy.append((clf.predict(X_test) == y_test).sum() / y_test.shape[0])
@@ -103,11 +103,3 @@ The library comes with a basic set of unit tests for `pytest`. To check your ins
 ```bash
 pytest
 ```
-
-
-## Guiding principles
-
-- __Unifying codebase:__ Diffprivlib is the first library of its kind to include a large collection of differential privacy mechanisms, tools and machine learning models. This unifying foundation will make it easier to build new models, tools and mechanisms and to experiment new ways to doing differential privacy.
-- __Wide audience:__ Diffprivlib is as useful to experts in differential privacy looking to build their own models, as it is to researchers experiencing and experimenting with differential privacy for the first time. Models and tools copy the form of the popular Numpy and SkLearn packages, allowing for basic usage without the need to set any privacy-specific parameters.
-- __Extensibility:__ Diffprivlib comes with an extensive list of mechanisms, allowing for new and custom models to be written using a common codebase. This will allow for the development of a one-stop-shop for differential privacy.
-
