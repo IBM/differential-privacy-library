@@ -1,6 +1,7 @@
 """
 The classic Gaussian mechanism in differential privacy, and its derivatives.
 """
+from math import erf
 from numbers import Real
 
 import numpy as np
@@ -112,3 +113,98 @@ class Gaussian(DPMechanism):
             self._stored_gaussian = None
 
         return standard_normal * self._scale + value
+
+
+class GaussianAnalytic(Gaussian):
+    """The analytic Gaussian mechanism in differential privacy.
+
+    As first proposed by Balle and Wang in "Improving the Gaussian Mechanism for Differential Privacy: Analytical
+    Calibration and Optimal Denoising".
+
+    Paper link: https://arxiv.org/pdf/1805.06530.pdf
+
+    """
+    def set_epsilon_delta(self, epsilon, delta):
+        r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
+
+        For the analytic Gaussian mechanism, `epsilon` and `delta` must be non-zero.
+
+        Parameters
+        ----------
+        epsilon : float
+            Epsilon value of the mechanism. Must satisfy 0 < `epsilon`.
+        delta : float
+            Delta value of the mechanism. Must satisfy 0 < `delta` < 1.
+
+        Returns
+        -------
+        self : class
+
+        """
+        if epsilon == 0 or delta == 0:
+            raise ValueError("Neither Epsilon nor Delta can be zero")
+
+        self._scale = None
+        return super(Gaussian, self).set_epsilon_delta(epsilon, delta)
+
+    @copy_docstring(Laplace.check_inputs)
+    def check_inputs(self, value):
+        if self._scale is None:
+            self._scale = self._find_scale()
+
+        super().check_inputs(value)
+
+        return True
+
+    def _find_scale(self):
+        if self._epsilon is None or self._delta is None:
+            raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
+        if self._sensitivity is None:
+            raise ValueError("Sensitivity must be set before calling _find_scale().")
+
+        epsilon = self._epsilon
+        delta = self._delta
+
+        def phi(x):
+            return (1 + erf(x / np.sqrt(2))) / 2
+
+        def b_plus(x):
+            return phi(np.sqrt(epsilon * x)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (x + 2))) - delta
+
+        def b_minus(x):
+            return phi(- np.sqrt(epsilon * x)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (x + 2))) - delta
+
+        delta_0 = b_plus(0)
+
+        if delta_0 == 0:
+            alpha = 1
+        else:
+            if delta_0 < 0:
+                target_func = b_plus
+            else:
+                target_func = b_minus
+
+            # Find the starting interval by doubling the initial size until the target_func sign changes, as suggested
+            # in the paper
+            left = 0
+            right = 1
+
+            while target_func(left) * target_func(right) > 0:
+                left = right
+                right *= 2
+
+            # Binary search code copied from mechanisms.LaplaceBoundedDomain
+            old_interval_size = (right - left) * 2
+
+            while old_interval_size > right - left:
+                old_interval_size = right - left
+                middle = (right + left) / 2
+
+                if target_func(middle) * target_func(left) <= 0:
+                    right = middle
+                if target_func(middle) * target_func(right) <= 0:
+                    left = middle
+
+            alpha = np.sqrt(1 + (left + right) / 4) + (-1 if delta_0 < 0 else 1) * np.sqrt((left + right) / 4)
+
+        return alpha * self._sensitivity / np.sqrt(2 * self._epsilon)

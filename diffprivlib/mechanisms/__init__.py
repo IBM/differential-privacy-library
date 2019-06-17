@@ -5,7 +5,7 @@ from diffprivlib.mechanisms.base import DPMachine, DPMechanism, TruncationAndFol
 
 from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.mechanisms.exponential import Exponential, ExponentialHierarchical
-from diffprivlib.mechanisms.gaussian import Gaussian
+from diffprivlib.mechanisms.gaussian import Gaussian, GaussianAnalytic
 from diffprivlib.mechanisms.geometric import Geometric, GeometricFolded, GeometricTruncated
 from diffprivlib.mechanisms.laplace import Laplace, LaplaceBoundedDomain, LaplaceBoundedNoise, LaplaceFolded,\
     LaplaceTruncated
