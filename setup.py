@@ -19,13 +19,11 @@ setup(name='diffprivlib',
       long_description=long_description,
       long_description_content_type='text/markdown',
       author='Naoise Holohan',
-      author_email='naoise@ibm.com',
-      url='https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib',
+      author_email='naoise.holohan@ibm.com',
+      url='https://github.com/IBM/differential-privacy-library',
       license='MIT',
       install_requires=install_requires,
-      # tests_require=tests_require,
       extras_require={
-          # 'tests': tests_require,
           'docs': docs_require
       },
       classifiers=[
