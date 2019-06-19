@@ -1,6 +1,6 @@
 # IBM Differential Privacy Library
 
-[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/) [![PEP8](https://img.shields.io/badge/code%20style-pep8-orange.svg)](https://www.python.org/dev/peps/pep-0008/)
+[![Python versions](https://img.shields.io/pypi/pyversions/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![PyPi version](https://img.shields.io/pypi/v/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![Build Status](https://travis-ci.org/IBM/differential-privacy-library.svg?branch=master)](https://travis-ci.org/IBM/differential-privacy-library) [![Documentation Status](https://readthedocs.org/projects/diffprivlib/badge/?version=latest)](https://diffprivlib.readthedocs.io/en/latest/?badge=latest) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/differential-privacy-library.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/differential-privacy-library/context:python)
 
 ## You have just found the IBM Differential Privacy Library
 
@@ -104,7 +104,7 @@ git clone https://github.com/IBM/differential-privacy-library
 
 To install `diffprivlib`, do the following in the project folder (alternatively, you can run `python3 -m pip install .`):
 ```bash
-pip3 install .
+pip install .
 ```
 
 The library comes with a basic set of unit tests for `pytest`. To check your install, you can run all the unit tests by calling `pytest` in the install folder:
