@@ -56,8 +56,9 @@ class Vector(DPMechanism):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon > 0`.
+
         delta : float
             For the vector mechanism, `delta` must be zero.
 
@@ -103,7 +104,7 @@ class Vector(DPMechanism):
     def set_dimension(self, vector_dim):
         """Sets the dimension `vector_dim` of the domain of the mechanism.
 
-        This dimension relates to the size of the input vector of the function being considered by the mechanism. This
+        This dimension relates to the size of the input vector of the function being considered by the mechanism.  This
         corresponds to the size of the random vector produced by the mechanism.
 
         Parameters
@@ -127,13 +128,14 @@ class Vector(DPMechanism):
     def set_sensitivity(self, function_sensitivity, data_sensitivity=1):
         """Sets the sensitivity of the function and data being processed by the mechanism.
 
-        - The sensitivity of the function relates to the max of its second derivative. Must be strictly positive.
-        - The sensitivity of the data relates to the max 2-norm of each row. Must be strictly positive.
+        - The sensitivity of the function relates to the max of its second derivative.  Must be strictly positive.
+        - The sensitivity of the data relates to the max 2-norm of each row.  Must be strictly positive.
 
         Parameters
         ----------
         function_sensitivity : float
             The function sensitivity of the mechanism.
+
         data_sensitivity : float, default 1.0
             The data sensitivity of the mechanism.
 
@@ -159,6 +161,7 @@ class Vector(DPMechanism):
         Parameters
         ----------
         value : method
+            The value to be checked.
 
         Returns
         -------
@@ -186,7 +189,7 @@ class Vector(DPMechanism):
     def randomise(self, value):
         """Randomise `value` with the mechanism.
 
-        If `value` is a method of two outputs, they are take as `f` and `fprime` (i.e., its gradient), and both are
+        If `value` is a method of two outputs, they are taken as `f` and `fprime` (i.e., its gradient), and both are
         perturbed accordingly.
 
         Parameters

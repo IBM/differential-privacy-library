@@ -90,8 +90,9 @@ class DPMachine(abc.ABC):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon >= 0`.
+
         delta : float
             The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
             Must have `0 <= delta <= 1`.
@@ -215,8 +216,9 @@ class DPMechanism(DPMachine, abc.ABC):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon >= 0`.
+
         delta : float
             The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
             Must have `0 <= delta <= 1`.
@@ -258,6 +260,7 @@ class DPMechanism(DPMachine, abc.ABC):
         Parameters
         ----------
         value : int or float or str or method
+            The value to be checked.
 
         Returns
         -------
@@ -301,6 +304,7 @@ class TruncationAndFoldingMixin:
         ----------
         lower : float
             The lower bound of the mechanism.
+
         upper : float
             The upper bound of the mechanism.
 

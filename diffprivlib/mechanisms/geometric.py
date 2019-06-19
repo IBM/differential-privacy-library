@@ -33,6 +33,7 @@ class Geometric(DPMechanism):
     Extended to allow for non-unity sensitivity.
 
     Paper link: https://arxiv.org/pdf/0811.2841.pdf
+
     """
     def __init__(self):
         super().__init__()
@@ -51,7 +52,7 @@ class Geometric(DPMechanism):
         Parameters
         ----------
         sensitivity : int
-            The sensitivity of the mechanism. Must satisfy `sensitivity` > 0.
+            The sensitivity of the mechanism.  Must satisfy `sensitivity` > 0.
 
         Returns
         -------
@@ -74,6 +75,7 @@ class Geometric(DPMechanism):
         Parameters
         ----------
         value : int
+            The value to be checked.
 
         Returns
         -------
@@ -101,8 +103,9 @@ class Geometric(DPMechanism):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon > 0`.
+
         delta : float
             For the geometric mechanism, `delta` must be zero.
 
@@ -171,12 +174,14 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     def set_bounds(self, lower, upper):
         """Sets the lower and upper bounds of the mechanism.
 
-        For the truncated geometric mechanism, `lower` and `upper` must be integer-valued. Must have `lower` <= `upper`.
+        For the truncated geometric mechanism, `lower` and `upper` must be integer-valued.  Must have
+        `lower` <= `upper`.
 
         Parameters
         ----------
         lower : int
             The lower bound of the mechanism.
+
         upper : int
             The upper bound of the mechanism.
 
@@ -221,13 +226,14 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
     def set_bounds(self, lower, upper):
         """Sets the lower and upper bounds of the mechanism.
 
-        For the folded geometric mechanism, `lower` and `upper` must be integer or half-integer -valued. Must have
+        For the folded geometric mechanism, `lower` and `upper` must be integer or half-integer -valued.  Must have
         `lower` <= `upper`.
 
         Parameters
         ----------
         lower : int or float
             The lower bound of the mechanism.
+
         upper : int or float
             The upper bound of the mechanism.
 

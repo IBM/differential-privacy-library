@@ -53,6 +53,7 @@ class Uniform(DPMechanism):
         ----------
         epsilon : float
             For the uniform mechanism, `epsilon` must be strictly zero.
+
         delta : float
             For the uniform mechanism, `delta` must satisfy 0 < `delta` <= 0.5.
 
@@ -64,6 +65,7 @@ class Uniform(DPMechanism):
         ------
         ValueError
             If `epsilon` is non-zero or if `delta` does not satisfy 0 < `delta` <= 0.5.
+
         TypeError
             If `epsilon` or `delta` cannot be cast as floats.
 

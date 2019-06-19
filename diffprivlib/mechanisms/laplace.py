@@ -54,7 +54,7 @@ class Laplace(DPMechanism):
         Parameters
         ----------
         sensitivity : float
-            The sensitivity of the mechanism. Must satisfy `sensitivity` > 0.
+            The sensitivity of the mechanism.  Must satisfy `sensitivity` > 0.
 
         Returns
         -------
@@ -77,6 +77,7 @@ class Laplace(DPMechanism):
         Parameters
         ----------
         value : float
+            The value to be checked
 
         Returns
         -------
@@ -312,6 +313,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         -------
         float
             The effective :math:`\epsilon` parameter of the mechanism.  Returns ``None`` if `delta` is non-zero.
+
         """
         if self._scale is None:
             self._scale = self._find_scale()
@@ -393,10 +395,11 @@ class LaplaceBoundedNoise(Laplace):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon > 0`.
+
         delta : float
-            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `0 < delta < 0.5`.
 
         Returns

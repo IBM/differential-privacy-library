@@ -58,6 +58,7 @@ class Gaussian(DPMechanism):
         ----------
         epsilon : float
             Epsilon value of the mechanism. Must satisfy 0 < `epsilon` <= 1.
+
         delta : float
             Delta value of the mechanism. Must satisfy 0 < `delta` <= 1.
 
@@ -150,6 +151,7 @@ class GaussianAnalytic(Gaussian):
         ----------
         epsilon : float
             Epsilon value of the mechanism. Must satisfy 0 < `epsilon`.
+
         delta : float
             Delta value of the mechanism. Must satisfy 0 < `delta` < 1.
 

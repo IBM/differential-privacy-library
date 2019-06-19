@@ -38,6 +38,7 @@ class Exponential(DPMechanism):
     value, with greater probability given to values 'closer' to the input, as measured by a given utility function.
 
     Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
+
     """
     def __init__(self):
         super().__init__()
@@ -54,7 +55,7 @@ class Exponential(DPMechanism):
         return output
 
     def set_utility(self, utility_list):
-        """Sets the utility function of the mechanism. The utility function is used to determine the probability of
+        """Sets the utility function of the mechanism.  The utility function is used to determine the probability of
         selecting an output for a given input.
 
         The utility function is set by `utility_list`, which is a list of pairwise 'distances' between values in the
@@ -65,7 +66,7 @@ class Exponential(DPMechanism):
         Parameters
         ----------
         utility_list : list of tuples
-            The utility list of the mechanism. Must be specified as a list of tuples, of the form ("value1", "value2",
+            The utility list of the mechanism.  Must be specified as a list of tuples, of the form ("value1", "value2",
             utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
             specified for every pair of values given in the `utility_list`.
 
@@ -80,6 +81,7 @@ class Exponential(DPMechanism):
         ------
         TypeError
             If the `value` components of each tuple are not strings of if the `utility` component is not a float.
+
         ValueError
             If any of the `value` components contains the substring ``::`` or ends in ``:``, or if the `utility`
             component is zero or negative.
@@ -228,8 +230,9 @@ class Exponential(DPMechanism):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon > 0`.
+
         delta : float
             For the exponential mechanism, `delta` must be zero.
 
@@ -268,7 +271,7 @@ class Exponential(DPMechanism):
 
 class ExponentialHierarchical(Exponential):
     """
-    Adaptation of the exponential mechanism to hierarchical data. Simplifies the process of specifying utility values,
+    Adaptation of the exponential mechanism to hierarchical data.  Simplifies the process of specifying utility values,
     as the values can be inferred from the hierarchy.
 
     """

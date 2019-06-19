@@ -49,13 +49,14 @@ class Binary(DPMechanism):
     def set_labels(self, value0, value1):
         """Sets the binary labels of the mechanism.
 
-        Labels must be unique, non-empty strings. If non-string labels are required, consider using a
+        Labels must be unique, non-empty strings.  If non-string labels are required, consider using a
         :class:`.DPTransformer`.
 
         Parameters
         ----------
         value0 : str
             0th binary label.
+
         value1 : str
             1st binary label.
 
@@ -85,7 +86,7 @@ class Binary(DPMechanism):
         Parameters
         ----------
         value : str
-
+            The value to be checked.
 
         Returns
         -------

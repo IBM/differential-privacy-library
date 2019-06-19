@@ -66,6 +66,7 @@ class Staircase(Laplace):
         ------
         TypeError
             If `gamma` is not a float.
+
         ValueError
             If `gamma` is does not satisfy 0 <= `gamma` <= 1.
 
@@ -96,8 +97,9 @@ class Staircase(Laplace):
         Parameters
         ----------
         epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism. Must
+            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
             have `epsilon > 0`.
+
         delta : float
             For the staircase mechanism, `delta` must be zero.
 
