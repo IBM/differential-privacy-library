@@ -14,7 +14,7 @@ docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
 setuptools.setup(name='diffprivlib',
-                 version='0.1.0a',
+                 version='0.1.1',
                  description='IBM Differential Privacy Library',
                  long_description=long_description,
                  long_description_content_type='text/markdown',
