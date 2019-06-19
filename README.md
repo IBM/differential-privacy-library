@@ -71,7 +71,7 @@ plt.ylabel("Accuracy")
 plt.show()
 ```
 
-![Differentially private naive Bayes](notebooks/30seconds.png)
+![Differentially private naive Bayes](https://github.com/IBM/differential-privacy-library/raw/master/notebooks/30seconds.png)
 
 Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
 
@@ -85,12 +85,21 @@ Diffprivlib is comprised of three modules:
 
 ## Setup
 
+### Installation with `pip`
+
+The library is designed to run with Python 3.
+The library can be installed from the PyPi repository using `pip` (or `pip3`):
+
+```bash
+pip install diffprivlib
+```
+
 ### Manual installation
 
 For the most recent version of the library, either download the source code or clone the repository in your directory of choice:
 
 ```bash
-git clone https://github.ibm.com/Naoise-Holohan/ibm-diff-priv-lib
+git clone https://github.com/IBM/differential-privacy-library
 ```
 
 To install `diffprivlib`, do the following in the project folder (alternatively, you can run `python3 -m pip install .`):
