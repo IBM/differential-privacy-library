@@ -85,7 +85,7 @@ class Staircase(Laplace):
 
         if self._gamma is None:
             self._gamma = 1 / (1 + np.exp(self._epsilon / 2))
-            raise warnings.warn("Gamma not set, falling back to default: 1 / (1 + exp(epsilon / 2)).", UserWarning)
+            warnings.warn("Gamma not set, falling back to default: 1 / (1 + exp(epsilon / 2)).", UserWarning)
 
         return True
 
