@@ -23,5 +23,13 @@ install:
   - pip install pylint pycodestyle
   - pip install .
 
-script:
-  - pytest
+script: pytest
+
+deploy:
+  provider: "pypi"
+  user:
+    secure: ""
+  password:
+    secure: ""
+  on:
+    tags: true
