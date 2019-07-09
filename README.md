@@ -14,7 +14,7 @@ Use the Differential Privacy Library if you are looking to:
 
 Diffprivlib is compatible with: __Python 3.4–3.7__.
 
-## Getting started: [ML with differential privacy in 30 seconds](notebooks/30seconds.ipynb)
+## Getting started: [ML with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
 
 ```python
@@ -73,7 +73,7 @@ plt.show()
 
 ![Differentially private naive Bayes](https://github.com/IBM/differential-privacy-library/raw/master/notebooks/30seconds.png)
 
-Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](notebooks/) directory, or [dive straight in](diffprivlib/).
+Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/) directory, or [dive straight in](https://github.com/IBM/differential-privacy-library/blob/master/diffprivlib/).
 
 ## Contents
 
