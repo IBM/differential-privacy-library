@@ -17,6 +17,13 @@
 # SOFTWARE.
 """
 Transform wrappers for differential privacy mechanisms to extend their use to alternative data types.
+
+Notes
+-----
+The naming convention for new transforms is to describe the `pre-transform` action, i.e. the action performed on the
+data to be ingested by the mechanism.  For transforms without a `pre-transform`, the `post-transform` action should be
+described.
+
 """
 from diffprivlib.mechanisms.transforms.base import DPTransformer
 

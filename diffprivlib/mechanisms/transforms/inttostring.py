@@ -28,23 +28,33 @@ class IntToString(DPTransformer):
     Useful when using integer-valued data with :class:`.Binary` or :class:`.Exponential`.
     """
     def pre_transform(self, value):
-        """
-        Transforms the input data to be ingested by the differential privacy mechanism.
+        """Transforms the input to be string-valued for ingestion by the mechanism.
 
-        :param value: Input value to be transformed.
-        :type value: `int`
-        :return: Transformed input value.
-        :rtype: `string`
+        Parameters
+        ----------
+        value : float or string
+            Input value to be transformed.
+
+        Returns
+        -------
+        string
+            Transformed input value
+
         """
         return str(value)
 
     def post_transform(self, value):
-        """
-        Transforms the output of the differential privacy mechanism to resemble the input data.
+        """Transforms the output of the mechanism to be integer-valued.
 
-        :param value: Mechanism output to be transformed.
-        :type value: `string`
-        :return: Transformed output value.
-        :rtype: `int`
+        Parameters
+        ----------
+        value : float or string
+            Mechanism output to be transformed.
+
+        Returns
+        -------
+        int
+            Transformed output value.
+
         """
         return int(value)

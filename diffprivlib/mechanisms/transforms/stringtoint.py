@@ -29,23 +29,33 @@ class StringToInt(DPTransformer):
     """
 
     def pre_transform(self, value):
-        """
-        Transforms the input data to be ingested by the differential privacy mechanism.
+        """Transforms the input to be integer-valued for ingestion by the mechanism.
 
-        :param value: Input value to be transformed.
-        :type value: `string`
-        :return: Transformed input value.
-        :rtype: `int`
+        Parameters
+        ----------
+        value : float or string
+            Input value to be transformed.
+
+        Returns
+        -------
+        int
+            Transformed input value
+
         """
         return int(value)
 
     def post_transform(self, value):
-        """
-        Transforms the output of the differential privacy mechanism to resemble the input data.
+        """Transforms the output of the mechanism to be string-valued.
 
-        :param value: Mechanism output to be transformed.
-        :type value: `int`
-        :return: Transformed output value.
-        :rtype: `string`
+        Parameters
+        ----------
+        value : float or string
+            Mechanism output to be transformed.
+
+        Returns
+        -------
+        string
+            Transformed output value.
+
         """
         return str(value)

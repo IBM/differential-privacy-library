@@ -15,6 +15,7 @@ Its purpose is to allow experimentation, simulation, and implementation of diffe
    :caption: Modules
 
    modules/mechanisms
+   modules/transforms
    modules/tools
    modules/models
    modules/utils
