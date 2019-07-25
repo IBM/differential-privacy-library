@@ -147,7 +147,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
 # noinspection PyShadowingBuiltins
 def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None):
-    """
+    r"""
     Compute the differentially private multidimensional histogram of some data.
 
     The histogram is computed using :obj:`numpy.histogramdd`, and noise added using :class:`.GeometricTruncated` to
