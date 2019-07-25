@@ -108,9 +108,17 @@ class DPMachine(abc.ABC):
 
 
 class DPMechanism(DPMachine, abc.ABC):
-    """
+    r"""
     Base class for all mechanisms. Instantiated from :class:`.DPMachine`.
 
+    Notes
+    -----
+    * Each `DPMechanism` must define a `randomise` method, to handle the application of differential privacy
+    * Mechanisms that only operate in a limited window of :math:`\epsilon` or :math:`\delta` must define a
+      `set_epsilon_delta` method. Error-checking, for example for non-zero :math:`\delta` should be done in
+      `set_epsilon_delta`; `set_epsilon` should be left unchanged.
+    * When new methods are added, `__repr__` should be updated accordingly in the mechanism.
+    * Each mechanism's
     """
     def __init__(self):
         self._epsilon = None

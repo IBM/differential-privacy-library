@@ -34,7 +34,7 @@ class Staircase(Laplace):
 
     The staircase mechanism is an optimisation of the classical Laplace Mechanism (:class:`.Laplace`), described as a
     "geometric mixture of uniform random variables".
-    Paper link: http://web.stanford.edu/~kairouzp/tstsp_2014.pdf
+    Paper link: https://arxiv.org/pdf/1212.1186.pdf
     """
     def __init__(self):
         super().__init__()
