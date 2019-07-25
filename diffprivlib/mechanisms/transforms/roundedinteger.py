@@ -26,12 +26,17 @@ class RoundedInteger(DPTransformer):
     Rounded integer transform. Rounds the (float) output of the given mechanism to the nearest integer.
     """
     def post_transform(self, value):
-        """
-        Transforms the mechanism output to the nearest integer.
+        """Transforms the (float) output of the mechanism to be a rounded integer.
 
-        :param value: Mechanism output value to be transformed.
-        :type value: `float`
-        :return: Transformed mechanism output.
-        :rtype: `int`
+        Parameters
+        ----------
+        value : float
+            Mechanism output to be transformed.
+
+        Returns
+        -------
+        int
+            Transformed output value.
+
         """
         return int(round(value))

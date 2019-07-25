@@ -23,8 +23,13 @@ from diffprivlib.mechanisms.base import DPMachine
 
 class DPTransformer(DPMachine):
     """
-    Base class for DP transformers. DP Transformers are simple wrappers for DP Mechanisms to allow mechanisms to be used
-    with data types and structures outside their scope.
+    Base class for DP transformers.  DP Transformers are simple wrappers for DP Mechanisms to allow mechanisms to be
+    used with data types and structures outside their scope.
+
+    A :class:`.DPTransformer` must be initiated with a :class:`.DPMachine` (either another :class:`.DPTransformer`, or a
+    :class:`.DPMechanism`).  This allows many instances of :class:`.DPTransformer` to be chained together, but the chain
+    must terminate with a :class:`.DPMechanism`.
+
     """
     def __init__(self, parent):
         if not isinstance(parent, DPMachine):
@@ -33,55 +38,69 @@ class DPTransformer(DPMachine):
         self.parent = parent
 
     def pre_transform(self, value):
-        """
-        Transforms the input data to be ingested by the differential privacy mechanism.
+        """Performs no transformation on the input data, and is ingested by the mechanism as-is.
 
-        :param value: Input value to be transformed.
-        :type value: `float` or `string`
-        :return: Transformed input value.
-        :rtype: `float` or `string`
+        Parameters
+        ----------
+        value : float or string
+            Input value to be transformed.
+
+        Returns
+        -------
+        float or string
+            Transformed input value
         """
         return value
 
     def post_transform(self, value):
-        """
-        Transforms the output of the differential privacy mechanism to resemble the input data.
+        """Performs no transformation on the output of the mechanism, and is returned as-is.
 
-        :param value: Mechanism output to be transformed.
-        :type value: `float` or `string`
-        :return: Transformed output value.
-        :rtype: `float` or `string`
+        Parameters
+        ----------
+        value : float or string
+            Mechanism output to be transformed.
+
+        Returns
+        -------
+        float or string
+            Transformed output value.
+
         """
         return value
 
     def set_epsilon(self, epsilon):
-        """
-        Sets the value of epsilon to be used by the mechanism.
+        """Sets the value of epsilon to be used by the mechanism.  For further details see `set_epsilon` of the
+        mechanism.
 
-        :param epsilon: Epsilon value for differential privacy.
-        :type epsilon: `float`
-        :return: self
-        :rtype: :class:`.DPMachine`
+        Parameters
+        ----------
+        epsilon : float
+            Epsilon value for differential privacy.
+
+        Returns
+        -------
+        self : class
+
         """
         self.parent.set_epsilon(epsilon)
         return self
 
     def set_epsilon_delta(self, epsilon, delta):
-        """
-        Set the privacy parameters epsilon and delta for the mechanism.
+        """Sets the value of epsilon and delta to be used by the mechanism.  For further details see `set_epsilon_delta`
+        of the mechanism.
 
-        Epsilon must be non-negative, epsilon >= 0. Delta must be on the unit interval, 0 <= delta <= 1. At least
-        one or epsilon and delta must be non-zero.
+        Parameters
+        ----------
+        epsilon : float
+            Epsilon value for differential privacy.
 
-        Pure (strict) differential privacy is given when delta = 0. Approximate (relaxed) differential privacy is given
-        when delta > 0.
+        delta : float
+            Delta value for differential privacy.
 
-        :param epsilon: Epsilon value of the mechanism.
-        :type epsilon: `float`
-        :param delta: Delta value of the mechanism.
-        :type delta: `float`
-        :return: self
-        :rtype: :class:`.DPMachine`
+        Returns
+        -------
+        self : class
+
         """
         self.parent.set_epsilon_delta(epsilon, delta)
         return self
@@ -90,10 +109,16 @@ class DPTransformer(DPMachine):
         """
         Randomise the given value using the :class:`.DPMachine`.
 
-        :param value: Value to be randomised.
-        :type value: `float` or `string`
-        :return: Randomised value, same type as value.
-        :rtype: `float` or `string`
+        Parameters
+        ----------
+        value : float or string
+            Value to be randomised.
+
+        Returns
+        -------
+        float or string
+            Randomised value, same type as `value`.
+
         """
         transformed_value = self.pre_transform(value)
         noisy_value = self.parent.randomise(transformed_value)
