@@ -31,4 +31,4 @@ class TestDPMachine(TestCase):
         mech = BaseDPMachine()
         val = mech.randomise(1)
 
-        self.assertTrue(isinstance(val, float))
+        self.assertIsInstance(val, float)
