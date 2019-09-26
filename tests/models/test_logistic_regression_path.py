@@ -22,4 +22,4 @@ class TestLogisticRegression(TestCase):
     def test_with_dataset(self):
         output = _logistic_regression_path(self.X, self.y, Cs=[1e5])
 
-        self.assertTrue(isinstance(output, tuple))
+        self.assertIsInstance(output, tuple)

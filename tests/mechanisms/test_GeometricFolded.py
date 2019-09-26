@@ -73,7 +73,7 @@ class TestGeometricFolded(TestCase):
     def test_half_integer_bounds(self):
         self.mech.set_sensitivity(1).set_epsilon(1).set_bounds(0, 1.5)
         val = self.mech.randomise(0)
-        self.assertTrue(isinstance(val, int))
+        self.assertIsInstance(val, int)
 
     def test_non_half_integer_bounds(self):
         self.mech.set_sensitivity(1).set_epsilon(1)
