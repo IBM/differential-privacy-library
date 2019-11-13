@@ -1,10 +1,10 @@
 :mod:`diffprivlib.models`
-=============================
+===============================
 .. automodule:: diffprivlib.models
 
 
 Classification models
------------------------------
+-------------------------------
 
 Gaussian Naive Bayes
 ++++++++++++++++++++
@@ -19,10 +19,19 @@ Logistic Regression
    :inherited-members:
 
 Clustering models
------------------------------
+-------------------------------
 
 K-Means
 +++++++
 .. autoclass:: KMeans
+   :members:
+   :inherited-members:
+
+Dimensionality reduction models
+-------------------------------
+
+PCA
++++
+.. autoclass:: PCA
    :members:
    :inherited-members:
