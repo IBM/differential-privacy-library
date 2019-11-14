@@ -223,8 +223,7 @@ class KMeans(skcluster.KMeans):
             noisy_count = geometric_mech.randomise(cluster_count)
 
             cluster_sum = np.sum(X[labels == cluster], axis=0)
-            # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
-            noisy_sum = np.array(np.zeros_like(cluster_sum))
+            noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
                 laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0]) \
