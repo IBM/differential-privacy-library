@@ -173,7 +173,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
         return total_mu, total_var
 
-    def _randomise(self, mu, var, n_samples):
+    def _randomise(self, mean, var, n_samples):
         """Randomises the learned means and variances subject to differential privacy."""
         features = var.shape[0]
 
@@ -183,9 +183,8 @@ class GaussianNB(sk_nb.GaussianNB):
         if len(self.bounds) != features:
             raise ValueError("Bounds must be specified for each feature dimension")
 
-        # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
-        new_mu = np.array(np.zeros_like(mu))
-        new_var = np.array(np.zeros_like(var))
+        new_mu = np.zeros_like(mean)
+        new_var = np.zeros_like(var)
 
         for feature in range(features):
             local_diameter = self.bounds[feature][1] - self.bounds[feature][0]
@@ -193,7 +192,7 @@ class GaussianNB(sk_nb.GaussianNB):
             mech_var = LaplaceBoundedDomain().set_sensitivity((n_samples - 1) * local_diameter ** 2 / n_samples ** 2)\
                 .set_epsilon(local_epsilon).set_bounds(0, float("inf"))
 
-            new_mu[feature] = mech_mu.randomise(mu[feature])
+            new_mu[feature] = mech_mu.randomise(mean[feature])
             new_var[feature] = mech_var.randomise(var[feature])
 
         return new_mu, new_var
