@@ -261,9 +261,8 @@ class LogisticRegression(linear_model.LogisticRegression):
         fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
             path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
                       fit_intercept=self.fit_intercept, tol=self.tol, verbose=self.verbose, solver=solver,
-                      multi_class=multi_class, max_iter=self.max_iter, class_weight=self.class_weight,
-                      check_input=False, random_state=self.random_state, coef=warm_start_coef_, penalty=self.penalty,
-                      max_squared_sum=None, sample_weight=sample_weight)
+                      multi_class=multi_class, max_iter=self.max_iter, check_input=False, coef=warm_start_coef_,
+                      penalty=self.penalty)
             for class_, warm_start_coef_ in zip(classes_, warm_start_coef))
 
         fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
@@ -280,9 +279,8 @@ class LogisticRegression(linear_model.LogisticRegression):
 
 
 def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
-                              tol=1e-4, verbose=0, solver='lbfgs', coef=None, class_weight=None, dual=False,
-                              penalty='l2', intercept_scaling=1., multi_class='ovr', random_state=None,
-                              check_input=True, max_squared_sum=None, sample_weight=None):
+                              tol=1e-4, verbose=0, solver='lbfgs', coef=None, dual=False, penalty='l2',
+                              multi_class='ovr', check_input=True, **unused_args):
     """Compute a Logistic Regression model with differential privacy for a list of regularization parameters.  Takes
     inspiration from ``_logistic_regression_path`` in scikit-learn, specified to the LBFGS solver and one-vs-rest
     multi class fitting.
@@ -328,33 +326,17 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     coef : array-like, shape (n_features,), default None
         Initialization value for coefficients of logistic regression. Useless for liblinear solver.
 
-    class_weight : None
-        Weights associated with classes in the form ``{class_label: weight}``. For diffprivlib, only ``None`` is
-        permitted. Specifying any other value will throw a warning.
-
     dual : bool
         Dual or primal formulation. Only `False` is permitted for diffprivlib.
 
     penalty : str, 'l2'
         Used to specify the norm used in the penalization. For diffprivlib, only l2 penalties are permitted.
 
-    intercept_scaling : float, default 1.
-        For diffprivlib, only intercept_scaling=1 is permitted.
-
     multi_class : str, {'ovr'}, default: 'ovr'
         For diffprivlib, only 'ovr' is permitted.
 
-    random_state : None
-        For diffprivlib, only None is permitted.
-
     check_input : bool, default True
         If False, the input arrays X and y will not be checked.
-
-    max_squared_sum : None
-        For diffprivlib, only None is permitted.
-
-    sample_weight : None
-        For diffprivlib, only None is permitted.
 
     Returns
     -------
@@ -370,26 +352,7 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
         Actual number of iteration for each Cs.
 
     """
-    if class_weight is not None:
-        warnings.warn("For diffprivlib, class_weight is not used. Set to None to suppress this warning.",
-                      DiffprivlibCompatibilityWarning)
-        del class_weight
-    if sample_weight is not None:
-        warnings.warn("For diffprivlib, sample_weight is not used. Set to None to suppress this warning.",
-                      DiffprivlibCompatibilityWarning)
-        del sample_weight
-    if intercept_scaling != 1.:
-        warnings.warn("For diffprivlib, intercept_scaling is not used. Set to 1.0 to suppress this warning.",
-                      DiffprivlibCompatibilityWarning)
-        del intercept_scaling
-    if max_squared_sum is not None:
-        warnings.warn("For diffprivlib, max_squared_sum is not used. Set to None to suppress this warning.",
-                      DiffprivlibCompatibilityWarning)
-        del max_squared_sum
-    if random_state is not None:
-        warnings.warn("For diffprivlib, random_state is not used. Set to None to suppress this warning.",
-                      DiffprivlibCompatibilityWarning)
-        del random_state
+    warn_unused_args(unused_args)
 
     if isinstance(Cs, numbers.Integral):
         Cs = np.logspace(-4, 4, int(Cs))

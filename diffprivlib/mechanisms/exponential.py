@@ -193,7 +193,7 @@ class Exponential(DPMechanism):
             return 0
 
         if value1 > value2:
-            return self._get_utility(value2, value1)
+            return self._get_utility(value1=value2, value2=value1)
 
         return self._utility_values[value1 + "::" + value2]
 
