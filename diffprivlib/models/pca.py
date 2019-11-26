@@ -43,12 +43,15 @@
 """
 Principal Component Analysis with differential privacy
 """
+import warnings
+
 import numpy as np
 import sklearn.decomposition.pca as sk_pca
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
 from diffprivlib import tools
-from diffprivlib.utils import warn_unused_args, copy_docstring
+from diffprivlib.mechanisms import Wishart
+from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
 
 
 # noinspection PyPep8Naming
@@ -76,7 +79,26 @@ class PCA(sk_pca.PCA):
 
         X -= self.mean_
 
-        u, s, v = np.linalg.svd(np.dot(X.T, X))
+        max_norm = np.linalg.norm(X, axis=1).max()
+
+        if self.data_norm is None:
+            warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
+            self.data_norm = max_norm
+
+        if max_norm > self.data_norm:
+            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
+                          "Got %f\n"
+                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
+                          % (self.data_norm, max_norm), PrivacyLeakWarning)
+
+        XtX = np.dot(X.T, X)
+
+        mech = Wishart().set_epsilon(self.epsilon).set_sensitivity(self.data_norm)
+        noisy_input = mech.randomise(XtX)
+
+        u, s, v = np.linalg.svd(noisy_input)
         u, v = svd_flip(u, v)
         s = np.sqrt(s)
 
