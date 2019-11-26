@@ -140,7 +140,7 @@ class Wishart(DPMechanism):
         scale = 1 / 2 / self._epsilon
         n_features = value.shape[0]
 
-        noise_array = np.random.randn(n_features, n_features + 1) * scale
-        noise_array = np.dot(noise_array, noise_array.T) * (self._sensitivity ** 2)
+        noise_array = np.random.randn(n_features, n_features + 1) * scale * self._sensitivity
+        noise_array = np.dot(noise_array, noise_array.T)
 
         return value + noise_array
