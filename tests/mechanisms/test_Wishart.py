@@ -83,6 +83,35 @@ class TestWishart(TestCase):
         with self.assertRaises(TypeError):
             self.mech.randomise(np.array([["1", "2"], ["3", "4"]]))
 
+    def test_scalar_input(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
+        with self.assertRaises(ValueError):
+            self.mech.randomise(np.array([1]))
+
+    def test_scalar_array_input(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
+        self.assertIsNotNone(self.mech.randomise(np.array([[1]])))
+
+    def test_vector_input(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
+        with self.assertRaises(ValueError):
+            self.mech.randomise(np.array([1, 2, 3]))
+
+    def test_non_square_input(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
+        with self.assertRaises(ValueError):
+            self.mech.randomise(np.ones((3, 4)))
+
+    def test_3D_input(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
+        with self.assertRaises(ValueError):
+            self.mech.randomise(np.ones((3, 3, 3)))
+
     def test_different_result(self):
         self.mech.set_epsilon(1).set_sensitivity(1)
         data = self.generate_data()

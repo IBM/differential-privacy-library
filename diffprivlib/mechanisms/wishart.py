@@ -112,9 +112,11 @@ class Wishart(DPMechanism):
         super().check_inputs(value)
 
         if not isinstance(value, np.ndarray):
-            raise TypeError("Value to be randomised must be a numpy array")
+            raise TypeError("Value to be randomised must be a numpy array, got %s" % type(value))
+        if value.ndim != 2:
+            raise ValueError("Array must be 2-dimensional, got %d dimensions" % value.ndim)
         if value.shape[0] != value.shape[1]:
-            raise ValueError("Array must be square")
+            raise ValueError("Array must be square, got %d x %d" % (value.shape[0], value.shape[1]))
 
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
