@@ -35,3 +35,12 @@ PCA
 .. autoclass:: PCA
    :members:
    :inherited-members:
+
+Preprocessing
+-------------
+
+Standard Scaler
++++++++++++++++
+.. autoclass:: StandardScaler
+   :members:
+   :inherited-members:

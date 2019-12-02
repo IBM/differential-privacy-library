@@ -22,3 +22,4 @@ from diffprivlib.models.naive_bayes import GaussianNB
 from diffprivlib.models.k_means import KMeans
 from diffprivlib.models.logistic_regression import LogisticRegression
 from diffprivlib.models.pca import PCA
+from diffprivlib.models.standard_scaler import StandardScaler
