@@ -99,3 +99,8 @@ class TestLaplaceBoundedDomain(TestCase):
 
         self.assertTrue(np.all(vals >= 0))
         self.assertTrue(np.all(vals <= 1))
+
+    def test_semi_inf_domain_inf_epsilon(self):
+        self.mech.set_epsilon(float("inf")).set_sensitivity(1).set_bounds(0.0, float("inf"))
+
+        self.assertIsNotNone(self.mech.randomise(0))
