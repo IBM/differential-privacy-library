@@ -51,6 +51,10 @@ from joblib import delayed, Parallel
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
+try:
+    from sklearn.linear_model._logistic import _logistic_loss_and_grad
+except ImportError:
+    from sklearn.linear_model.logistic import _logistic_loss_and_grad
 from sklearn.utils import check_X_y, check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
@@ -438,7 +442,7 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
             .set_epsilon(epsilon)\
             .set_alpha(1. / C)\
             .set_sensitivity(0.25, data_norm)
-        noisy_logistic_loss = vector_mech.randomise(linear_model.logistic._logistic_loss_and_grad)
+        noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         w0, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
