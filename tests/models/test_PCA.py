@@ -1,13 +1,16 @@
 from unittest import TestCase
 
 import numpy as np
-import sklearn.decomposition.pca as sk_pca
+try:
+    import sklearn.decomposition._pca as sk_pca
+except ImportError:
+    import sklearn.decomposition.pca as sk_pca
 
 from diffprivlib.models.pca import PCA
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
-class TestGaussianNB(TestCase):
+class TestPCA(TestCase):
     def test_not_none(self):
         clf = PCA(epsilon=1, centered=True, data_norm=1)
         self.assertIsNotNone(clf)
@@ -93,7 +96,6 @@ class TestGaussianNB(TestCase):
 
     def test_different_results(self):
         from sklearn import datasets
-        import sklearn.decomposition.pca as sk_pca
         from sklearn.model_selection import train_test_split
 
         dataset = datasets.load_iris()
