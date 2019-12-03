@@ -130,6 +130,75 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
 
 
 class StandardScaler(sk_pp.StandardScaler):
+    """Standardize features by removing the mean and scaling to unit variance, calculated with differential privacy 
+    guarantees. Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
+    transformed output will certainly not satisfy differential privacy. 
+
+    The standard score of a sample `x` is calculated as:
+
+        z = (x - u) / s
+
+    where `u` is the (differentially private) mean of the training samples or zero if `with_mean=False`, and `s` is the 
+    (differentially private) standard deviation of the training samples or one if `with_std=False`.
+
+    Centering and scaling happen independently on each feature by computing the relevant statistics on the samples in 
+    the training set. Mean and standard deviation are then stored to be used on later data using the `transform` method.
+
+    For further information, users are referred to :class:`sklearn.preprocessing.StandardScaler`.
+
+    Parameters
+    ----------
+    epsilon: float, optional, default 1.0
+        The privacy budget to be allocated to learning the mean and variance of the training sample.  If 
+        `with_std=True`,  the privacy budget is split evenly between mean and variance (the mean must be calculated even
+        when `with_mean=False`, as it is used in the calculation of the variance.
+         
+    range:  array_like or None, default None
+        Range of each feature of the sample. Same shape as np.ptp(X, axis=0). If not specified, `range` will be 
+        calculated on the data, triggering a :class:`.PrivacyLeakWarning`.
+        
+    copy : boolean, optional, default True
+        If False, try to avoid a copy and do inplace scaling instead. This is not guaranteed to always work inplace; 
+        e.g. if the data is not a NumPy array, a copy may still be returned.
+
+    with_mean : boolean, True by default
+        If True, center the data before scaling.
+
+    with_std : boolean, True by default
+        If True, scale the data to unit variance (or equivalently, unit standard deviation).
+
+    Attributes
+    ----------
+    scale_ : ndarray or None, shape (n_features,)
+        Per feature relative scaling of the data. This is calculated using `np.sqrt(var_)`. Equal to ``None`` when 
+        ``with_std=False``.
+
+    mean_ : ndarray or None, shape (n_features,)
+        The mean value for each feature in the training set. Equal to ``None`` when ``with_mean=False``.
+
+    var_ : ndarray or None, shape (n_features,)
+        The variance for each feature in the training set. Used to compute `scale_`. Equal to ``None`` when 
+        ``with_std=False``.
+
+    n_samples_seen_ : int or array, shape (n_features,)
+        The number of samples processed by the estimator for each feature. If there are not missing samples, the 
+        ``n_samples_seen`` will be an integer, otherwise it will be an array.
+        Will be reset on new calls to fit, but increments across ``partial_fit`` calls.
+
+    See also
+    --------
+    scale: Equivalent function without the estimator API.
+
+    :class:`sklearn.preprocessing.StandardScaler`
+        Vanilla scikit-learn version, without differential privacy.
+
+    :class:`sklearn.decomposition.PCA`
+        Further removes the linear correlation across features with 'whiten=True'.
+
+    Notes
+    -----
+    NaNs are treated as missing values: disregarded in fit, and maintained in transform.
+    """  # noqa
     def __init__(self, epsilon=1, range=None, copy=True, with_mean=True, with_std=True):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
@@ -155,7 +224,7 @@ class StandardScaler(sk_pp.StandardScaler):
 
         epsilon_0 = self.epsilon if self.with_std is None else self.epsilon / 2
 
-        X = check_array(X, accept_sparse=False, copy=self.copy, warn_on_dtype=True, estimator=self, dtype=FLOAT_DTYPES,
+        X = check_array(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=FLOAT_DTYPES,
                         force_all_finite='allow-nan')
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
