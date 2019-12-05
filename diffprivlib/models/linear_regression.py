@@ -204,9 +204,9 @@ class LinearRegression(sk_lr.LinearRegression):
                           PrivacyLeakWarning)
 
             if self.range_X is None:
-                self.range_X = np.maximum(np.max(X, axis=0) - np.min(X, axis=0), 1e-5)
+                self.range_X = np.maximum(np.ptp(X, axis=0), 1e-5)
             if self.range_y is None:
-                self.range_y = np.maximum(np.max(y, axis=0) - np.min(y, axis=0), 1e-5)
+                self.range_y = np.maximum(np.ptp(y, axis=0), 1e-5)
 
         X, y = check_X_y(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
