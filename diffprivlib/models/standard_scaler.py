@@ -132,6 +132,7 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
     return updated_mean, updated_variance, updated_sample_count
 
 
+# noinspection PyPep8Naming
 class StandardScaler(sk_pp.StandardScaler):
     """Standardize features by removing the mean and scaling to unit variance, calculated with differential privacy 
     guarantees. Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
