@@ -12,7 +12,7 @@ Use the Differential Privacy Library if you are looking to:
 - Explore the impact of differential privacy on machine learning accuracy using basic classification and clustering models 
 - Build your own differential privacy applications, using our extensive collection of mechanisms
 
-Diffprivlib is compatible with: __Python 3.4–3.7__.
+Diffprivlib is compatible with: __Python 3.4–3.8__.
 
 ## Getting started: [ML with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
@@ -30,9 +30,9 @@ Now, let's train a differentially private naive Bayes classifier. Our classifier
 `diffprivlib.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
 
 ```python
-import diffprivlib.models as dp
+import diffprivlib.models as models
 
-clf = dp.GaussianNB()
+clf = models.GaussianNB()
 clf.fit(X_train, y_train)
 ```
 
@@ -45,7 +45,7 @@ clf.predict(X_test)
 Every time the model is trained with `.fit()`, a different model is produced due to the randomness of differential privacy. The accuracy will therefore change, even if it's re-trained with the same training data. Try it for yourself to find out!
 
 ```python
-(clf.predict(X_test) == y_test).sum() / y_test.shape[0]
+print("Test accuracy: %f" % ((clf.predict(X_test) == y_test).sum() / y_test.shape[0]))
 ```
 
 We can easily evaluate the accuracy of the model for various `epsilon` values and plot it with `matplotlib`.
@@ -79,7 +79,7 @@ Congratulations, you've completed your first differentially private machine lear
 
 Diffprivlib is comprised of three modules:
 1. __Mechanisms:__ These are the building blocks of differential privacy, and are used in all models that implement differential privacy. Mechanisms have little or no default settings, and are intended for use by experts implementing their own models. They can, however, be used outside models for separate investigations, etc.
-1. __Models:__ This module includes machine learning models with differential privacy. Diffprivlib currently has models for clustering and classification.
+1. __Models:__ This module includes machine learning models with differential privacy. Diffprivlib currently has models for clustering, classification, regression, dimensionality reduction and pre-processing.
 1. __Tools:__ Diffprivlib comes with a number of generic tools for differentially private data analysis. This includes differentially private histograms, following the same format as [Numpy's histogram function](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html).
 
 
