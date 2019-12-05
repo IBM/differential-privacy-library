@@ -194,7 +194,7 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
                       "additional privacy loss, specify `range` for each valued returned by np.mean().",
                       PrivacyLeakWarning)
 
-        ranges = np.maximum(np.max(a, axis=axis) - np.min(a, axis=axis), 1e-5)
+        ranges = np.maximum(np.ptp(a, axis=axis), 1e-5)
     elif isinstance(range, Real):
         ranges = np.ones_like(actual_mean) * range
     else:
@@ -375,7 +375,7 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
                       "additional privacy loss, specify `range` for each valued returned by np.mean().",
                       PrivacyLeakWarning)
 
-        ranges = np.maximum(np.max(a, axis=axis) - np.min(a, axis=axis), 1e-5)
+        ranges = np.maximum(np.ptp(a, axis=axis), 1e-5)
     elif isinstance(range, Real):
         ranges = np.ones_like(actual_var) * range
     else:
