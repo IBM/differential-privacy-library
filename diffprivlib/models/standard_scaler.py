@@ -58,49 +58,6 @@ range_ = range
 
 
 def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_sample_count):
-    """Calculate mean update and a Youngs and Cramer variance update.
-
-    last_mean and last_variance are statistics computed at the last step by the function. Both must be initialized to
-    0.0. In case no scaling is required last_variance can be None. The mean is always required and returned because
-    necessary for the calculation of the variance. last_n_samples_seen is the number of samples encountered until now.
-
-    From the paper "Algorithms for computing the sample variance: analysis and recommendations", by Chan, Golub,
-    and LeVeque.
-
-    Parameters
-    ----------
-    X : array-like, shape (n_samples, n_features)
-        Data to use for variance update
-
-    last_mean : array-like, shape: (n_features,)
-
-    last_variance : array-like or None, shape: (n_features,)
-
-    last_sample_count : array-like, shape (n_features,)
-
-    Returns
-    -------
-    updated_mean : array, shape (n_features,)
-
-    updated_variance : array, shape (n_features,)
-        If None, only mean is computed
-
-    updated_sample_count : array, shape (n_features,)
-
-    Notes
-    -----
-    NaNs are ignored during the algorithm.
-
-    References
-    ----------
-    T. Chan, G. Golub, R. LeVeque. Algorithms for computing the sample
-        variance: recommendations, The American Statistician, Vol. 37, No. 3,
-        pp. 242-247
-
-    Also, see the sparse implementation of this in
-    `utils.sparsefuncs.incr_mean_variance_axis` and
-    `utils.sparsefuncs_fast.incr_mean_variance_axis0`
-    """
     # old = stats until now
     # new = the current increment
     # updated = the aggregated stats
@@ -191,12 +148,10 @@ class StandardScaler(sk_pp.StandardScaler):
 
     See also
     --------
-    scale: Equivalent function without the estimator API.
-
     :class:`sklearn.preprocessing.StandardScaler`
         Vanilla scikit-learn version, without differential privacy.
 
-    :class:`sklearn.decomposition.PCA`
+    :class:`.PCA`
         Further removes the linear correlation across features with 'whiten=True'.
 
     Notes
