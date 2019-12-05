@@ -57,6 +57,7 @@ from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
 _range = range
 
 
+# noinspection PyPep8Naming
 def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=None, copy=True, check_input=True,
                      **unused_args):
     warn_unused_args(unused_args)
@@ -84,7 +85,7 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=Non
     return X, y, X_offset, y_offset, X_scale
 
 
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyAttributeOutsideInit
 class LinearRegression(sk_lr.LinearRegression):
     r"""
     Ordinary least squares Linear Regression with differential privacy.
