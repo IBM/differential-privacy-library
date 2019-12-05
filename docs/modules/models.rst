@@ -18,6 +18,17 @@ Logistic Regression
    :members:
    :inherited-members:
 
+Regression models
+-----------------
+
+Linear Regression
++++++++++++++++++
+
+.. autoclass:: LinearRegression
+   :members:
+   :inherited-members:
+
+
 Clustering models
 -------------------------------
 
