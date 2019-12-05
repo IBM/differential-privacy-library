@@ -28,6 +28,10 @@ from diffprivlib.mechanisms.base import DPMechanism
 class Wishart(DPMechanism):
     """
     The Wishart mechanism in differential privacy.
+
+    Used to achieve differential privacy on 2nd moment matrices.
+
+    Paper link: https://ieeexplore.ieee.org/abstract/document/7472095/
     """
     def __init__(self):
         super().__init__()

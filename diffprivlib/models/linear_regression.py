@@ -84,7 +84,74 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=Non
     return X, y, X_offset, y_offset, X_scale
 
 
+# noinspection PyPep8Naming
 class LinearRegression(sk_lr.LinearRegression):
+    r"""
+    Ordinary least squares Linear Regression with differential privacy.
+
+    LinearRegression fits a linear model with coefficients w = (w1, ..., wp) to minimize the residual sum of squares
+    between the observed targets in the dataset, and the targets predicted by the linear approximation. Differential
+    privacy is guaranteed with respect to the training sample.
+
+    Differential privacy is achieved by adding noise to the second moment matrix using the :class:`.Wishart` mechanism.
+    This method is demonstrated in  [She15]_, but our implementation takes inspiration from the use of the Wishart
+    distribution in  [IS16]_ to achieve a strict differential privacy guarantee.
+
+    Parameters
+    ----------
+    epsilon : float, optional, default 1.0
+        Privacy parameter :math:`\epsilon`.
+
+    data_norm : float, default: None
+        The max l2 norm of any row of the concatenated dataset A = [X; y].  This defines the spread of data that will be
+        protected by differential privacy.
+
+        If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        `data_norm` should be selected independently of the data, i.e. with domain knowledge.
+
+    range_X : array_like
+        Range of each feature of the training sample X. Its non-private equivalent is np.ptp(X, axis=0).
+
+        If not specified, the range is taken from the data when ``.fit()`` is first called, but will result in a
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        `range_X` should be selected independently of the data, i.e. with domain knowledge.
+
+    range_y : array_like
+        Same as `range_X`, but for the training label set `y`.
+
+    fit_intercept : bool, optional, default True
+        Whether to calculate the intercept for this model. If set to False, no intercept will be used in calculations
+        (i.e. data is expected to be centered).
+
+    copy_X : bool, optional, default True
+        If True, X will be copied; else, it may be overwritten.
+
+    Attributes
+    ----------
+    coef_ : array of shape (n_features, ) or (n_targets, n_features)
+        Estimated coefficients for the linear regression problem. If multiple targets are passed during the fit (y 2D),
+        this is a 2D array of shape (n_targets, n_features), while if only one target is passed, this is a 1D array of
+        length n_features.
+
+    rank_ : int
+        Rank of matrix `X`.
+
+    singular_ : array of shape (min(X, y),)
+        Singular values of `X`.
+
+    intercept_ : float or array of shape of (n_targets,)
+        Independent term in the linear model. Set to 0.0 if `fit_intercept = False`.
+
+    References
+    ----------
+    .. [She15] Sheffet, Or. "Private approximations of the 2nd-moment matrix using existing techniques in linear
+        regression." arXiv preprint arXiv:1507.00056 (2015).
+
+    .. [IS16] Imtiaz, Hafiz, and Anand D. Sarwate. "Symmetric matrix perturbation for differentially-private principal
+        component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+        pp. 2339-2343. IEEE, 2016.
+    """
     def __init__(self, epsilon=1, data_norm=None, range_X=None, range_y=None, fit_intercept=True, copy_X=True,
                  **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
