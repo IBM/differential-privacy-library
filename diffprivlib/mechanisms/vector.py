@@ -35,7 +35,7 @@ class Vector(DPMechanism):
     def __init__(self):
         super().__init__()
         self._function_sensitivity = None
-        self._data_sensitivity = 1
+        self._data_sensitivity = None
         self._vector_dim = None
         self._alpha = 0.01
 
