@@ -1,5 +1,4 @@
 import setuptools
-from diffprivlib import __version__ as version
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -15,7 +14,7 @@ docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
 
 setuptools.setup(name='diffprivlib',
-                 version=version,
+                 version='0.1.2',
                  description='IBM Differential Privacy Library',
                  long_description=long_description,
                  long_description_content_type='text/markdown',
