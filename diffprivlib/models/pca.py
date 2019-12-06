@@ -62,12 +62,12 @@ class PCA(sk_pca.PCA):
     """Principal component analysis (PCA) with differential privacy.
 
     This class is a child of :obj:`sklearn.decomposition.PCA`, with amendments to allow for the implementation of
-    differential privacy as given in [IS16]_.  Some parameters of `Scikit Learn`'s model have therefore had to be fixed,
+    differential privacy as given in [IS16b]_.  Some parameters of `Scikit Learn`'s model have therefore had to be fixed,
     including:
 
         - The only permitted `svd_solver` is 'full'.  Specifying the ``svd_solver`` option will result in a warning;
-        - The parameters ``tol`` and ``iterated_power`` are not applicable (as a consequence of fixing ``svd_solved =
-        'full'``.
+        - The parameters ``tol`` and ``iterated_power`` are not applicable (as a consequence of fixing ``svd_solver =
+          'full'``).
 
     Parameters
     ----------
@@ -102,8 +102,6 @@ class PCA(sk_pca.PCA):
         If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
         is the random number generator.
 
-        .. versionadded:: 0.18.0
-
     Attributes
     ----------
     components_ : array, shape (n_components, n_features)
@@ -115,8 +113,6 @@ class PCA(sk_pca.PCA):
 
         Equal to n_components largest eigenvalues of the covariance matrix of X.
 
-        .. versionadded:: 0.18
-
     explained_variance_ratio_ : array, shape (n_components,)
         Percentage of variance explained by each of the selected components.
 
@@ -125,8 +121,6 @@ class PCA(sk_pca.PCA):
     singular_values_ : array, shape (n_components,)
         The singular values corresponding to each of the selected components. The singular values are equal to the
         2-norms of the ``n_components`` variables in the lower-dimensional space.
-
-        .. versionadded:: 0.19
 
     mean_ : array, shape (n_features,)
         Per-feature empirical mean, estimated from the training set.
@@ -159,7 +153,7 @@ class PCA(sk_pca.PCA):
 
     References
     ----------
-    .. [IS16] Imtiaz, Hafiz, and Anand D. Sarwate. "Symmetric matrix perturbation for differentially-private principal
+    .. [IS16b] Imtiaz, Hafiz, and Anand D. Sarwate. "Symmetric matrix perturbation for differentially-private principal
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
