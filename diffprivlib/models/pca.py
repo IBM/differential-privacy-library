@@ -162,7 +162,7 @@ class PCA(sk_pca.PCA):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
         self.centered = centered
-        self.epsilon = epsilon if centered else epsilon / 2  # Must use some privacy budget for calculating the mean
+        self.epsilon = epsilon
         self.data_norm = data_norm
         self.range = range
 
@@ -174,7 +174,7 @@ class PCA(sk_pca.PCA):
         if self.centered:
             self.mean_ = np.zeros_like(np.mean(X, axis=0))
         else:
-            self.mean_ = tools.mean(X, epsilon=self.epsilon, range=self.range, axis=0)
+            self.mean_ = tools.mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0)
 
         X -= self.mean_
 
@@ -194,7 +194,8 @@ class PCA(sk_pca.PCA):
 
         XtX = np.dot(X.T, X)
 
-        mech = Wishart().set_epsilon(self.epsilon).set_sensitivity(self.data_norm)
+        mech = Wishart().set_epsilon(self.epsilon if self.centered else self.epsilon / 2).\
+            set_sensitivity(self.data_norm)
         noisy_input = mech.randomise(XtX)
 
         u, s, v = np.linalg.svd(noisy_input)
