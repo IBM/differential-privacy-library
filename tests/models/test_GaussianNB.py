@@ -5,7 +5,7 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
-from diffprivlib.utils import global_seed, PrivacyLeakWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
 class TestGaussianNB(TestCase):
@@ -28,6 +28,15 @@ class TestGaussianNB(TestCase):
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
+
+    def test_sample_weight_warning(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+        clf = GaussianNB(epsilon=1, bounds=[(0, 1), (0, 1)])
+        w = abs(np.random.randn(10))
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            clf.fit(X, y, sample_weight=w)
 
     def test_mis_ordered_bounds(self):
         X = np.random.random((10, 2))
