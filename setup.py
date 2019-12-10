@@ -16,8 +16,8 @@ def get_version(rel_path):
         if line.startswith('__version__'):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
-    else:
-        raise RuntimeError("Unable to find version string.")
+
+    raise RuntimeError("Unable to find version string.")
 
 
 install_requires = ['numpy >= 1.15.0',
