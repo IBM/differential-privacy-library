@@ -62,8 +62,8 @@ class PCA(sk_pca.PCA):
     """Principal component analysis (PCA) with differential privacy.
 
     This class is a child of :obj:`sklearn.decomposition.PCA`, with amendments to allow for the implementation of
-    differential privacy as given in [IS16b]_.  Some parameters of `Scikit Learn`'s model have therefore had to be fixed,
-    including:
+    differential privacy as given in [IS16b]_.  Some parameters of `Scikit Learn`'s model have therefore had to be
+    fixed, including:
 
         - The only permitted `svd_solver` is 'full'.  Specifying the ``svd_solver`` option will result in a warning;
         - The parameters ``tol`` and ``iterated_power`` are not applicable (as a consequence of fixing ``svd_solver =
