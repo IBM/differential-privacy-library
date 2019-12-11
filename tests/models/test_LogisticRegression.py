@@ -36,6 +36,18 @@ class TestLogisticRegression(TestCase):
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
 
+    def test_sample_weight_warning(self):
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+
+        clf = LogisticRegression(data_norm=5.5)
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            clf.fit(X, y, sample_weight=np.ones_like(y))
+
     def test_trinomial(self):
         X = np.array(
             [0.50, 0.75, 1.00])

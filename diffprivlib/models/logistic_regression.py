@@ -192,15 +192,17 @@ class LogisticRegression(linear_model.LogisticRegression):
         y : array-like, shape (n_samples,)
             Target vector relative to X.
 
-        sample_weight : array-like, shape (n_samples,) optional
-            Array of weights that are assigned to individual samples.
-            If not provided, then each sample is given unit weight.
+        sample_weight : ignored
+            Ignored by diffprivlib. Present for consistency with sklearn API.
 
         Returns
         -------
         self : class
 
         """
+        if sample_weight is not None:
+            warn_unused_args("sample_weight")
+
         if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
         if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:
@@ -382,7 +384,7 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     sample_weight = np.ones(X.shape[0], dtype=X.dtype)
 
     # For doing a ovr, we need to mask the labels first.
-    w0 = np.zeros(n_features + int(fit_intercept), dtype=X.dtype)
+    output_vec = np.zeros(n_features + int(fit_intercept), dtype=X.dtype)
     mask = (y == pos_class)
     y_bin = np.ones(y.shape, dtype=X.dtype)
     y_bin[~mask] = -1.
@@ -390,10 +392,10 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
 
     if coef is not None:
         # it must work both giving the bias term and not
-        if coef.size not in (n_features, w0.size):
+        if coef.size not in (n_features, output_vec.size):
             raise ValueError('Initialization coef is of shape %d, expected shape %d or %d' % (coef.size, n_features,
-                                                                                              w0.size))
-        w0[:coef.size] = coef
+                                                                                              output_vec.size))
+        output_vec[:coef.size] = coef
 
     target = y_bin
 
@@ -408,13 +410,13 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
         noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
-        w0, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, w0, fprime=None,
+        output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
                                              args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
                                              maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 
-        coefs.append(w0.copy())
+        coefs.append(output_vec.copy())
 
         n_iter[i] = info['nit']
 

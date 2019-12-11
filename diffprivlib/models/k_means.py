@@ -98,9 +98,8 @@ class KMeans(skcluster.KMeans):
         y : Ignored
             not used, present here for API consistency by convention.
 
-        sample_weight : Ignored
-            Not used in diffprivlib, present here for consistency with :obj:`sklearn.cluster.KMeans`. Specifying this
-            parameter will result in a :class:`.DiffprivlibCompatibilityWarning`.
+        sample_weight : ignored
+            Ignored by diffprivlib. Present for consistency with sklearn API.
 
         Returns
         -------

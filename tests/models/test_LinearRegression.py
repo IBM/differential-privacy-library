@@ -24,6 +24,18 @@ class TestLinearRegression(TestCase):
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
 
+    def test_sample_weight_warning(self):
+        clf = LinearRegression(data_norm=5.5, range_X=5, range_y=1)
+
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            clf.fit(X, y, sample_weight=np.ones_like(y))
+
     def test_no_range_y(self):
         clf = LinearRegression(data_norm=5.5, range_X=5)
 

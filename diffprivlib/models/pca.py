@@ -59,7 +59,7 @@ from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarni
 
 # noinspection PyPep8Naming
 class PCA(sk_pca.PCA):
-    """Principal component analysis (PCA) with differential privacy.
+    r"""Principal component analysis (PCA) with differential privacy.
 
     This class is a child of :obj:`sklearn.decomposition.PCA`, with amendments to allow for the implementation of
     differential privacy as given in [IS16b]_.  Some parameters of `Scikit Learn`'s model have therefore had to be

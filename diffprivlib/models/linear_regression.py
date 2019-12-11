@@ -164,7 +164,7 @@ class LinearRegression(sk_lr.LinearRegression):
 
         warn_unused_args(unused_args)
 
-    def fit(self, X, y, **unused_args):
+    def fit(self, X, y, sample_weight=None):
         """
         Fit linear model.
 
@@ -176,12 +176,16 @@ class LinearRegression(sk_lr.LinearRegression):
         y : array_like, shape (n_samples, n_targets)
             Target values. Will be cast to X's dtype if necessary
 
+        sample_weight : ignored
+            Ignored by diffprivlib. Present for consistency with sklearn API.
+
         Returns
         -------
         self : returns an instance of self.
         """
 
-        warn_unused_args(unused_args)
+        if sample_weight is not None:
+            warn_unused_args("sample_weight")
 
         max_norm = np.linalg.norm(X, axis=1).max()
 
