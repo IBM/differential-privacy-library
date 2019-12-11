@@ -86,6 +86,29 @@ class PCA(sk_pca.PCA):
 
             n_components == min(n_samples, n_features) - 1
 
+    centered : bool, default=False
+        If False, the data will be centered before calculating the principal components.  This will be calculated with
+        differential privacy, consuming privacy budget from epsilon.
+
+        If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
+        therefore will not require the consumption of privacy budget to calculate the mean.
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.  If ``centered=False``, half of epsilon is used to calculate the
+        differentially private mean to center the data prior to the calculation of principal components.
+
+    data_norm : float, default: None
+        The max l2 norm of any row of the data.  This defines the spread of data that will be protected by
+        differential privacy.
+
+        If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        `data_norm` should be selected independently of the data, i.e. with domain knowledge.
+
+    range : array_like or float, optional
+        Range of each feature of the sample X, but only required when ``centered=False``. Used to calculate the
+        differentially private mean of the sample.
+
     copy : bool, default=True
         If False, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected
         results, use fit_transform(X) instead.
@@ -101,6 +124,11 @@ class PCA(sk_pca.PCA):
     random_state : int, RandomState instance or None, optional (default None)
         If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
         is the random number generator.
+
+    **unused_args : kwargs
+        Placeholder for parameters of :obj:`sklearn.decomposition.PCA` that are not used in `diffprivlib`.
+        Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
+
 
     Attributes
     ----------
