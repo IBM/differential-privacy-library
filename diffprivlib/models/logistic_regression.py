@@ -51,6 +51,7 @@ from joblib import delayed, Parallel
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
+
 try:
     from sklearn.linear_model._logistic import _logistic_loss_and_grad
 except ImportError:
@@ -402,17 +403,17 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     coefs = list()
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
-        vector_mech = Vector()\
-            .set_dimension(n_features + int(fit_intercept))\
-            .set_epsilon(epsilon)\
-            .set_alpha(1. / C)\
+        vector_mech = Vector() \
+            .set_dimension(n_features + int(fit_intercept)) \
+            .set_epsilon(epsilon) \
+            .set_alpha(1. / C) \
             .set_sensitivity(0.25, data_norm)
         noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
-                                             args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
-                                             maxiter=max_iter)
+                                                     args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
+                                                     maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 
