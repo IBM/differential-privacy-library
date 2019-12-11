@@ -43,6 +43,7 @@ setuptools.setup(name='diffprivlib',
                  extras_require={
                      'docs': docs_require
                  },
+                 python_requires='>=3',
                  classifiers=[
                      'Development Status :: 3 - Alpha',
                      'Intended Audience :: Developers',
