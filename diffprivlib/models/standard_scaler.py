@@ -43,8 +43,13 @@
 """
 Standard Scaler with differential privacy
 """
+import warnings
+
 import numpy as np
 import sklearn.preprocessing as sk_pp
+
+from diffprivlib.utils import PrivacyLeakWarning
+
 try:
     from sklearn.preprocessing._data import _handle_zeros_in_scale
 except ImportError:
@@ -158,7 +163,7 @@ class StandardScaler(sk_pp.StandardScaler):
     -----
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
     """  # noqa
-    def __init__(self, epsilon=1, range=None, copy=True, with_mean=True, with_std=True):
+    def __init__(self, epsilon=1.0, range=None, copy=True, with_mean=True, with_std=True):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
         self.range = range
@@ -185,6 +190,14 @@ class StandardScaler(sk_pp.StandardScaler):
 
         X = check_array(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=FLOAT_DTYPES,
                         force_all_finite='allow-nan')
+
+        if self.range is None:
+            warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                          "This will result in additional privacy leakage. To ensure differential privacy with no "
+                          "additional privacy loss, specify `range` for each valued returned by np.mean().",
+                          PrivacyLeakWarning)
+
+            self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
         # computation of the var See incr_mean_variance_axis and _incremental_mean_variance_axis

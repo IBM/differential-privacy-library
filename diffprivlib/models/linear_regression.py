@@ -153,7 +153,7 @@ class LinearRegression(sk_lr.LinearRegression):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, epsilon=1, data_norm=None, range_X=None, range_y=None, fit_intercept=True, copy_X=True,
+    def __init__(self, epsilon=1.0, data_norm=None, range_X=None, range_y=None, fit_intercept=True, copy_X=True,
                  **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 

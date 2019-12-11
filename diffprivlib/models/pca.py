@@ -157,7 +157,7 @@ class PCA(sk_pca.PCA):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, n_components=None, centered=False, epsilon=1, data_norm=None, range=None, copy=True,
+    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, range=None, copy=True,
                  whiten=False, random_state=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
@@ -174,6 +174,15 @@ class PCA(sk_pca.PCA):
         if self.centered:
             self.mean_ = np.zeros_like(np.mean(X, axis=0))
         else:
+            if self.range is None:
+                warnings.warn(
+                    "Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                    "This will result in additional privacy leakage. To ensure differential privacy with no "
+                    "additional privacy loss, specify `range` for each valued returned by np.mean().",
+                    PrivacyLeakWarning)
+
+                self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
+
             self.mean_ = tools.mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0)
 
         X -= self.mean_
