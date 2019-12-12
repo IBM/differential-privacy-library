@@ -262,9 +262,8 @@ class LogisticRegression(linear_model.LogisticRegression):
 
         fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
             path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
-                      fit_intercept=self.fit_intercept, tol=self.tol, verbose=self.verbose, solver=solver,
-                      multi_class=multi_class, max_iter=self.max_iter, check_input=False, coef=warm_start_coef_,
-                      penalty=self.penalty)
+                      fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose,
+                      coef=warm_start_coef_, check_input=False)
             for class_, warm_start_coef_ in zip(classes_, warm_start_coef))
 
         fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
@@ -281,8 +280,7 @@ class LogisticRegression(linear_model.LogisticRegression):
 
 
 def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
-                              tol=1e-4, verbose=0, solver='lbfgs', coef=None, dual=False, penalty='l2',
-                              multi_class='ovr', check_input=True, **unused_args):
+                              tol=1e-4, verbose=0, coef=None, check_input=True, **unused_args):
     """Compute a Logistic Regression model with differential privacy for a list of regularization parameters.  Takes
     inspiration from ``_logistic_regression_path`` in scikit-learn, specified to the LBFGS solver and one-vs-rest
     multi class fitting.
@@ -322,20 +320,8 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     verbose : int
         For the liblinear and lbfgs solvers set verbose to any positive number for verbosity.
 
-    solver : {'lbfgs'}
-        Numerical solver to use.
-
     coef : array-like, shape (n_features,), default None
         Initialization value for coefficients of logistic regression. Useless for liblinear solver.
-
-    dual : bool
-        Dual or primal formulation. Only `False` is permitted for diffprivlib.
-
-    penalty : str, 'l2'
-        Used to specify the norm used in the penalization. For diffprivlib, only l2 penalties are permitted.
-
-    multi_class : str, {'ovr'}, default: 'ovr'
-        For diffprivlib, only 'ovr' is permitted.
 
     check_input : bool, default True
         If False, the input arrays X and y will not be checked.
@@ -359,7 +345,7 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     if isinstance(Cs, numbers.Integral):
         Cs = np.logspace(-4, 4, int(Cs))
 
-    solver = _check_solver(solver, penalty, dual)
+    solver = 'lbfgs'
 
     # Data norm increases if intercept is included
     if fit_intercept:
@@ -374,8 +360,7 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
 
     classes = np.unique(y)
 
-    multi_class = _check_multi_class(multi_class, solver, len(classes))
-    if pos_class is None and multi_class != 'multinomial':
+    if pos_class is None:
         if classes.size > 2:
             raise ValueError('To fit OvR, use the pos_class argument')
         # np.unique(y) gives labels in sorted order.
