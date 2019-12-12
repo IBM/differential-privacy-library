@@ -51,7 +51,6 @@ from joblib import delayed, Parallel
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
-
 try:
     from sklearn.linear_model._logistic import _logistic_loss_and_grad
 except ImportError:

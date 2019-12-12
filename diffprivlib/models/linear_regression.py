@@ -46,7 +46,7 @@ Linear Regression with differential privacy
 import warnings
 
 import numpy as np
-from sklearn import linear_model as sk_lr
+import sklearn.linear_model as sk_lr
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 

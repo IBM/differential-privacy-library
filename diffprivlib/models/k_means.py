@@ -21,14 +21,14 @@ K-means clustering algorithm satisfying differential privacy.
 import warnings
 
 import numpy as np
-from sklearn import cluster as skcluster
+import sklearn.cluster as sk_cluster
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
-class KMeans(skcluster.KMeans):
+class KMeans(sk_cluster.KMeans):
     r"""K-Means clustering with differential privacy.
 
     Implements the DPLloyd approach presented in [SCL16]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
