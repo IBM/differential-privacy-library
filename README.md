@@ -45,7 +45,9 @@ clf.predict(X_test)
 Every time the model is trained with `.fit()`, a different model is produced due to the randomness of differential privacy. The accuracy will therefore change, even if it's re-trained with the same training data. Try it for yourself to find out!
 
 ```python
-print("Test accuracy: %f" % ((clf.predict(X_test) == y_test).sum() / y_test.shape[0]))
+from sklearn.metrics import accuracy_score
+
+print("Test accuracy: %f" % accuracy_score(y_test, clf.predict(X_test)))
 ```
 
 We can easily evaluate the accuracy of the model for various `epsilon` values and plot it with `matplotlib`.
@@ -59,10 +61,10 @@ bounds = [(4.3, 7.9), (2.0, 4.4), (1.1, 6.9), (0.1, 2.5)]
 accuracy = list()
 
 for epsilon in epsilons:
-    clf = dp.GaussianNB(bounds=bounds, epsilon=epsilon)
+    clf = models.GaussianNB(bounds=bounds, epsilon=epsilon)
     clf.fit(X_train, y_train)
     
-    accuracy.append((clf.predict(X_test) == y_test).sum() / y_test.shape[0])
+    accuracy.append(accuracy_score(y_test, clf.predict(X_test)))
 
 plt.semilogx(epsilons, accuracy)
 plt.title("Differentially private Naive Bayes accuracy")
