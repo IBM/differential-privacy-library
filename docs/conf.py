@@ -25,7 +25,7 @@ project = 'IBM Differential Privacy Library'
 copyright = '2019, Naoise Holohan'
 author = 'Naoise Holohan'
 
-# Single-sourced versioning for docs copied from pip:
+# Single-sourced versioning for docs with inspiration from pip:
 # https://github.com/pypa/pip/blob/04d8841ace46d49a1443ef56f1205a70019a1a2f/docs/html/conf.py
 version = release = 'dev'
 
