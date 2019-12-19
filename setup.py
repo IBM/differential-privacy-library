@@ -11,8 +11,8 @@ def read(rel_path):
         return fp.read()
 
 
-def get_version(rel_path):
-    for line in read(rel_path).splitlines():
+def get_version(file_path):
+    for line in read(file_path).splitlines():
         if line.startswith('__version__'):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
