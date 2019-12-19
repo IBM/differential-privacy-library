@@ -233,7 +233,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         self.classes_ = np.unique(y)
         _, n_features = X.shape
 
-        multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
+        _check_multi_class(self.multi_class, solver, len(self.classes_))
 
         n_classes = len(self.classes_)
         classes_ = self.classes_
