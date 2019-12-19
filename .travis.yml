@@ -1,35 +1,28 @@
 language: python
 dist: xenial
 python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-  - "3.7"
-  - "3.8"
+- '3.4'
+- '3.5'
+- '3.6'
+- '3.7'
+- '3.8'
 matrix:
   include:
-    - python: 3.7
-      script:
-        - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0)
-#  allow_failures:
-#    - python: 3.8-dev
-#      script:
-#        - pytest
-
+  - python: 3.7
+    script:
+    - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib
+      || exit 0)
 install:
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then
-      pip install scikit-learn==0.20.3;
-    fi
-  - pip install pylint pycodestyle
-  - pip install .
-
+- if [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then pip install scikit-learn==0.20.3;
+  fi
+- pip install pylint pycodestyle
+- pip install .
 script: pytest
-
 deploy:
   provider: pypi
-  user: "naoise-h"
+  user: "__token__"
   password:
-    secure: "lx+LgE0sHcnGpmTEYFAQkwrsCbbFgSD1xkseeo/8a9kFAF42/WHng1fT3iHcvqry8subUiLZbljkgHYsGwSpCTo6wZYjreBSUA1LDzdOL2exixtodMzZeBQ+kaNhZ8IG4kd7Uv75D+68CVBK/Tn2N2u4kxk67DJoUTqZj4RtFiafNnrJQ+aZcey6qQKulC7xG8YQS90PWv1tCRFGQtzdS3i+vhAVU4EMc7oZtOa9DBmuPbSdvaFhruKzkHcfZhIlA8PARH3IJGmZFzgL7WcRdExMNrQKkN7Jg3rNvlkKtSlYiBZ9oHFmOc4CYqLmZPfjNABx7Wgc8AW7gY8Umt00Ufy5cyy+WldvidguyW2J5Mukl4ZLKjU8ylMygFRfEk6/S+e2OJ8Cz/NQ6GOEcXfg8WA2aNff53DSlJ8vrx9C5HYHeL6ozxrUlLsNUe7kNTYtHBoZ91QESAaO7ltooOFSdyBVarhu3mkWg0o4w4LwTJ/UJZdszvuMfbx8Dy832FlkUSJX/K5xRY167yuZPBcd9MsOtXWvZsdTx5Qo4TjtN1/Uk/aC9REQAHoPDCwRfNJ+VZPwZmnLO9RQA5JlE4NcyIuqRTInZD5zmevSiM+mqQgmiW6+0ui8N+nNrvcB4PHmmUQnSDHuxLy8ySu9NwmdPZ8bxoxT96Wy9ValVoPl2gk="
+    secure: "HY7brEoxQlAFpMskNDnUwAyAyNNBSSkWy0kKwlMlpKrEnPyMxGGS5mHAJaTT067flX3OQUgDrRtqd8TXN+bhY8vTJFqGFP0wzlDxU4u6YrrKisVWH0vCroxdxfx8YZ8uYDoiVOXUwUskVfz+oQUcnxO8jjTGgYGxLVcFERyruRl8rL4TmfmX9AWMzPGKZNdpsa9vt6YfHx+oQ8QFq83p7+COJ/iL7j4MnKybBMOTRPbxkYobX1fW+yV1SQsrBwzYYP8oPc304dEKqSnp/SaE/ihh57kDijzh83/HIVNuZCXkjPYjlyegczmHPJWQt4AxPA0dItlbwF3sTcVpX7jU9i3mOwC2nDjosL3uau3sGxeiORXzZbVoESt4lGJca0aFwChp288CB9ra1K+3jj5jh73TNZEPbBLQWjL5+oFXR0EIRT1A7r/Z3preqFA91VckwMnY4xlVMh4n8mcANVuiqjmmmfaxb70Ec+zTSd6cuf6nPNoM9nAKb26RvspJG/FnBZRVvcLWDaRNAPYfSjM3+kbeZVnCFOiwiRL/D27uFxZjKwKBsSldMS24xPNBTqYXMwH2idJhf7v/AfXHhgRQGJYCpWElzFJHV1tg28kjcDk+fSuieWTI2Zp8rVFs7n+vwsn33KUCn16tW+wgZRhk6BTBtH7tqdvYfGuOzfA1L6A="
   on:
     tags: true
     branch: master
