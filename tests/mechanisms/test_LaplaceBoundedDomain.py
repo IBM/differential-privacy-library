@@ -1,6 +1,8 @@
 import numpy as np
 from unittest import TestCase
 
+import pytest
+
 from diffprivlib.mechanisms import LaplaceBoundedDomain
 from diffprivlib.utils import global_seed
 
@@ -99,3 +101,11 @@ class TestLaplaceBoundedDomain(TestCase):
 
         self.assertTrue(np.all(vals >= 0))
         self.assertTrue(np.all(vals <= 1))
+
+    def test_semi_inf_domain_inf_epsilon(self):
+        self.mech.set_epsilon(float("inf")).set_sensitivity(1).set_bounds(0.0, float("inf"))
+
+        with pytest.warns(None) as w:
+            self.assertIsNotNone(self.mech.randomise(0))
+
+        self.assertFalse(w, "Warning thrown for LaplaceBoundedDomain")

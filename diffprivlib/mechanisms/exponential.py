@@ -70,9 +70,6 @@ class Exponential(DPMechanism):
             utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
             specified for every pair of values given in the `utility_list`.
 
-            The mechanism's string values cannot contain the substring ``::``, and must not end in ``:``.  If this is a
-            requirement, you can use a :class:`.DPTransformer` as an alternative.
-
         Returns
         -------
         self : class
@@ -83,8 +80,7 @@ class Exponential(DPMechanism):
             If the `value` components of each tuple are not strings of if the `utility` component is not a float.
 
         ValueError
-            If any of the `value` components contains the substring ``::`` or ends in ``:``, or if the `utility`
-            component is zero or negative.
+            If the `utility` component is zero or negative.
 
         """
         if not isinstance(utility_list, list):
@@ -101,10 +97,6 @@ class Exponential(DPMechanism):
 
             if not isinstance(value1, str) or not isinstance(value2, str):
                 raise TypeError("Utility keys must be strings")
-            if (value1.find("::") >= 0) or (value2.find("::") >= 0) \
-                    or value1.endswith(":") or value2.endswith(":"):
-                raise ValueError("Values cannot contain the substring \"::\" and cannot end in \":\". "
-                                 "Use a DPTransformer if necessary.")
             if not isinstance(utility_value, Real):
                 raise TypeError("Utility value must be a number")
             if utility_value < 0.0:
@@ -116,12 +108,12 @@ class Exponential(DPMechanism):
             if value2 not in domain_values:
                 domain_values.append(value2)
 
-            if value1 is value2:
+            if value1 == value2:
                 continue
             if value1 < value2:
-                utility_values[value1 + "::" + value2] = utility_value
+                utility_values[(value1, value2)] = utility_value
             else:
-                utility_values[value2 + "::" + value1] = utility_value
+                utility_values[(value2, value1)] = utility_value
 
         self._utility_values = utility_values
         self._sensitivity = sensitivity
@@ -137,8 +129,8 @@ class Exponential(DPMechanism):
                 if val1 >= val2:
                     continue
 
-                if val1 + "::" + val2 not in self._utility_values:
-                    raise ValueError("Utility value for %s missing" % (val1 + "::" + val2))
+                if (val1, val2) not in self._utility_values:
+                    raise ValueError("Utility value for (%s) missing" % (val1 + ", " + val2))
 
         return True
 
@@ -157,9 +149,9 @@ class Exponential(DPMechanism):
 
         utility_list = []
 
-        for _key, _value in self._utility_values.items():
-            value1, value2 = _key.split("::", maxsplit=1)
-            utility_list.append((value1, value2, _value))
+        for _key, _utility in self._utility_values.items():
+            value1, value2 = _key
+            utility_list.append((value1, value2, _utility))
 
         return utility_list
 
@@ -193,9 +185,9 @@ class Exponential(DPMechanism):
             return 0
 
         if value1 > value2:
-            return self._get_utility(value2, value1)
+            return self._get_utility(value1=value2, value2=value1)
 
-        return self._utility_values[value1 + "::" + value2]
+        return self._utility_values[(value1, value2)]
 
     def _get_prob(self, value1, value2):
         if value1 == value2:

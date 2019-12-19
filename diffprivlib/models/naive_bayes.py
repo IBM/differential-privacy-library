@@ -25,7 +25,7 @@ import sklearn.naive_bayes as sk_nb
 
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 from diffprivlib.models.utils import _check_bounds
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 class GaussianNB(sk_nb.GaussianNB):
@@ -44,12 +44,10 @@ class GaussianNB(sk_nb.GaussianNB):
         are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     priors : array-like, shape (n_classes,)
-        Prior probabilities of the classes. If specified the priors are not
-        adjusted according to the data.
+        Prior probabilities of the classes. If specified the priors are not adjusted according to the data.
 
     var_smoothing : float, optional (default=1e-9)
-        Portion of the largest variance of all features that is added to
-        variances for calculation stability.
+        Portion of the largest variance of all features that is added to variances for calculation stability.
 
     Attributes
     ----------
@@ -83,6 +81,9 @@ class GaussianNB(sk_nb.GaussianNB):
         self.bounds = bounds
 
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
+        if sample_weight is not None:
+            warn_unused_args("sample_weight")
+
         # Store size of current X to apply differential privacy later on
         self.new_n_samples = X.shape[0]
 
@@ -94,7 +95,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
         self.bounds = _check_bounds(self.bounds, X.shape[1])
 
-        super()._partial_fit(X, y, classes, _refit, sample_weight)
+        super()._partial_fit(X, y, classes, _refit, sample_weight=None)
 
         del self.new_n_samples
         return self
@@ -102,13 +103,11 @@ class GaussianNB(sk_nb.GaussianNB):
     def _update_mean_variance(self, n_past, mu, var, X, sample_weight=None):
         """Compute online update of Gaussian mean and variance.
 
-        Given starting sample count, mean, and variance, a new set of
-        points X, and optionally sample weights, return the updated mean and
-        variance. (NB - each dimension (column) in X is treated as independent
-        -- you get variance, not covariance).
+        Given starting sample count, mean, and variance, a new set of points X return the updated mean and variance.
+        (NB - each dimension (column) in X is treated as independent -- you get variance, not covariance).
 
-        Can take scalar mean and variance, or vector mean and variance to
-        simultaneously update a number of independent Gaussians.
+        Can take scalar mean and variance, or vector mean and variance to simultaneously update a number of
+        independent Gaussians.
 
         See Stanford CS tech report STAN-CS-79-773 by Chan, Golub, and LeVeque:
 
@@ -117,9 +116,8 @@ class GaussianNB(sk_nb.GaussianNB):
         Parameters
         ----------
         n_past : int
-            Number of samples represented in old mean and variance. If sample
-            weights were given, this should contain the sum of sample
-            weights represented in old mean and variance.
+            Number of samples represented in old mean and variance. If sample weights were given, this should contain
+            the sum of sample weights represented in old mean and variance.
 
         mu : array-like, shape (number of Gaussians,)
             Means for Gaussians in original set.
@@ -127,8 +125,8 @@ class GaussianNB(sk_nb.GaussianNB):
         var : array-like, shape (number of Gaussians,)
             Variances for Gaussians in original set.
 
-        sample_weight : array-like, shape (n_samples,), optional (default=None)
-            Weights applied to individual samples (1. for unweighted).
+        sample_weight : ignored
+            Ignored in diffprivlib.
 
         Returns
         -------
@@ -143,13 +141,11 @@ class GaussianNB(sk_nb.GaussianNB):
 
         # Compute (potentially weighted) mean and variance of new datapoints
         if sample_weight is not None:
-            n_new = float(sample_weight.sum())
-            new_mu = np.average(X, axis=0, weights=sample_weight / n_new)
-            new_var = np.average((X - new_mu) ** 2, axis=0, weights=sample_weight / n_new)
-        else:
-            n_new = X.shape[0]
-            new_var = np.var(X, axis=0)
-            new_mu = np.mean(X, axis=0)
+            warn_unused_args("sample_weight")
+
+        n_new = X.shape[0]
+        new_var = np.var(X, axis=0)
+        new_mu = np.mean(X, axis=0)
 
         # Apply differential privacy to the new means and variances
         new_mu, new_var = self._randomise(new_mu, new_var, self.new_n_samples)
@@ -173,7 +169,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
         return total_mu, total_var
 
-    def _randomise(self, mu, var, n_samples):
+    def _randomise(self, mean, var, n_samples):
         """Randomises the learned means and variances subject to differential privacy."""
         features = var.shape[0]
 
@@ -183,9 +179,8 @@ class GaussianNB(sk_nb.GaussianNB):
         if len(self.bounds) != features:
             raise ValueError("Bounds must be specified for each feature dimension")
 
-        # Extra np.array() a temporary fix for PyLint bug: https://github.com/PyCQA/pylint/issues/2747
-        new_mu = np.array(np.zeros_like(mu))
-        new_var = np.array(np.zeros_like(var))
+        new_mu = np.zeros_like(mean)
+        new_var = np.zeros_like(var)
 
         for feature in range(features):
             local_diameter = self.bounds[feature][1] - self.bounds[feature][0]
@@ -193,7 +188,7 @@ class GaussianNB(sk_nb.GaussianNB):
             mech_var = LaplaceBoundedDomain().set_sensitivity((n_samples - 1) * local_diameter ** 2 / n_samples ** 2)\
                 .set_epsilon(local_epsilon).set_bounds(0, float("inf"))
 
-            new_mu[feature] = mech_mu.randomise(mu[feature])
+            new_mu[feature] = mech_mu.randomise(mean[feature])
             new_var[feature] = mech_var.randomise(var[feature])
 
         return new_mu, new_var

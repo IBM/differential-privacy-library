@@ -373,6 +373,8 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         unif_rv += self._cdf(self._lower_bound - value)
         unif_rv -= 0.5
 
+        unif_rv = min(unif_rv, 0.5 - 1e-10)
+
         return value - self._scale * np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv))
 
 

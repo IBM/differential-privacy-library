@@ -27,3 +27,5 @@ basic data analysis with differential privacy; and machine learning models that 
 from diffprivlib import mechanisms
 from diffprivlib import models
 from diffprivlib import tools
+
+__version__ = '0.1.2'

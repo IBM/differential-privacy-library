@@ -14,6 +14,8 @@
 #
 import os
 import sys
+
+docs_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -23,10 +25,31 @@ project = 'IBM Differential Privacy Library'
 copyright = '2019, Naoise Holohan'
 author = 'Naoise Holohan'
 
-# The short X.Y version
-version = '0.1'
-# The full version, including alpha/beta/rc tags
-release = '0.1.1'
+# Single-sourced versioning for docs with inspiration from pip:
+# https://github.com/pypa/pip/blob/04d8841ace46d49a1443ef56f1205a70019a1a2f/docs/html/conf.py
+version = release = 'dev'
+
+# Readthedocs seems to install pip as an egg (via setup.py install) which
+# is somehow resulting in "import pip" picking up an older copy of pip.
+# Rather than trying to force RTD to install pip properly, we'll simply
+# read the version direct from the __init__.py file. (Yes, this is
+# fragile, but it works...)
+
+init_file = os.path.join(docs_dir, '..', 'diffprivlib', '__init__.py')
+with open(init_file) as f:
+    for line in f:
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            __version__ = line.split(delim)[1]
+
+            version = '.'.join(__version__.split('.')[:2])
+            release = __version__
+            break
+
+# We have this here because readthedocs plays tricks sometimes and there seems
+# to be a heisenbug, related to the version of pip discovered. This is here to
+# help debug that if someone decides to do that in the future.
+print(version)
 
 
 # -- General configuration ---------------------------------------------------
@@ -106,7 +129,7 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

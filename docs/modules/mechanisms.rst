@@ -111,3 +111,10 @@ Vector mechanism
    :members:
    :inherited-members:
    :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+
+Wishart mechanism
+-----------------------------
+.. autoclass:: Wishart
+   :members:
+   :inherited-members:
+   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta

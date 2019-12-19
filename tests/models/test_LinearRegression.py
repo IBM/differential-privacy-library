@@ -1,19 +1,43 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.models.logistic_regression import LogisticRegression
+from diffprivlib.models.linear_regression import LinearRegression
 from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
-class TestLogisticRegression(TestCase):
+class TestLinearRegression(TestCase):
     def setup_method(self, method):
         global_seed(3141592653)
 
     def test_not_none(self):
-        self.assertIsNotNone(LogisticRegression)
+        self.assertIsNotNone(LinearRegression)
 
     def test_no_params(self):
-        clf = LogisticRegression()
+        clf = LinearRegression()
+
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+
+        with self.assertWarns(PrivacyLeakWarning):
+            clf.fit(X, y)
+
+    def test_sample_weight_warning(self):
+        clf = LinearRegression(data_norm=5.5, range_X=5, range_y=1)
+
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            clf.fit(X, y, sample_weight=np.ones_like(y))
+
+    def test_no_range_y(self):
+        clf = LinearRegression(data_norm=5.5, range_X=5)
 
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -31,40 +55,10 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=1.0)
+        clf = LinearRegression(data_norm=1.0)
 
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
-
-    def test_sample_weight_warning(self):
-        X = np.array(
-            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
-             5.00, 5.50])
-        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
-        X = X[:, np.newaxis]
-
-        clf = LogisticRegression(data_norm=5.5)
-
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            clf.fit(X, y, sample_weight=np.ones_like(y))
-
-    def test_trinomial(self):
-        X = np.array(
-            [0.50, 0.75, 1.00])
-        y = np.array([0, 1, 2])
-        X = X[:, np.newaxis]
-
-        clf = LogisticRegression(data_norm=1.0)
-
-        self.assertIsNotNone(clf.fit(X, y))
-
-    def test_solver_warning(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            LogisticRegression(solver="newton-cg")
-
-    def test_multi_class_warning(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            LogisticRegression(multi_class="multinomial")
 
     def test_different_results(self):
         from sklearn import datasets
@@ -74,17 +68,17 @@ class TestLogisticRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = LogisticRegression(data_norm=12)
+        clf = LinearRegression(data_norm=12, range_X=[3.6, 2.2, 5.9, 2.4], range_y=2)
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = LogisticRegression(data_norm=12)
+        clf = LinearRegression(data_norm=12, range_X=[3.6, 2.2, 5.9, 2.4], range_y=2)
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
 
-        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr")
+        clf = linear_model.LinearRegression()
         clf.fit(X_train, y_train)
 
         predict3 = clf.predict(X_test)
@@ -100,32 +94,25 @@ class TestLogisticRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = LogisticRegression(data_norm=12, epsilon=float("inf"))
+        clf = LinearRegression(data_norm=12, epsilon=float("inf"), range_X=[3.6, 2.2, 5.9, 2.4], range_y=2)
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr")
+        clf = linear_model.LinearRegression(normalize=False)
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
 
-        self.assertTrue(np.all(predict1 == predict2))
+        self.assertTrue(np.allclose(predict1, predict2))
 
     def test_simple(self):
-        X = np.array(
-            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
-             5.00, 5.50])
-        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = np.linspace(-1, 1, 1000)
+        y = X.copy()
         X = X[:, np.newaxis]
-        X -= 3.0
-        X /= 2.5
 
-        clf = LogisticRegression(epsilon=2, data_norm=1.0)
+        clf = LinearRegression(epsilon=2, data_norm=1, range_X=[1], range_y=1, fit_intercept=False)
         clf.fit(X, y)
 
-        # print(clf.predict(np.array([0.5, 2, 5.5])))
-
         self.assertIsNotNone(clf)
-        self.assertFalse(clf.predict(np.array([(0.5 - 3) / 2.5]).reshape(-1, 1)))
-        self.assertTrue(clf.predict(np.array([(5.5 - 3) / 2.5]).reshape(-1, 1)))
+        self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, places=3)

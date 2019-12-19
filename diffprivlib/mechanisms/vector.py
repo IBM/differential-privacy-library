@@ -35,7 +35,7 @@ class Vector(DPMechanism):
     def __init__(self):
         super().__init__()
         self._function_sensitivity = None
-        self._data_sensitivity = 1
+        self._data_sensitivity = None
         self._vector_dim = None
         self._alpha = 0.01
 
@@ -223,7 +223,7 @@ class Vector(DPMechanism):
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 
         def output_func(*args):
-            w = args[0]
+            input_vec = args[0]
 
             func = value(*args)
 
@@ -232,11 +232,11 @@ class Vector(DPMechanism):
             else:
                 grad = None
 
-            func += np.dot(normed_noisy_vector, w)
-            func += 0.5 * delta * np.dot(w, w)
+            func += np.dot(normed_noisy_vector, input_vec)
+            func += 0.5 * delta * np.dot(input_vec, input_vec)
 
             if grad is not None:
-                grad += normed_noisy_vector + delta * w
+                grad += normed_noisy_vector + delta * input_vec
 
                 return func, grad
 

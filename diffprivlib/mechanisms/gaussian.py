@@ -184,14 +184,14 @@ class GaussianAnalytic(Gaussian):
         epsilon = self._epsilon
         delta = self._delta
 
-        def phi(x):
-            return (1 + erf(x / np.sqrt(2))) / 2
+        def phi(val):
+            return (1 + erf(val / np.sqrt(2))) / 2
 
-        def b_plus(x):
-            return phi(np.sqrt(epsilon * x)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (x + 2))) - delta
+        def b_plus(val):
+            return phi(np.sqrt(epsilon * val)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (val + 2))) - delta
 
-        def b_minus(x):
-            return phi(- np.sqrt(epsilon * x)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (x + 2))) - delta
+        def b_minus(val):
+            return phi(- np.sqrt(epsilon * val)) - np.exp(epsilon) * phi(- np.sqrt(epsilon * (val + 2))) - delta
 
         delta_0 = b_plus(0)
 
