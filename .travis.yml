@@ -7,7 +7,7 @@ python:
 - '3.8'
 matrix:
   include:
-  - python: 3.7
+  - python: 3.8
     script:
     - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0)
 install:
@@ -22,4 +22,4 @@ deploy:
   on:
     tags: true
     branch: master
-    condition: $TRAVIS_PYTHON_VERSION = 3.6
+    condition: $TRAVIS_PYTHON_VERSION = 3.7
