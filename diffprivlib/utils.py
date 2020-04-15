@@ -19,6 +19,7 @@
 Basic functions and other utilities for the differential privacy library
 """
 import warnings
+from numbers import Real
 
 import numpy as np
 
@@ -87,6 +88,47 @@ def warn_unused_args(args):
     for arg in args:
         warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
                       "warning." % arg, DiffprivlibCompatibilityWarning)
+
+
+def check_epsilon_delta(epsilon, delta):
+    """Checks that epsilon and delta are valid values for differential privacy. Throws an error if checks fail,
+    otherwise returns nothing.
+
+    As well as the requirements of epsilon and delta separately, both cannot be simultaneously zero.
+
+    Parameters
+    ----------
+    epsilon : float
+        Epsilon parameter for differential privacy. Must be non-negative.
+
+    delta : float
+        Delta parameter for differential privacy. Must be on the unit interval, [0, 1].
+
+    """
+    if not isinstance(epsilon, Real) or not isinstance(delta, Real):
+        raise TypeError("Epsilon and delta must be numeric")
+
+    if epsilon < 0:
+        raise ValueError("Epsilon must be non-negative")
+
+    if not 0 <= delta <= 1:
+        raise ValueError("Delta must be in [0, 1]")
+
+    if epsilon + delta == 0:
+        raise ValueError("Epsilon and Delta cannot both be zero")
+
+
+class BudgetError(ValueError):
+    """Custom exception to capture the privacy budget being exceeded, typically controlled by a
+    :class:`.BudgetAccountant`.
+
+    For example, this exception may be raised when the user:
+
+        - Attempts to execute a query which would exceed the privacy budget of the accountant.
+        - Attempts to change the slack of the accountant in such a way that the existing budget spends would exceed the
+          accountant's budget.
+
+    """
 
 
 class PrivacyLeakWarning(RuntimeWarning):
