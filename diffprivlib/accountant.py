@@ -18,6 +18,8 @@
 """
 Privacy budget accountant for differential privacy
 """
+from numbers import Integral
+
 import numpy as np
 
 from diffprivlib.utils import check_epsilon_delta, BudgetError
@@ -142,16 +144,18 @@ class BudgetAccountant:
 
         for epsilon, _ in spent_budget:
             epsilon_sum += epsilon
-            epsilon_exp_sum += (np.exp(epsilon) - 1) * epsilon / (np.exp(epsilon) + 1)
+            epsilon_exp_sum += (1 - np.exp(-epsilon)) * epsilon / (1 + np.exp(-epsilon))
             epsilon_sq_sum += epsilon ** 2
 
         total_epsilon_naive = epsilon_sum
-        total_epsilon_drv = float("inf") if slack <= 0 else \
-            epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum * np.log(1 / slack))
-        total_epsilon_kov = float("inf") if slack <= 0 else \
-            epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum * np.log(np.exp(1) + np.sqrt(epsilon_sq_sum) / slack))
-
         total_delta = self.__total_delta_safe(spent_budget, slack)
+
+        if slack == 0:
+            return total_epsilon_naive, total_delta
+
+        total_epsilon_drv = epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum * np.log(1 / slack))
+        total_epsilon_kov = epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum *
+                                                      np.log(np.exp(1) + np.sqrt(epsilon_sq_sum) / slack))
 
         return min(total_epsilon_naive, total_epsilon_drv, total_epsilon_kov), total_delta
 
@@ -173,7 +177,7 @@ class BudgetAccountant:
 
         """
         check_epsilon_delta(epsilon, delta)
-        spent_budget = self.__spent_budget.copy() + [(epsilon, delta)]
+        spent_budget = self.__spent_budget + [(epsilon, delta)]
 
         epsilon_spent, delta_spent = self.total_spent(spent_budget=spent_budget)
 
@@ -198,8 +202,13 @@ class BudgetAccountant:
             Budget remaining to be spent on `k` queries.
 
         """
+        if not isinstance(k, Integral):
+            raise TypeError("k must be integer-valued, got {}.".format(type(k)))
+        if k < 1:
+            raise ValueError("k must be at least 1, got {}.".format(k))
+
         _, spent_delta = self.total_spent()
-        delta = 1 - ((1 - self.delta) / (1 - spent_delta)) ** (1 / k)
+        delta = 1 - ((1 - self.delta) / (1 - spent_delta)) ** (1 / k) if spent_delta < 1.0 else 1.0
         # delta = 1 - np.exp((np.log(1 - self.delta) - np.log(1 - spent_delta)) / k)
 
         lower = 0
@@ -210,7 +219,7 @@ class BudgetAccountant:
             old_interval_size = upper - lower
             mid = (upper + lower) / 2
 
-            spent_budget = self.__spent_budget.copy() + [(mid, 0)] * k
+            spent_budget = self.__spent_budget + [(mid, 0)] * k
             x_0, _ = self.total_spent(spent_budget=spent_budget)
 
             if x_0 >= self.epsilon:
@@ -240,7 +249,7 @@ class BudgetAccountant:
         check_epsilon_delta(epsilon, delta)
 
         if not self.check_spend(epsilon, delta):
-            raise BudgetError("Privacy budget exceeded with ({},{}). Use {} to check remaining budget".format(
+            raise BudgetError("Privacy budget exceeded with ({},{}). Use {} to check remaining budget.".format(
                 epsilon, delta, self.remaining_budget.__name__
             ))
 
