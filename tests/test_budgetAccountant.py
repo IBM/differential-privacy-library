@@ -94,6 +94,24 @@ class TestBudgetAccountant(TestCase):
         _, delt = acc.remaining_budget(100)
         self.assertEqual(0.0, delt)
 
+    def test_remaining_budget_k(self):
+        acc = BudgetAccountant(1, 1e-2, 1e-3)
+
+        with self.assertRaises(ValueError):
+            acc.remaining_budget(0)
+
+        with self.assertRaises(TypeError):
+            acc.remaining_budget(1.0)
+
+    def test_remaining_budget_inf(self):
+        acc = BudgetAccountant()
+        self.assertEqual((float("inf"), 1.0), acc.remaining_budget())
+        self.assertEqual((float("inf"), 1.0), acc.remaining_budget(100))
+
+        acc.spend(float("inf"), 1)
+        self.assertEqual((float("inf"), 1.0), acc.remaining_budget())
+        self.assertEqual((float("inf"), 1.0), acc.remaining_budget(100))
+
     def test_spend(self):
         acc = BudgetAccountant()
         acc.spend(1, 0)
@@ -129,6 +147,14 @@ class TestBudgetAccountant(TestCase):
 
         with self.assertRaises(BudgetError):
             acc.spend(0, 1e-5)
+
+    def test_inf_spend(self):
+        acc = BudgetAccountant()
+        acc.spend(float("inf"), 1)
+        self.assertEqual((float("inf"), 1), acc.total_spent())
+        self.assertEqual((float("inf"), 1), acc.remaining_budget())
+        self.assertEqual((float("inf"), 1), acc.remaining_budget(100))
+        self.assertTrue(acc.check_spend(float("inf"), 1))
 
     def test_remaining_budget_positive_vals(self):
         acc = BudgetAccountant(1, 1e-2, 1e-5, [(0.01, 0), (0.01, 0), (0.01, 0)])
