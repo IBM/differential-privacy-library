@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.tools.histograms import histogram2d
-from diffprivlib.utils import global_seed, PrivacyLeakWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, BudgetError
 
 
 class TestHistogram2d(TestCase):
@@ -57,3 +57,13 @@ class TestHistogram2d(TestCase):
 
         self.assertAlmostEqual(dp_hist.sum(), 1.0 * (3 / 10) ** 2)
 
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant(1.5, 0)
+
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([5, 7, 1, 5, 9])
+        histogram2d(x, y, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
+
+        with self.assertRaises(BudgetError):
+            histogram2d(x, y, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
