@@ -25,6 +25,11 @@ import numpy as np
 from diffprivlib.utils import check_epsilon_delta, BudgetError
 
 
+def check_accountant(accountant):
+    if accountant is not None and not isinstance(accountant, BudgetAccountant):
+        raise TypeError("Accounant must be of type BudgetAccountant, got {}.".format(type(accountant)))
+
+
 class BudgetAccountant:
     """Privacy budget accountant for differential privacy.
 
@@ -173,7 +178,12 @@ class BudgetAccountant:
         Returns
         -------
         bool
-            True if the budget can be spent, False if not.
+            True if the budget can be spent, otherwise a :class:`.BudgetError` is raised..
+
+        Raises
+        ------
+        BudgetError
+            If the specified budget spend will result in the target budget being exceeded..
 
         """
         check_epsilon_delta(epsilon, delta)
@@ -183,7 +193,10 @@ class BudgetAccountant:
 
         if self.epsilon >= epsilon_spent and self.delta >= delta_spent:
             return True
-        return False
+
+        raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
+                          "Use {}.{} to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
+                                                                        self.remaining_budget.__name__))
 
     def remaining_budget(self, k=1):
         """Calculates the budget that remains to be spent.
@@ -248,10 +261,7 @@ class BudgetAccountant:
         """
         check_epsilon_delta(epsilon, delta)
 
-        if not self.check_spend(epsilon, delta):
-            raise BudgetError("Privacy budget exceeded with ({},{}). Use {} to check remaining budget.".format(
-                epsilon, delta, self.remaining_budget.__name__
-            ))
+        self.check_spend(epsilon, delta)
 
         self.__spent_budget.append((epsilon, delta))
 

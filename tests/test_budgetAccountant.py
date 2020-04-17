@@ -58,7 +58,9 @@ class TestBudgetAccountant(TestCase):
 
     def test_spent_budget(self):
         acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
-        self.assertFalse(acc.check_spend(0.1, 0))
+
+        with self.assertRaises(BudgetError):
+            acc.check_spend(0.1, 0)
 
     def test_remaining_budget_epsilon(self):
         acc = BudgetAccountant(1, 0)
