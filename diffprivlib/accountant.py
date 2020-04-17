@@ -27,7 +27,7 @@ from diffprivlib.utils import check_epsilon_delta, BudgetError
 
 def check_accountant(accountant):
     if accountant is not None and not isinstance(accountant, BudgetAccountant):
-        raise TypeError("Accounant must be of type BudgetAccountant, got {}.".format(type(accountant)))
+        raise TypeError("Accountant must be of type BudgetAccountant, got {}.".format(type(accountant)))
 
 
 class BudgetAccountant:
