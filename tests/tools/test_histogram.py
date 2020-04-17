@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.tools.histograms import histogram
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import global_seed, BudgetError
 
 
 class TestHistogram(TestCase):
@@ -42,3 +42,14 @@ class TestHistogram(TestCase):
         # print(dp_hist.sum())
 
         self.assertAlmostEqual(dp_hist.sum(), 1.0 * 3 / 10)
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant(1.5, 0)
+
+        a = np.array([1, 2, 3, 4, 5])
+        histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=acc)
+        self.assertEqual((1, 0), acc.total_spent())
+
+        with self.assertRaises(BudgetError):
+            histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=acc)
