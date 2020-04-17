@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from diffprivlib.accountant import BudgetAccountant, check_accountant
+from diffprivlib.accountant import BudgetAccountant
+from diffprivlib.utils import check_accountant
 
 
 class TestCheck_accountant(TestCase):
