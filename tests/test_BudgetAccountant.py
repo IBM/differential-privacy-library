@@ -37,11 +37,11 @@ class TestBudgetAccountant(TestCase):
             BudgetAccountant(0, 0)
 
     def test_init_scalar_spent(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             BudgetAccountant(spent_budget=2)
 
     def test_init_non_list_spent(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             BudgetAccountant(spent_budget=(1, 0))
 
     def test_init_small_tuple_spent(self):
@@ -196,3 +196,12 @@ class TestBudgetAccountant(TestCase):
 
         self.assertAlmostEqual(remaining_eps, eps)
         self.assertAlmostEqual(remaining_delt, delt)
+
+    def test_many_queries(self):
+        acc = BudgetAccountant(1, 1e-3, 1e-3)
+
+        for i in range(100):
+            epsilon, delta = acc.remaining_budget(2)
+            acc.spend(epsilon, delta)
+
+        self.assertGreaterEqual(acc.remaining_budget(), (0, 0))
