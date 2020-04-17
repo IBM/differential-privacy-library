@@ -119,6 +119,8 @@ def check_epsilon_delta(epsilon, delta):
 
 
 def check_accountant(accountant):
+    """Checks that the supplied `accountant` is of the correct type, i.e. a :class:`.BudgetAccountant`.
+    """
     from diffprivlib.accountant import BudgetAccountant
 
     if accountant is not None and not isinstance(accountant, BudgetAccountant):
