@@ -73,6 +73,9 @@ class BudgetAccountant:
         self.slack = slack
 
         if spent_budget is not None:
+            if not isinstance(spent_budget, list):
+                raise TypeError("spent_budget must be a list")
+
             try:
                 for _epsilon, _delta in spent_budget:
                     self.spend(_epsilon, _delta)
