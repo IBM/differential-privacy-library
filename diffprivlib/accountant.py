@@ -92,11 +92,8 @@ class BudgetAccountant:
 
     @slack.setter
     def slack(self, slack):
-        if not 0 <= slack <= 1:
-            raise ValueError("Slack must be between 0 and 1 (inclusive), got {}.".format(slack))
-        if slack > self.delta:
-            raise ValueError("Slack must not be greater than the total delta budget ({}). "
-                             "Got {}.".format(self.delta, slack))
+        if not 0 <= slack <= self.delta:
+            raise ValueError("Slack must be between 0 and delta ({}), inclusive. Got {}.".format(self.delta, slack))
 
         epsilon_spent, delta_spent = self.total_spent(slack=slack)
 
@@ -140,8 +137,8 @@ class BudgetAccountant:
 
         if slack is None:
             slack = self.slack
-        elif not 0 <= slack <= 1:
-            raise ValueError("Slack must be between 0 and 1 (inclusive), got {}".format(slack))
+        elif not 0 <= slack <= self.delta:
+            raise ValueError("Slack must be between 0 and delta ({}), inclusive. Got {}.".format(self.delta, slack))
 
         epsilon_sum, epsilon_exp_sum, epsilon_sq_sum = 0, 0, 0
 
