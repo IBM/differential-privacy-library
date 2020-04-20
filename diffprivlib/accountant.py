@@ -257,10 +257,7 @@ class BudgetAccountant:
             Delta privacy budget to spend.
 
         """
-        check_epsilon_delta(epsilon, delta)
-
         self.check_spend(epsilon, delta)
-
         self.__spent_budget.append((epsilon, delta))
 
     @staticmethod
