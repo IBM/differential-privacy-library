@@ -95,7 +95,7 @@ class BudgetAccountant:
         if not 0 <= slack <= self.delta:
             raise ValueError("Slack must be between 0 and delta ({}), inclusive. Got {}.".format(self.delta, slack))
 
-        epsilon_spent, delta_spent = self.total_spent(slack=slack)
+        epsilon_spent, delta_spent = self.total(slack=slack)
 
         if self.epsilon < epsilon_spent or self.delta < delta_spent:
             raise BudgetError("Privacy budget will be exceeded by changing slack to {}.".format(slack))
@@ -108,7 +108,7 @@ class BudgetAccountant:
         """
         return self.__spent_budget
 
-    def total_spent(self, spent_budget=None, slack=None):
+    def total(self, spent_budget=None, slack=None):
         """Returns the total current privacy spend.
 
         `spent_budget` and `slack` can be specified as parameters, otherwise the class values will be used.
@@ -159,7 +159,7 @@ class BudgetAccountant:
 
         return min(total_epsilon_naive, total_epsilon_drv, total_epsilon_kov), total_delta
 
-    def check_spend(self, epsilon, delta):
+    def check(self, epsilon, delta):
         """Checks if the provided budget can be spent while staying within the accountant's target budget.
 
         Parameters
@@ -184,16 +184,16 @@ class BudgetAccountant:
         check_epsilon_delta(epsilon, delta)
         spent_budget = self.__spent_budget + [(epsilon, delta)]
 
-        epsilon_spent, delta_spent = self.total_spent(spent_budget=spent_budget)
+        epsilon_spent, delta_spent = self.total(spent_budget=spent_budget)
 
         if self.epsilon >= epsilon_spent and self.delta >= delta_spent:
             return True
 
         raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
                           "Use {}.{} to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
-                                                                        self.remaining_budget.__name__))
+                                                                        self.remaining.__name__))
 
-    def remaining_budget(self, k=1):
+    def remaining(self, k=1):
         """Calculates the budget that remains to be spent.
 
         Calculates the privacy budget that can be spent on `k` queries. Spending this budget on `k` queries will
@@ -215,7 +215,7 @@ class BudgetAccountant:
         if k < 1:
             raise ValueError("k must be at least 1, got {}.".format(k))
 
-        _, spent_delta = self.total_spent()
+        _, spent_delta = self.total()
         delta = 1 - ((1 - self.delta) / (1 - spent_delta)) ** (1 / k) if spent_delta < 1.0 else 1.0
         # delta = 1 - np.exp((np.log(1 - self.delta) - np.log(1 - spent_delta)) / k)
 
@@ -228,7 +228,7 @@ class BudgetAccountant:
             mid = (upper + lower) / 2
 
             spent_budget = self.__spent_budget + [(mid, 0)] * k
-            x_0, _ = self.total_spent(spent_budget=spent_budget)
+            x_0, _ = self.total(spent_budget=spent_budget)
 
             if x_0 >= self.epsilon:
                 upper = mid
@@ -254,7 +254,7 @@ class BudgetAccountant:
             Delta privacy budget to spend.
 
         """
-        self.check_spend(epsilon, delta)
+        self.check(epsilon, delta)
         self.__spent_budget.append((epsilon, delta))
 
     @staticmethod

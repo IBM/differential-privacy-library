@@ -118,15 +118,6 @@ def check_epsilon_delta(epsilon, delta):
         raise ValueError("Epsilon and Delta cannot both be zero")
 
 
-def check_accountant(accountant):
-    """Checks that the supplied `accountant` is of the correct type, i.e. a :class:`.BudgetAccountant`.
-    """
-    from diffprivlib.accountant import BudgetAccountant
-
-    if accountant is not None and not isinstance(accountant, BudgetAccountant):
-        raise TypeError("Accountant must be of type BudgetAccountant, got {}.".format(type(accountant)))
-
-
 class BudgetError(ValueError):
     """Custom exception to capture the privacy budget being exceeded, typically controlled by a
     :class:`.BudgetAccountant`.

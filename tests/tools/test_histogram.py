@@ -49,7 +49,7 @@ class TestHistogram(TestCase):
 
         a = np.array([1, 2, 3, 4, 5])
         histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=acc)
-        self.assertEqual((1, 0), acc.total_spent())
+        self.assertEqual((1, 0), acc.total())
 
         with self.assertRaises(BudgetError):
             histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=acc)
