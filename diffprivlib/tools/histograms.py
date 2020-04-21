@@ -48,12 +48,14 @@ from sys import maxsize
 
 import numpy as np
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import GeometricTruncated
-from diffprivlib.utils import PrivacyLeakWarning, check_accountant
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 # noinspection PyShadowingBuiltins
-def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
+def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None, density=None,
+              accountant=BudgetAccountant()):
     r"""
     Compute the differentially private histogram of a set of data.
 
@@ -129,9 +131,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
                       "specified independently of the data (i.e., using domain knowledge).", PrivacyLeakWarning)
 
-    if accountant:
-        check_accountant(accountant)
-        accountant.check_spend(epsilon, 0)
+    accountant.check(epsilon, 0)
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
@@ -144,8 +144,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
     # dp_hist = dp_hist.astype(float, casting='safe')
 
-    if accountant:
-        accountant.spend(epsilon, 0)
+    accountant.spend(epsilon, 0)
 
     if normed or density:
         bin_sizes = np.array(np.diff(bin_edges), float)
@@ -155,7 +154,8 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
 
 # noinspection PyShadowingBuiltins
-def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
+def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None,
+                accountant=BudgetAccountant()):
     r"""
     Compute the differentially private multidimensional histogram of some data.
 
@@ -230,9 +230,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
                       "specified for each dimension independently of the data (i.e., using domain knowledge).",
                       PrivacyLeakWarning)
 
-    if accountant:
-        check_accountant(accountant)
-        accountant.check_spend(epsilon, 0)
+    accountant.check(epsilon, 0)
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
@@ -258,14 +256,14 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
             dp_hist = dp_hist / np.diff(bin_edges[i]).reshape(shape)
         dp_hist /= dp_hist_sum
 
-    if accountant:
-        accountant.spend(epsilon, 0)
+    accountant.spend(epsilon, 0)
 
     return dp_hist, bin_edges
 
 
 # noinspection PyShadowingBuiltins
-def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
+def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None,
+                accountant=BudgetAccountant()):
     r"""
     Compute the differentially private bi-dimensional histogram of two data samples.
 
