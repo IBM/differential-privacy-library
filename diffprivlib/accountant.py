@@ -162,6 +162,9 @@ class BudgetAccountant:
     def check(self, epsilon, delta):
         """Checks if the provided budget can be spent while staying within the accountant's target budget.
 
+        Additionally checks that the supplied class is of type BudgetAccountant, useful when type-checking an
+        accountant argument when used in a function.
+
         Parameters
         ----------
         epsilon : float
@@ -181,6 +184,9 @@ class BudgetAccountant:
             If the specified budget spend will result in the target budget being exceeded..
 
         """
+        if not isinstance(self, BudgetAccountant):
+            raise TypeError("Accountant must be of type BudgetAccountant, got {}".format(type(self)))
+
         check_epsilon_delta(epsilon, delta)
         spent_budget = self.__spent_budget + [(epsilon, delta)]
 

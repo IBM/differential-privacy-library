@@ -197,6 +197,16 @@ class TestBudgetAccountant(TestCase):
         self.assertAlmostEqual(remaining_eps, eps)
         self.assertAlmostEqual(remaining_delt, delt)
 
+    def test_check_wrong_type(self):
+        with self.assertRaises(TypeError):
+            BudgetAccountant.check(0, 0, 0)
+
+        with self.assertRaises(TypeError):
+            BudgetAccountant.check([1, 2, 3], 0, 0)
+
+        with self.assertRaises(TypeError):
+            BudgetAccountant.check("BudgetAccountant", 0, 0)
+
     def test_many_queries(self):
         acc = BudgetAccountant(1, 1e-3, 1e-3)
 

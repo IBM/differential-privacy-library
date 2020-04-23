@@ -53,3 +53,6 @@ class TestHistogram(TestCase):
 
         with self.assertRaises(BudgetError):
             histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=acc)
+
+        with self.assertRaises(TypeError):
+            histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=[acc])
