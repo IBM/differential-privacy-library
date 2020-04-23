@@ -131,7 +131,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
                       "specified independently of the data (i.e., using domain knowledge).", PrivacyLeakWarning)
 
-    accountant.check(epsilon, 0)
+    BudgetAccountant.check(accountant, epsilon, 0)
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
@@ -230,7 +230,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
                       "specified for each dimension independently of the data (i.e., using domain knowledge).",
                       PrivacyLeakWarning)
 
-    accountant.check(epsilon, 0)
+    BudgetAccountant.check(accountant, epsilon, 0)
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
