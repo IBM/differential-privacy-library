@@ -65,6 +65,8 @@ class BudgetAccountant:
         IEEE Transactions on Information Theory 63.6 (2017): 4037-4049.
 
     """
+    _default = None
+
     def __init__(self, epsilon=float("inf"), delta=1, slack=0, spent_budget=None):
         check_epsilon_delta(epsilon, delta)
         self.epsilon = epsilon
@@ -107,6 +109,31 @@ class BudgetAccountant:
         """List of tuples of the form (epsilon, delta) of spent privacy budget.
         """
         return self.__spent_budget
+
+    def set_default(self):
+        """Sets the current accountant to be the default when running functions and queries with diffprivlib.
+
+        Returns
+        -------
+        self
+
+        """
+        BudgetAccountant._default = self
+        return self
+
+    @staticmethod
+    def pop_default():
+        """Pops the default BudgetAccountant from the class and returns it to the user.
+
+        Returns
+        -------
+        default : BudgetAccountant
+            Returns the existing default BudgetAccountant.
+
+        """
+        default = BudgetAccountant._default
+        BudgetAccountant._default = None
+        return default
 
     def total(self, spent_budget=None, slack=None):
         """Returns the total current privacy spend.
@@ -162,9 +189,6 @@ class BudgetAccountant:
     def check(self, epsilon, delta):
         """Checks if the provided budget can be spent while staying within the accountant's target budget.
 
-        Additionally checks that the supplied class is of type BudgetAccountant, useful when type-checking an
-        accountant argument when used in a function.
-
         Parameters
         ----------
         epsilon : float
@@ -184,9 +208,6 @@ class BudgetAccountant:
             If the specified budget spend will result in the target budget being exceeded..
 
         """
-        if not isinstance(self, BudgetAccountant):
-            raise TypeError("Accountant must be of type BudgetAccountant, got {}".format(type(self)))
-
         check_epsilon_delta(epsilon, delta)
         spent_budget = self.__spent_budget + [(epsilon, delta)]
 
@@ -292,3 +313,33 @@ class BudgetAccountant:
             prod += delta - prod * delta
 
         return prod
+
+    @staticmethod
+    def load_default(accountant):
+        """Loads the default privacy budget accountant if none is supplied, otherwise checks that the supplied
+        accountant is a BudgetAccountant class.
+
+        An accountant can be set as the default using the `set_default()` method. If no default has been set, a default
+        is created.
+
+        Parameters
+        ----------
+        accountant : BudgetAccountant or None
+            The supplied budget accountant. If None, the default accountant is returned.
+
+        Returns
+        -------
+        BudgetAccountant
+
+        """
+        if accountant is None:
+            if BudgetAccountant._default is None:
+                default = BudgetAccountant()
+                BudgetAccountant._default = default
+
+            return BudgetAccountant._default
+
+        if not isinstance(accountant, BudgetAccountant):
+            raise TypeError("Accountant must be of type BudgetAccountant, got {}".format(type(accountant)))
+
+        return accountant
