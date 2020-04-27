@@ -5,6 +5,9 @@ from diffprivlib.utils import BudgetError
 
 
 class TestBudgetAccountant(TestCase):
+    def tearDown(self):
+        BudgetAccountant.pop_default()
+
     def test_init(self):
         acc = BudgetAccountant()
         self.assertEqual(acc.epsilon, float("inf"))
@@ -197,15 +200,27 @@ class TestBudgetAccountant(TestCase):
         self.assertAlmostEqual(remaining_eps, eps)
         self.assertAlmostEqual(remaining_delt, delt)
 
-    def test_check_wrong_type(self):
+    def test_load_wrong_type(self):
         with self.assertRaises(TypeError):
-            BudgetAccountant.check(0, 0, 0)
+            BudgetAccountant.load_default(0)
 
         with self.assertRaises(TypeError):
-            BudgetAccountant.check([1, 2, 3], 0, 0)
+            BudgetAccountant.load_default([1, 2, 3])
 
         with self.assertRaises(TypeError):
-            BudgetAccountant.check("BudgetAccountant", 0, 0)
+            BudgetAccountant.load_default("BudgetAccountant")
+
+    def test_set_default(self):
+        acc = BudgetAccountant()
+        acc.set_default()
+
+        self.assertIs(BudgetAccountant._default, acc)
+
+    def test_pop_default(self):
+        acc = BudgetAccountant().set_default()
+        acc2 = BudgetAccountant.pop_default()
+
+        self.assertIs(acc, acc2)
 
     def test_many_queries(self):
         acc = BudgetAccountant(1, 1e-3, 1e-3)
