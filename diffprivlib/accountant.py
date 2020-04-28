@@ -70,6 +70,7 @@ class BudgetAccountant:
     def __init__(self, epsilon=float("inf"), delta=1, slack=0, spent_budget=None):
         check_epsilon_delta(epsilon, delta)
         self.epsilon = epsilon
+        self.min_epsilon = 0 if epsilon == float("inf") else epsilon * 1e-14
         self.delta = delta
         self.__spent_budget = []
         self.slack = slack
@@ -110,31 +111,6 @@ class BudgetAccountant:
         """
         return self.__spent_budget
 
-    def set_default(self):
-        """Sets the current accountant to be the default when running functions and queries with diffprivlib.
-
-        Returns
-        -------
-        self
-
-        """
-        BudgetAccountant._default = self
-        return self
-
-    @staticmethod
-    def pop_default():
-        """Pops the default BudgetAccountant from the class and returns it to the user.
-
-        Returns
-        -------
-        default : BudgetAccountant
-            Returns the existing default BudgetAccountant.
-
-        """
-        default = BudgetAccountant._default
-        BudgetAccountant._default = None
-        return default
-
     def total(self, spent_budget=None, slack=None):
         """Returns the total current privacy spend.
 
@@ -155,6 +131,7 @@ class BudgetAccountant:
 
         delta : float
             Total delta spend.
+
         """
         if spent_budget is None:
             spent_budget = self.__spent_budget
@@ -209,6 +186,9 @@ class BudgetAccountant:
 
         """
         check_epsilon_delta(epsilon, delta)
+        if 0 < epsilon < self.min_epsilon:
+            raise ValueError("Epsilon must be at least {} if non-zero, got {}.".format(self.min_epsilon, epsilon))
+
         spent_budget = self.__spent_budget + [(epsilon, delta)]
 
         epsilon_spent, delta_spent = self.total(spent_budget=spent_budget)
@@ -301,6 +281,7 @@ class BudgetAccountant:
         -------
         float
             Total delta spend.
+
         """
         delta_spend = [slack]
         for _, delta in spent_budget:
@@ -343,3 +324,28 @@ class BudgetAccountant:
             raise TypeError("Accountant must be of type BudgetAccountant, got {}".format(type(accountant)))
 
         return accountant
+
+    def set_default(self):
+        """Sets the current accountant to be the default when running functions and queries with diffprivlib.
+
+        Returns
+        -------
+        self
+
+        """
+        BudgetAccountant._default = self
+        return self
+
+    @staticmethod
+    def pop_default():
+        """Pops the default BudgetAccountant from the class and returns it to the user.
+
+        Returns
+        -------
+        default : BudgetAccountant
+            Returns the existing default BudgetAccountant.
+
+        """
+        default = BudgetAccountant._default
+        BudgetAccountant._default = None
+        return default
