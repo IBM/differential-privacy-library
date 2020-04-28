@@ -73,11 +73,36 @@ class TestBudgetAccountant(TestCase):
         with self.assertRaises(ValueError):
             BudgetAccountant(1, 1e-2, 1e-1)
 
+    def test_change_large_slack(self):
+        acc = BudgetAccountant(1, 0.2, 0)
+        acc.spend(0.1, 0.1)
+        acc.spend(0.1, 0.1)
+
+        with self.assertRaises(BudgetError):
+            acc.slack = 0.2
+
+    def test_total_large_slack(self):
+        acc = BudgetAccountant(1, 0.5)
+        with self.assertRaises(ValueError):
+            acc.total(slack=0.75)
+
+    def test_init_exceed_budget(self):
+        with self.assertRaises(BudgetError):
+            BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0), (0.5, 0)])
+
     def test_spent_budget(self):
         acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
 
         with self.assertRaises(BudgetError):
             acc.check(0.1, 0)
+
+    def test_get_spent_budget(self):
+        acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
+
+        spent_budget = acc.spent_budget
+
+        self.assertIsInstance(spent_budget, list)
+        self.assertEqual(2, len(spent_budget))
 
     def test_remaining_budget_epsilon(self):
         acc = BudgetAccountant(1, 0)
@@ -223,6 +248,12 @@ class TestBudgetAccountant(TestCase):
 
         with self.assertRaises(TypeError):
             BudgetAccountant.load_default("BudgetAccountant")
+
+    def test_small_epsilon(self):
+        acc = BudgetAccountant(1)
+
+        with self.assertRaises(ValueError):
+            acc.spend(1e-16, 0)
 
     def test_set_default(self):
         acc = BudgetAccountant()
