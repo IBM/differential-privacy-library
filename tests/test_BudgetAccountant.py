@@ -8,6 +8,20 @@ class TestBudgetAccountant(TestCase):
     def tearDown(self):
         BudgetAccountant.pop_default()
 
+    @staticmethod
+    def sample_model(epsilon=1.0, accountant=None):
+        accountant = BudgetAccountant.load_default(accountant)
+        accountant.check(epsilon, 0.0)
+
+        accountant.spend(epsilon, 0.0)
+
+    @staticmethod
+    def sample_model2(epsilon=1.0, accountant=None):
+        accountant = BudgetAccountant.load_default(accountant)
+        accountant.check(epsilon, 0.0)
+
+        accountant.spend(epsilon, 0.0)
+
     def test_init(self):
         acc = BudgetAccountant()
         self.assertEqual(acc.epsilon, float("inf"))
@@ -222,11 +236,50 @@ class TestBudgetAccountant(TestCase):
 
         self.assertIs(acc, acc2)
 
-    def test_many_queries(self):
-        acc = BudgetAccountant(1, 1e-3, 1e-3)
+    def test_default(self):
+        # Specify accountant as arg
+        acc1 = BudgetAccountant(1.5, 0.0)
+        self.sample_model(accountant=acc1)
+        self.assertEqual((1.0, 0.0), acc1.total())
 
-        for i in range(100):
-            epsilon, delta = acc.remaining(2)
-            acc.spend(epsilon, delta)
+        # Use default accountant without one being set
+        self.sample_model()
+        acc2 = BudgetAccountant.pop_default()
+        self.assertIsNot(acc1, acc2)
+        self.assertEqual(float("inf"), acc2.epsilon)
+        self.assertEqual((1.0, 0.0), acc2.total())
 
-        self.assertGreaterEqual(acc.remaining(), (0, 0))
+        # Set accountant as default
+        acc3 = BudgetAccountant(2.0, 0.0).set_default()
+        self.sample_model(epsilon=1.5)
+        self.assertEqual((1.5, 0), acc3.total())
+        self.assertEqual(2.0, acc3.epsilon)
+        self.assertIsNot(acc3, acc2)
+        self.assertIsNot(acc3, acc1)
+
+        # Check default is same as what we set it
+        acc4 = BudgetAccountant.pop_default()
+        self.assertIs(acc3, acc4)
+        self.assertEqual((1.0, 0.0), acc2.total())
+
+        # Run again in 2 different functions without setting a default
+        self.sample_model()
+        self.sample_model2()
+        acc5 = BudgetAccountant.pop_default()
+        self.assertIsNot(acc5, acc2)
+        self.assertIsNot(acc5, acc3)
+        self.assertEqual((2.0, 0), acc5.total())
+
+    def test_correct_composition(self):
+        epsilons = [2**-9] * 700
+        slack = 2**-25
+
+        acc = BudgetAccountant(slack=slack)
+
+        for epsilon in epsilons:
+            acc.spend(epsilon, 0)
+
+        spent_epsilon, spent_delta = acc.total()
+
+        self.assertAlmostEqual(spent_epsilon, 0.27832280615743646366122002955588987576913442137093, places=14)
+        self.assertEqual(spent_delta, slack)
