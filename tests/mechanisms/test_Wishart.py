@@ -54,6 +54,15 @@ class TestWishart(TestCase):
         with self.assertRaises(ValueError):
             self.mech.set_epsilon_delta(1, 0.5)
 
+    def test_wrong_sensitivity(self):
+        self.mech.set_epsilon(1)
+
+        with self.assertRaises(TypeError):
+            self.mech.set_sensitivity("1")
+
+        with self.assertRaises(ValueError):
+            self.mech.set_sensitivity(-1)
+
     def test_no_sensitivity(self):
         self.mech.set_epsilon(1)
         with self.assertRaises(ValueError):
@@ -122,3 +131,7 @@ class TestWishart(TestCase):
             noisy_data = self.mech.randomise(self.generate_data())
 
             self.assertFalse(np.allclose(noisy_data, old_noisy_data))
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1))
+        self.assertIn(".Wishart(", repr_)

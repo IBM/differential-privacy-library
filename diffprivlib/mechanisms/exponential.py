@@ -84,7 +84,7 @@ class Exponential(DPMechanism):
 
         """
         if not isinstance(utility_list, list):
-            raise ValueError("Utility must be given in a list")
+            raise TypeError("Utility must be given in a list")
 
         self._normalising_constant = None
 
@@ -257,8 +257,6 @@ class Exponential(DPMechanism):
 
             if unif_rv <= cum_prob:
                 return _target_value
-
-        return None
 
 
 class ExponentialHierarchical(Exponential):

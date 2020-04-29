@@ -195,26 +195,9 @@ class DPMechanism(DPMachine, abc.ABC):
 
         """
         if self.get_variance(value) is None or self.get_bias(value) is None:
-            pass
+            return None
 
         return self.get_variance(value) + (self.get_bias(value)) ** 2
-
-    def set_epsilon(self, epsilon):
-        r"""Sets the value of epsilon to be used by the mechanism.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`\epsilon`-differential privacy with the mechanism.  Must have
-            `epsilon > 0`.
-
-        Returns
-        -------
-        self : class
-
-        """
-
-        return self.set_epsilon_delta(epsilon, 0.0)
 
     def set_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of epsilon and delta to be used by the mechanism.

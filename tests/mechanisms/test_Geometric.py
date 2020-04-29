@@ -31,6 +31,11 @@ class TestGeometric(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_neg_sensitivity(self):
+        self.mech.set_epsilon(1)
+        with self.assertRaises(ValueError):
+            self.mech.set_sensitivity(-1)
+
     def test_non_integer_sensitivity(self):
         self.mech.set_epsilon(1)
         with self.assertRaises(TypeError):
@@ -102,3 +107,10 @@ class TestGeometric(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1))
+        self.assertIn(".Geometric(", repr_)
+
+    def test_bias(self):
+        self.assertEqual(0.0, self.mech.get_bias(0))

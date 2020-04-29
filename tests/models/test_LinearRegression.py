@@ -2,6 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.linear_regression import LinearRegression
+from diffprivlib.models.logistic_regression import _check_solver, _check_multi_class
 from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
@@ -116,3 +117,21 @@ class TestLinearRegression(TestCase):
 
         self.assertIsNotNone(clf)
         self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, places=3)
+
+    def test_check_solver(self):
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            _check_solver("wrong_solver", "l2", False)
+
+        with self.assertRaises(ValueError):
+            _check_solver("lbfgs", "l1", False)
+
+        with self.assertRaises(ValueError):
+            _check_solver("lbfgs", "l2", True)
+
+        self.assertIsNotNone(_check_solver("lbfgs", "l2", False))
+
+    def test_check_multi_class(self):
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            _check_multi_class("multinomial", "lbfgs", 2)
+
+        self.assertIsNotNone(_check_multi_class("ovr", "lbfgs", 2))

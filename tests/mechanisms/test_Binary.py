@@ -73,6 +73,11 @@ class TestBinary(TestCase):
         with self.assertRaises(ValueError):
             self.mech.set_labels("0", "0")
 
+    def test_randomise_without_labels(self):
+        self.mech.set_epsilon(1).set_labels("1", "2")
+        with self.assertRaises(ValueError):
+            self.mech.randomise("0")
+
     def test_distrib_prob(self):
         epsilon = np.log(2)
         runs = 20000
@@ -85,3 +90,7 @@ class TestBinary(TestCase):
 
         # print("%d / %d = %f" % (count[0], count[1], count[0] / count[1]))
         self.assertAlmostEqual(count[0] / count[1], np.exp(epsilon), delta=0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_labels("0", "1"))
+        self.assertIn(".Binary(", repr_)

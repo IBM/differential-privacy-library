@@ -65,6 +65,12 @@ class TestExponential(TestCase):
         with self.assertRaises(ValueError):
             self.mech.set_epsilon_delta(1, 0.5)
 
+    def test_no_utility(self):
+        self.mech.set_epsilon(1)
+
+        with self.assertRaises(ValueError):
+            self.mech.randomise("1")
+
     def test_hierarchy_first(self):
         utility_list = [
             ["A", "B", 1],
@@ -91,6 +97,32 @@ class TestExponential(TestCase):
         with self.assertRaises(ValueError):
             self.mech.set_utility(utility_list)
 
+    def test_wrong_utilities(self):
+        utility_list = (
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2]
+        )
+        with self.assertRaises(TypeError):
+            self.mech.set_utility(utility_list)
+
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", "2"]
+        ]
+        with self.assertRaises(TypeError):
+            self.mech.set_utility(utility_list)
+
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", -2]
+        ]
+
+        with self.assertRaises(ValueError):
+            self.mech.set_utility(utility_list)
+
     def test_non_string_input(self):
         utility_list = [
             ["A", "B", 1],
@@ -110,6 +142,33 @@ class TestExponential(TestCase):
         self.mech.set_epsilon(1).set_utility(utility_list)
         with self.assertRaises(ValueError):
             self.mech.randomise("D")
+
+    def test_get_utility_list(self):
+        self.assertIsNone(self.mech.get_utility_list())
+
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2]
+        ]
+        self.mech.set_epsilon(1).set_utility(utility_list)
+
+        _utility_list = self.mech.get_utility_list()
+        self.assertEqual(len(_utility_list), len(utility_list))
+
+    def test_self_in_utility(self):
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2],
+            ["A", "A", 5]
+        ]
+        self.mech.set_epsilon(1).set_utility(utility_list)
+
+        _utility_list = self.mech.get_utility_list()
+        self.assertEqual(len(_utility_list) + 1, len(utility_list))
+
+        self.assertEqual(self.mech._get_utility("A", "A"), 0)
 
     def test_distrib_prob(self):
         epsilon = np.log(2)
@@ -134,3 +193,7 @@ class TestExponential(TestCase):
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
         self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1))
+        self.assertIn(".Exponential(", repr_)

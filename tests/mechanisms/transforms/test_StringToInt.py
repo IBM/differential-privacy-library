@@ -17,21 +17,14 @@ class TestStringToInt(TestCase):
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMachine
+        from diffprivlib.mechanisms.transforms import DPTransformer
+
         self.assertTrue(issubclass(StringToInt, DPMachine))
+        self.assertTrue(issubclass(StringToInt, DPTransformer))
 
     def test_no_parent(self):
         with self.assertRaises(TypeError):
             StringToInt()
-
-    def test_empty_mechanism(self):
-        mech = StringToInt(Geometric())
-        with self.assertRaises(ValueError):
-            mech.randomise("1")
-
-    def test_set_epsilon_locally(self):
-        mech = StringToInt(Geometric().set_sensitivity(1))
-        mech.set_epsilon(1)
-        self.assertIsNotNone(mech)
 
     def test_randomise(self):
         mech = StringToInt(Geometric().set_sensitivity(1).set_epsilon(1))
@@ -51,5 +44,4 @@ class TestStringToInt(TestCase):
                 count[1] += 1
 
         self.assertGreater(count[0], count[1])
-        # print("%f <= %f" % (count[0] / runs, count[1] * np.exp(epsilon) / runs))
         self.assertLessEqual(count[0] / runs, count[1] * np.exp(epsilon) / runs + 0.05)

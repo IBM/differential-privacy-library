@@ -90,3 +90,7 @@ class TestGaussianAnalytic(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon_delta(1, 0.5))
+        self.assertIn(".GaussianAnalytic(", repr_)

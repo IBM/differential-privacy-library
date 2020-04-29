@@ -14,21 +14,14 @@ class TestRoundedInteger(TestCase):
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMachine
+        from diffprivlib.mechanisms.transforms import DPTransformer
+
         self.assertTrue(issubclass(RoundedInteger, DPMachine))
+        self.assertTrue(issubclass(RoundedInteger, DPTransformer))
 
     def test_no_parent(self):
         with self.assertRaises(TypeError):
             RoundedInteger()
-
-    def test_empty_mechanism(self):
-        mech = RoundedInteger(Laplace())
-        with self.assertRaises(ValueError):
-            mech.randomise(1)
-
-    def test_set_epsilon_locally(self):
-        mech = RoundedInteger(Laplace().set_sensitivity(1))
-        mech.set_epsilon(1)
-        self.assertIsNotNone(mech)
 
     def test_randomise(self):
         mech = RoundedInteger(Laplace().set_sensitivity(1).set_epsilon(1))

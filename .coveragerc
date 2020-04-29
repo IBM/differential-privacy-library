@@ -1,0 +1,10 @@
+# .coveragerc to control coverage.py
+
+[run]
+source = diffprivlib/
+command_line = -m pytest
+
+[report]
+show_missing = True
+skip_covered = True
+sort = Cover
