@@ -348,3 +348,14 @@ class TestBudgetAccountant(TestCase):
         with self.assertRaises(BudgetError):
             with BudgetAccountant(1):
                 self.sample_model(2)
+
+    def test_len(self):
+        acc = BudgetAccountant()
+        self.assertEqual(0, len(acc))
+
+        acc.spend(1, 0)
+        acc.spend(1, 0)
+        self.assertEqual(2, len(acc))
+
+        acc.spend(1, 0)
+        self.assertEqual(3, len(acc))

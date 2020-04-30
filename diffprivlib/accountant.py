@@ -99,6 +99,9 @@ class BudgetAccountant:
             self.old_default.set_default()
         del self.old_default
 
+    def __len__(self):
+        return len(self.__spent_budget)
+
     @property
     def slack(self):
         """Slack parameter for composition.
@@ -213,7 +216,7 @@ class BudgetAccountant:
 
         raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
                           "Use {}.{}() to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
-                                                                        self.remaining.__name__))
+                                                                          self.remaining.__name__))
 
     def remaining(self, k=1):
         """Calculates the budget that remains to be spent.
