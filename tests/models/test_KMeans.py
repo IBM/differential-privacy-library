@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.k_means import KMeans
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestKMeans(TestCase):
@@ -91,3 +91,24 @@ class TestKMeans(TestCase):
         self.assertEqual(centers.shape[1], 3)
 
         self.assertTrue(np.all(clf.transform(X).argmin(axis=1) == clf.predict(X)))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+
+        acc = BudgetAccountant()
+        clf = KMeans(30, [(0, 1)], 3, accountant=acc)
+
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
+        clf.fit(X)
+        self.assertEqual((30, 0), acc.total())
+
+        clf.fit(X)
+        self.assertEqual((60, 0), acc.total())
+
+        with BudgetAccountant(15, 0) as acc2:
+            clf2 = KMeans(10, [(0, 1)], 3)
+            clf2.fit(X)
+            self.assertEqual((10, 0), acc2.total())
+            
+            with self.assertRaises(BudgetError):
+                clf2.fit(X)

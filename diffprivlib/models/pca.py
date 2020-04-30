@@ -52,7 +52,8 @@ except ImportError:
     import sklearn.decomposition.pca as sk_pca
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
-from diffprivlib import tools
+from diffprivlib.accountant import BudgetAccountant
+from diffprivlib.tools import mean
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
 
@@ -125,6 +126,9 @@ class PCA(sk_pca.PCA):
         If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
         is the random number generator.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     **unused_args : kwargs
         Placeholder for parameters of :obj:`sklearn.decomposition.PCA` that are not used in `diffprivlib`.
         Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
@@ -186,17 +190,20 @@ class PCA(sk_pca.PCA):
         pp. 2339-2343. IEEE, 2016.
     """
     def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, range=None, copy=True,
-                 whiten=False, random_state=None, **unused_args):
+                 whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
         self.centered = centered
         self.epsilon = epsilon
         self.data_norm = data_norm
         self.range = range
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
     def _fit_full(self, X, n_components):
+        self.accountant.check(self.epsilon, 0)
+
         n_samples, n_features = X.shape
 
         if self.centered:
@@ -211,7 +218,7 @@ class PCA(sk_pca.PCA):
 
                 self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
 
-            self.mean_ = tools.mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0)
+            self.mean_ = mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0, accountant=BudgetAccountant())
 
         X -= self.mean_
 
@@ -269,6 +276,8 @@ class PCA(sk_pca.PCA):
         self.explained_variance_ = explained_variance_[:n_components]
         self.explained_variance_ratio_ = explained_variance_ratio_[:n_components]
         self.singular_values_ = singular_values_[:n_components]
+
+        self.accountant.spend(self.epsilon, 0)
 
         return u, s, v
 

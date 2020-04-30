@@ -23,6 +23,7 @@ import warnings
 import numpy as np
 import sklearn.naive_bayes as sk_nb
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
@@ -49,6 +50,9 @@ class GaussianNB(sk_nb.GaussianNB):
     var_smoothing : float, optional (default=1e-9)
         Portion of the largest variance of all features that is added to variances for calculation stability.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Attributes
     ----------
     class_prior_ : array, shape (n_classes,)
@@ -74,13 +78,16 @@ class GaussianNB(sk_nb.GaussianNB):
 
     """
 
-    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
+    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
         super().__init__(priors, var_smoothing)
 
         self.epsilon = epsilon
         self.bounds = bounds
+        self.accountant = BudgetAccountant.load_default(accountant)
 
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
@@ -97,6 +104,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
         super()._partial_fit(X, y, classes, _refit, sample_weight=None)
 
+        self.accountant.spend(self.epsilon, 0)
         del self.new_n_samples
         return self
 

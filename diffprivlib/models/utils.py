@@ -26,12 +26,12 @@ def _check_bounds(bounds, dims=1, min_separation=1e-5):
         return None
 
     if not isinstance(bounds, list):
-        raise TypeError("Bounds must be specified as a list of tuples.")
+        raise TypeError("Bounds must be specified as a list of tuples, got {}.".format(type(bounds)))
 
     new_bounds = list()
 
     if len(bounds) != dims:
-        raise ValueError("Number of bounds must match the dimensions of input data")
+        raise ValueError("Number of bounds ({}) must match the dimensions ({}) of input data".format(len(bounds), dims))
 
     for bound in bounds:
         if not isinstance(bound, tuple):
@@ -40,8 +40,8 @@ def _check_bounds(bounds, dims=1, min_separation=1e-5):
         lower, upper = bound
 
         if not isinstance(lower, Real) or not isinstance(upper, Real) or lower > upper:
-            raise ValueError("For each feature bound, lower bound must be smaller than upper bound"
-                             "(error found in bound %s" % str(bound))
+            raise ValueError("For each feature bound, lower bound must be smaller than upper bound and both must be "
+                             "numeric (error found in bound %s: %s)" % (str(bound), str(lower) + ", " + str(upper)))
 
         if upper - lower <= min_separation:
             bound = (lower - min_separation, upper + min_separation)

@@ -5,7 +5,7 @@ from sklearn.utils.extmath import _incremental_mean_and_var as sk_incremental_me
 import sklearn.preprocessing as sk_pp
 
 from diffprivlib.models.standard_scaler import _incremental_mean_and_var, StandardScaler
-from diffprivlib.utils import PrivacyLeakWarning, global_seed
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
 
 
 class TestIncrementalMeanAndVar(TestCase):
@@ -142,3 +142,22 @@ class TestStandardScaler(TestCase):
         self.assertTrue(np.allclose(dp_ss.var_, sk_ss.var_, rtol=1, atol=1e-4), "Arrays %s and %s should be close" %
                         (dp_ss.var_, sk_ss.var_))
         self.assertTrue(np.all(dp_ss.n_samples_seen_ == sk_ss.n_samples_seen_))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        X = np.random.rand(10, 5)
+        ss = StandardScaler(epsilon=1, range=1, accountant=acc)
+        ss.fit(X)
+        self.assertEqual((1, 0), acc.total())
+
+        with BudgetAccountant(1.5, 0) as acc2:
+            ss = StandardScaler(epsilon=1, range=1)
+            ss.fit(X)
+            self.assertEqual((1, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                ss.fit(X)
+
+        self.assertEqual((1, 0), acc.total())

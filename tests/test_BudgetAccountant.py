@@ -324,13 +324,15 @@ class TestBudgetAccountant(TestCase):
             self.sample_model(2)
 
         self.assertIsNone(BudgetAccountant._default)
+        self.assertEqual((3, 0), acc.total())
 
         acc.set_default()
 
         with acc2:
             self.sample_model(5)
+            self.sample_model(1, accountant=acc)
 
-        self.assertEqual((3, 0), acc.total())
+        self.assertEqual((4, 0), acc.total())
         self.assertEqual((5, 0), acc2.total())
         self.assertIs(BudgetAccountant._default, acc)
 
