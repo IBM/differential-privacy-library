@@ -314,3 +314,35 @@ class TestBudgetAccountant(TestCase):
 
         self.assertAlmostEqual(spent_epsilon, 0.27832280615743646366122002955588987576913442137093, places=14)
         self.assertEqual(spent_delta, slack)
+
+    def test_with_statement(self):
+        acc = BudgetAccountant()
+        acc2 = BudgetAccountant()
+
+        with acc:
+            self.sample_model(1)
+            self.sample_model(2)
+
+        self.assertIsNone(BudgetAccountant._default)
+
+        acc.set_default()
+
+        with acc2:
+            self.sample_model(5)
+
+        self.assertEqual((3, 0), acc.total())
+        self.assertEqual((5, 0), acc2.total())
+        self.assertIs(BudgetAccountant._default, acc)
+
+    def test_with_statement_errors(self):
+        with BudgetAccountant(1.5) as acc:
+            self.assertIsInstance(acc, BudgetAccountant)
+
+            self.sample_model(1)
+
+            with self.assertRaises(BudgetError):
+                self.sample_model(1)
+
+        with self.assertRaises(BudgetError):
+            with BudgetAccountant(1):
+                self.sample_model(2)

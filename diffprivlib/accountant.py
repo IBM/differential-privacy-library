@@ -87,6 +87,18 @@ class BudgetAccountant:
             except Exception as exc:
                 raise ValueError("spent_budget must be a list of tuples, of the form (epsilon, delta)") from exc
 
+    def __enter__(self):
+        self.old_default = self.pop_default()
+        self.set_default()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.pop_default()
+
+        if self.old_default is not None:
+            self.old_default.set_default()
+        del self.old_default
+
     @property
     def slack(self):
         """Slack parameter for composition.

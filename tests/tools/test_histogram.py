@@ -7,9 +7,6 @@ from diffprivlib.utils import global_seed, BudgetError
 
 
 class TestHistogram(TestCase):
-    def tearDown(self):
-        BudgetAccountant.pop_default()
-
     def test_no_params(self):
         a = np.array([1, 2, 3, 4, 5])
         with self.assertWarns(RuntimeWarning):
@@ -61,6 +58,8 @@ class TestHistogram(TestCase):
             histogram(a, epsilon=1, bins=3, range=(0, 10), density=True, accountant=[acc])
 
     def test_default_accountant(self):
+        BudgetAccountant.pop_default()
+
         a = np.array([1, 2, 3, 4, 5])
         histogram(a, epsilon=1, bins=3, range=(0, 10), density=True)
         acc = BudgetAccountant.pop_default()

@@ -7,9 +7,6 @@ from diffprivlib.utils import global_seed, PrivacyLeakWarning, BudgetError
 
 
 class TestHistogramdd(TestCase):
-    def tearDown(self):
-        BudgetAccountant.pop_default()
-
     def test_no_params(self):
         a = np.array([1, 2, 3, 4, 5])
         with self.assertWarns(PrivacyLeakWarning):
@@ -68,6 +65,8 @@ class TestHistogramdd(TestCase):
             histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
 
     def test_default_accountant(self):
+        BudgetAccountant.pop_default()
+
         a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).T
         histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True)
         acc = BudgetAccountant.pop_default()
@@ -76,5 +75,5 @@ class TestHistogramdd(TestCase):
         self.assertEqual(acc.delta, 1.0)
 
         histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)])
-        acc = BudgetAccountant.pop_default()
+
         self.assertEqual((1, 0), acc.total())
