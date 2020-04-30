@@ -7,9 +7,6 @@ from diffprivlib.utils import global_seed, PrivacyLeakWarning, BudgetError
 
 
 class TestHistogram2d(TestCase):
-    def tearDown(self):
-        BudgetAccountant.pop_default()
-
     def test_no_params(self):
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([5, 7, 1, 5, 9])
