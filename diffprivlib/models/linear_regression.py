@@ -50,6 +50,7 @@ import sklearn.linear_model as sk_lr
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
@@ -71,9 +72,9 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=Non
     X_scale = np.ones(X.shape[1], dtype=X.dtype)
 
     if fit_intercept:
-        X_offset = mean(X, axis=0, range=range_X, epsilon=epsilon)
+        X_offset = mean(X, axis=0, range=range_X, epsilon=epsilon, accountant=BudgetAccountant())
         X -= X_offset
-        y_offset = mean(y, axis=0, range=range_y, epsilon=epsilon)
+        y_offset = mean(y, axis=0, range=range_y, epsilon=epsilon, accountant=BudgetAccountant())
         y = y - y_offset
     else:
         X_offset = np.zeros(X.shape[1], dtype=X.dtype)
@@ -128,6 +129,9 @@ class LinearRegression(sk_lr.LinearRegression):
     copy_X : bool, optional, default True
         If True, X will be copied; else, it may be overwritten.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Attributes
     ----------
     coef_ : array of shape (n_features, ) or (n_targets, n_features)
@@ -154,13 +158,14 @@ class LinearRegression(sk_lr.LinearRegression):
         pp. 2339-2343. IEEE, 2016.
     """
     def __init__(self, epsilon=1.0, data_norm=None, range_X=None, range_y=None, fit_intercept=True, copy_X=True,
-                 **unused_args):
+                 accountant=None, **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 
         self.epsilon = epsilon
         self.data_norm = data_norm
         self.range_X = range_X
         self.range_y = range_y
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
@@ -183,6 +188,7 @@ class LinearRegression(sk_lr.LinearRegression):
         -------
         self : returns an instance of self.
         """
+        self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
             warn_unused_args("sample_weight")
@@ -239,6 +245,9 @@ class LinearRegression(sk_lr.LinearRegression):
         if y.ndim == 1:
             self.coef_ = np.ravel(self.coef_)
         self._set_intercept(X_offset, y_offset, X_scale)
+
+        self.accountant.spend(self.epsilon, 0)
+
         return self
 
     _preprocess_data = staticmethod(_preprocess_data)

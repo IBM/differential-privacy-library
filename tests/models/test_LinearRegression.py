@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.models.linear_regression import LinearRegression
 from diffprivlib.models.logistic_regression import _check_solver, _check_multi_class
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestLinearRegression(TestCase):
@@ -135,3 +135,23 @@ class TestLinearRegression(TestCase):
             _check_multi_class("multinomial", "lbfgs", 2)
 
         self.assertIsNotNone(_check_multi_class("ovr", "lbfgs", 2))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+
+        acc = BudgetAccountant()
+        X = np.linspace(-1, 1, 1000)
+        y = X.copy()
+        X = X[:, np.newaxis]
+
+        clf = LinearRegression(epsilon=2, data_norm=1, range_X=[1], range_y=1, fit_intercept=False, accountant=acc)
+        clf.fit(X, y)
+        self.assertEqual((2, 0), acc.total())
+
+        with BudgetAccountant(3, 0) as acc2:
+            clf = LinearRegression(epsilon=2, data_norm=1, range_X=[1], range_y=1, fit_intercept=False)
+            clf.fit(X, y)
+            self.assertEqual((2, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                clf.fit(X, y)

@@ -5,7 +5,7 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestGaussianNB(TestCase):
@@ -88,6 +88,7 @@ class TestGaussianNB(TestCase):
 
         self.assertFalse(np.all(same_prediction))
 
+    @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_with_iris(self):
         global_seed(12345)
         from sklearn import datasets
@@ -108,3 +109,22 @@ class TestGaussianNB(TestCase):
         clf.partial_fit(x_train, y_train)
         new_counts = clf.class_count_
         self.assertTrue(np.all(new_counts == 2 * counts ))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        x_train = np.random.random((10, 2))
+        y_train = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1.0, bounds=[(0, 1)]*2, accountant=acc)
+        clf.fit(x_train, y_train)
+        self.assertEqual((1, 0), acc.total())
+
+        with BudgetAccountant(1.5, 0) as acc2:
+            clf = GaussianNB(epsilon=1.0, bounds=[(0, 1)]*2)
+            clf.fit(x_train, y_train)
+            self.assertEqual((1, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                clf.fit(x_train, y_train)

@@ -59,6 +59,7 @@ from sklearn.utils import check_X_y, check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args
 
@@ -118,6 +119,9 @@ class LogisticRegression(linear_model.LogisticRegression):
         Number of CPU cores used when parallelising over classes.  ``None`` means 1 unless in a context. ``-1`` means
         using all processors.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     **unused_args : kwargs
         Placeholder for parameters of :obj:`sklearn.linear_model.LogisticRegression` that are not used in
         `diffprivlib`.  Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
@@ -169,13 +173,14 @@ class LogisticRegression(linear_model.LogisticRegression):
     """
 
     def __init__(self, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
-                 warm_start=False, n_jobs=None, **unused_args):
+                 warm_start=False, n_jobs=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=None, solver='lbfgs', max_iter=max_iter, multi_class='ovr',
                          verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
         self.data_norm = data_norm
         self.classes_ = None
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
@@ -200,6 +205,8 @@ class LogisticRegression(linear_model.LogisticRegression):
         self : class
 
         """
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
@@ -275,6 +282,8 @@ class LogisticRegression(linear_model.LogisticRegression):
         if self.fit_intercept:
             self.intercept_ = self.coef_[:, -1]
             self.coef_ = self.coef_[:, :-1]
+
+        self.accountant.spend(self.epsilon, 0)
 
         return self
 

@@ -7,7 +7,7 @@ except ImportError:
     import sklearn.decomposition.pca as sk_pca
 
 from diffprivlib.models.pca import PCA
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestPCA(TestCase):
@@ -122,3 +122,24 @@ class TestPCA(TestCase):
 
         self.assertFalse(np.all(transform1 == transform2))
         self.assertFalse(np.all(transform3 == transform1) and np.all(transform3 == transform2))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        X = np.random.randn(25000, 21)
+        X -= np.mean(X, axis=0)
+        X /= np.linalg.norm(X, axis=1).max()
+
+        clf = PCA(5, epsilon=5, centered=True, data_norm=1, accountant=acc)
+        clf.fit(X)
+
+        self.assertEqual((5, 0), acc.total())
+
+        with BudgetAccountant(8, 0) as acc2:
+            clf = PCA(5, epsilon=5, centered=True, data_norm=1)
+            clf.fit(X)
+            self.assertEqual((5, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                clf.fit(X)

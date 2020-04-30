@@ -54,6 +54,7 @@ except ImportError:
 from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
 
@@ -65,7 +66,7 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
     # new = the current increment
     # updated = the aggregated stats
     last_sum = last_mean * last_sample_count
-    new_mean = nanmean(X, epsilon=epsilon, axis=0, range=range)
+    new_mean = nanmean(X, epsilon=epsilon, axis=0, range=range, accountant=BudgetAccountant())
     new_sample_count = np.sum(~np.isnan(X), axis=0)
     new_sum = new_mean * new_sample_count
     updated_sample_count = last_sample_count + new_sample_count
@@ -75,7 +76,8 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
     if last_variance is None:
         updated_variance = None
     else:
-        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, range=range) * new_sample_count
+        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, range=range,
+                                           accountant=BudgetAccountant()) * new_sample_count
         last_unnormalized_variance = last_variance * last_sample_count
 
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -131,6 +133,10 @@ class StandardScaler(sk_pp.StandardScaler):
     with_std : boolean, True by default
         If True, scale the data to unit variance (or equivalently, unit standard deviation).
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+
     Attributes
     ----------
     scale_ : ndarray or None, shape (n_features,)
@@ -161,10 +167,11 @@ class StandardScaler(sk_pp.StandardScaler):
     -----
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
     """  # noqa
-    def __init__(self, epsilon=1.0, range=None, copy=True, with_mean=True, with_std=True):
+    def __init__(self, epsilon=1.0, range=None, copy=True, with_mean=True, with_std=True, accountant=None):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
         self.range = range
+        self.accountant = BudgetAccountant.load_default(accountant)
 
     def partial_fit(self, X, y=None):
         """Online computation of mean and std with differential privacy on X for later scaling. All of X is processed as
@@ -183,6 +190,7 @@ class StandardScaler(sk_pp.StandardScaler):
         y
             Ignored
         """
+        self.accountant.check(self.epsilon, 0)
 
         epsilon_0 = self.epsilon if self.with_std is None else self.epsilon / 2
 
@@ -235,5 +243,7 @@ class StandardScaler(sk_pp.StandardScaler):
             self.scale_ = _handle_zeros_in_scale(np.sqrt(self.var_))
         else:
             self.scale_ = None
+
+        self.accountant.spend(self.epsilon, 0)
 
         return self

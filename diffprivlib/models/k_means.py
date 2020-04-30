@@ -23,6 +23,7 @@ import warnings
 import numpy as np
 import sklearn.cluster as sk_cluster
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
@@ -45,6 +46,9 @@ class KMeans(sk_cluster.KMeans):
 
     n_clusters : int, optional, default: 8
         The number of clusters to form as well as the number of centroids to generate.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     **unused_args :
         Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any
@@ -73,11 +77,12 @@ class KMeans(sk_cluster.KMeans):
 
     """
 
-    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, **unused_args):
+    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, accountant=None, **unused_args):
         super().__init__(n_clusters=n_clusters)
 
         self.epsilon = epsilon
         self.bounds = bounds
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
@@ -106,6 +111,8 @@ class KMeans(sk_cluster.KMeans):
         self : class
 
         """
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
@@ -143,6 +150,8 @@ class KMeans(sk_cluster.KMeans):
         self.labels_ = labels
         self.inertia_ = distances[np.arange(len(labels)), labels].sum()
         self.n_iter_ = iters
+
+        self.accountant.spend(self.epsilon, 0)
 
         return self
 
