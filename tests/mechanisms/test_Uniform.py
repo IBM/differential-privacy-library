@@ -56,6 +56,15 @@ class TestUniform(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_wrong_sensitivity(self):
+        self.mech.set_epsilon_delta(0, 0.2)
+
+        with self.assertRaises(ValueError):
+            self.mech.set_sensitivity(-1)
+
+        with self.assertRaises(TypeError):
+            self.mech.set_sensitivity("1")
+
     def test_non_numeric(self):
         self.mech.set_sensitivity(1).set_epsilon_delta(0, 0.2)
         with self.assertRaises(TypeError):
@@ -70,3 +79,10 @@ class TestUniform(TestCase):
 
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon_delta(0, 0.1).set_sensitivity(1))
+        self.assertIn(".Uniform(", repr_)
+
+    def test_bias(self):
+        self.assertEqual(0.0, self.mech.get_bias(0))

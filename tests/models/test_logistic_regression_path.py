@@ -23,3 +23,11 @@ class TestLogisticRegression(TestCase):
         output = _logistic_regression_path(self.X, self.y, Cs=[1e5])
 
         self.assertIsInstance(output, tuple)
+
+    def test_Cs(self):
+        coefs, Cs, n_iter = _logistic_regression_path(self.X, self.y, Cs=3)
+
+        self.assertEqual(len(coefs), 3)
+        self.assertEqual(len(Cs), 3)
+        self.assertEqual(len(n_iter), 3)
+

@@ -117,3 +117,10 @@ class TestGeometricFolded(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 4))
+        self.assertIn(".GeometricFolded(", repr_)
+
+    def test_bias(self):
+        self.assertIsNone(self.mech.get_bias(0))

@@ -54,6 +54,26 @@ class TestStaircase(TestCase):
         with self.assertRaises(ValueError):
             self.mech.set_epsilon_delta(1, 0.5)
 
+    def test_bad_gamma(self):
+        self.mech.set_sensitivity(1).set_epsilon(1)
+
+        with self.assertRaises(TypeError):
+            self.mech.set_gamma("1")
+
+        with self.assertRaises(ValueError):
+            self.mech.set_gamma(-1)
+
+        with self.assertRaises(ValueError):
+            self.mech.set_gamma(1.1)
+
+    def test_default_gamma(self):
+        self.mech.set_sensitivity(1).set_epsilon(1)
+
+        with self.assertWarns(UserWarning):
+            self.mech.check_inputs(1)
+
+        self.assertTrue(0 <= self.mech._gamma <= 1.0)
+
     def test_non_numeric(self):
         self.mech.set_sensitivity(1).set_epsilon(1).set_gamma(0.5)
         with self.assertRaises(TypeError):
@@ -87,3 +107,10 @@ class TestStaircase(TestCase):
         # print("0: %d; 1: %d" % (count[0], count[1]))
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_gamma(0.5))
+        self.assertIn(".Staircase(", repr_)
+
+    def test_bias(self):
+        self.assertEqual(0.0, self.mech.get_bias(0))

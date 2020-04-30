@@ -99,3 +99,16 @@ class TestLaplaceFolded(TestCase):
 
         self.assertTrue(np.all(vals >= 0))
         self.assertTrue(np.all(vals <= 1))
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1))
+        self.assertIn(".LaplaceFolded(", repr_)
+
+    def test_bias(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
+        self.assertGreater(self.mech.get_bias(0), 0.0)
+        self.assertLess(self.mech.get_bias(1), 0.0)
+
+    def test_variance(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
+        self.assertIsNone(self.mech.get_variance(0))

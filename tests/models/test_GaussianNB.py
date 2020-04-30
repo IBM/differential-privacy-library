@@ -100,6 +100,11 @@ class TestGaussianNB(TestCase):
         clf = GaussianNB(epsilon=1.0, bounds=bounds)
         clf.fit(x_train, y_train)
 
-        accuracy = sum(clf.predict(x_test) == y_test) / y_test.shape[0]
+        accuracy = clf.score(x_test, y_test)
+        counts = clf.class_count_.copy()
         # print(accuracy)
         self.assertGreater(accuracy, 0.5)
+
+        clf.partial_fit(x_train, y_train)
+        new_counts = clf.class_count_
+        self.assertTrue(np.all(new_counts == 2 * counts ))

@@ -12,6 +12,37 @@ class TestLogisticRegression(TestCase):
     def test_not_none(self):
         self.assertIsNotNone(LogisticRegression)
 
+    def test_bad_params(self):
+        X = [[1]]
+        y = [0]
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, C=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, C=1.2).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, max_iter=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, max_iter="100").fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, tol=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, tol="1").fit(X, y)
+
+    def test_one_class(self):
+        X = [[1]]
+        y = [0]
+
+        clf = LogisticRegression(data_norm=1)
+
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
+
     def test_no_params(self):
         clf = LogisticRegression()
 
