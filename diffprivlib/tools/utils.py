@@ -48,13 +48,14 @@ import numpy as np
 from numpy.core import multiarray as mu
 from numpy.core import umath as um
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
 from diffprivlib.utils import PrivacyLeakWarning
 
 _range = range
 
 
-def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -96,6 +97,9 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     m : ndarray, see dtype parameter above
@@ -107,10 +111,10 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
     std, var, nanmean
 
     """
-    return _mean(a, epsilon, range, axis, dtype, out, keepdims, False)
+    return _mean(a, epsilon, range, axis, dtype, out, keepdims, accountant, False)
 
 
-def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -154,6 +158,9 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     m : ndarray, see dtype parameter above
@@ -165,10 +172,14 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     std, var, mean
 
     """
-    return _mean(a, epsilon, range, axis, dtype, out, keepdims, True)
+    return _mean(a, epsilon, range, axis, dtype, out, keepdims, accountant, True)
 
 
-def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, nan=False):
+def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
+          nan=False):
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
     if isinstance(axis, tuple):
         temp_axis = axis
     elif axis is not None:
@@ -215,15 +226,19 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
             dp_mean[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
 
+        accountant.spend(epsilon, 0)
+
         return dp_mean
 
     range = np.ravel(ranges)[0]
     dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(range / num_datapoints)
 
+    accountant.spend(epsilon, 0)
+
     return dp_mech.randomise(actual_mean)
 
 
-def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -271,6 +286,9 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     variance : ndarray, see dtype parameter above
@@ -282,10 +300,10 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     std , mean, nanvar
 
     """
-    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, False)
+    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, False)
 
 
-def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -335,6 +353,9 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     variance : ndarray, see dtype parameter above
@@ -346,10 +367,14 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     std , mean, var
 
     """
-    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, True)
+    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, True)
 
 
-def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, nan=False):
+def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+         nan=False):
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
     if isinstance(axis, tuple):
         temp_axis = axis
     elif axis is not None:
@@ -397,16 +422,20 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
             dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
 
+        accountant.spend(epsilon, 0)
+
         return dp_var
 
     range = np.ravel(ranges)[0]
     dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")). \
         set_sensitivity(range ** 2 / num_datapoints)
 
+    accountant.spend(epsilon, 0)
+
     return dp_mech.randomise(actual_var)
 
 
-def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -454,6 +483,9 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     standard_deviation : ndarray, see dtype parameter above.
@@ -465,10 +497,10 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     var, mean, nanstd
 
     """
-    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, False)
+    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, False)
 
 
-def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue):
+def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -518,6 +550,9 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     standard_deviation : ndarray, see dtype parameter above.
@@ -529,11 +564,13 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     var, mean, std
 
     """
-    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, True)
+    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, True)
 
 
-def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, nan=False):
-    ret = _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims, nan=nan)
+def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+         nan=False):
+    ret = _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+               accountant=accountant, nan=nan)
 
     if isinstance(ret, mu.ndarray):
         ret = um.sqrt(ret, out=ret)

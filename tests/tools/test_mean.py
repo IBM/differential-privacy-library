@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.utils import mean
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError
 
 
 class TestMean(TestCase):
@@ -59,3 +59,15 @@ class TestMean(TestCase):
 
         res = mean(a, range=1)
         self.assertTrue(np.isnan(res))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant(1.5, 0)
+
+        a = np.random.random((1000, 5))
+        mean(a, epsilon=1, range=1, accountant=acc)
+        self.assertEqual((1.0, 0), acc.total())
+
+        with acc:
+            with self.assertRaises(BudgetError):
+                mean(a, epsilon=1, range=1)

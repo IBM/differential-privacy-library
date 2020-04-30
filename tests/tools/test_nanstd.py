@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.utils import nanstd
-from diffprivlib.utils import PrivacyLeakWarning, global_seed
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
 
 
 class TestNanStd(TestCase):
@@ -61,3 +61,14 @@ class TestNanStd(TestCase):
         res = nanstd(a, range=1)
         self.assertFalse(np.isnan(res))
 
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant(1.5, 0)
+
+        a = np.random.random((1000, 5))
+        nanstd(a, epsilon=1, range=1, accountant=acc)
+        self.assertEqual((1.0, 0), acc.total())
+
+        with acc:
+            with self.assertRaises(BudgetError):
+                nanstd(a, epsilon=1, range=1)
