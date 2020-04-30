@@ -189,15 +189,18 @@ class BudgetAccountant:
         Returns
         -------
         bool
-            True if the budget can be spent, otherwise a :class:`.BudgetError` is raised..
+            True if the budget can be spent, otherwise a :class:`.BudgetError` is raised.
 
         Raises
         ------
         BudgetError
-            If the specified budget spend will result in the target budget being exceeded..
+            If the specified budget spend will result in the target budget being exceeded.
 
         """
         check_epsilon_delta(epsilon, delta)
+        if self.epsilon == float("inf") and self.delta == 1:
+            return True
+
         if 0 < epsilon < self.min_epsilon:
             raise ValueError("Epsilon must be at least {} if non-zero, got {}.".format(self.min_epsilon, epsilon))
 
@@ -272,9 +275,14 @@ class BudgetAccountant:
         delta : float
             Delta privacy budget to spend.
 
+        Returns
+        -------
+        self
+
         """
         self.check(epsilon, delta)
         self.__spent_budget.append((epsilon, delta))
+        return self
 
     @staticmethod
     def __total_delta_safe(spent_budget, slack):
