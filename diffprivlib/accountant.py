@@ -212,7 +212,7 @@ class BudgetAccountant:
             return True
 
         raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
-                          "Use {}.{} to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
+                          "Use {}.{}() to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
                                                                         self.remaining.__name__))
 
     def remaining(self, k=1):
