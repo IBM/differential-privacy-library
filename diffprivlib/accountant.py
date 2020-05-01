@@ -231,8 +231,11 @@ class BudgetAccountant:
 
         Returns
         -------
-        (epsilon, delta)
-            Budget remaining to be spent on `k` queries.
+        epsilon : float
+            Total epsilon spend remaining for `k` queries.
+
+        delta : float
+            Total delta spend remaining for `k` queries.
 
         """
         if not isinstance(k, Integral):
@@ -280,7 +283,7 @@ class BudgetAccountant:
 
         Returns
         -------
-        self
+        self : BudgetAccountant
 
         """
         self.check(epsilon, delta)
@@ -333,7 +336,8 @@ class BudgetAccountant:
 
         Returns
         -------
-        BudgetAccountant
+        default : BudgetAccountant
+            Returns a working BudgetAccountant, either the supplied `accountant` or the existing default.
 
         """
         if accountant is None:
@@ -353,7 +357,7 @@ class BudgetAccountant:
 
         Returns
         -------
-        self
+        self : BudgetAccountant
 
         """
         BudgetAccountant._default = self

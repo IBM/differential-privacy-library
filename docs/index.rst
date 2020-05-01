@@ -14,6 +14,7 @@ Its purpose is to allow experimentation, simulation, and implementation of diffe
    :maxdepth: 3
    :caption: Modules
 
+   modules/accountant
    modules/mechanisms
    modules/transforms
    modules/tools
