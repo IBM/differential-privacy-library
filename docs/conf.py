@@ -21,8 +21,8 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'IBM Differential Privacy Library'
-copyright = '2019, Naoise Holohan'
+project = 'Diffprivlib: Differential Privacy Library'
+copyright = '2020, Naoise Holohan'
 author = 'Naoise Holohan'
 
 # Single-sourced versioning for docs with inspiration from pip:
@@ -145,7 +145,7 @@ html_theme_options = {
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'IBMDifferentialPrivacyLibrarydoc'
+htmlhelp_basename = 'diffprivlibdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -172,7 +172,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'IBMDifferentialPrivacyLibrary.tex', 'IBM Differential Privacy Library Documentation',
+    (master_doc, 'diffprivlib.tex', 'Diffprivlib Documentation',
      'Naoise Holohan', 'manual'),
 ]
 
@@ -191,7 +191,7 @@ intersphinx_mapping = {
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'ibmdifferentialprivacylibrary', 'IBM Differential Privacy Library Documentation',
+    (master_doc, 'diffprivlib', 'Diffprivlib Documentation',
      [author], 1)
 ]
 
@@ -202,8 +202,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'IBMDifferentialPrivacyLibrary', 'IBM Differential Privacy Library Documentation',
-     author, 'IBMDifferentialPrivacyLibrary', 'One line description of project.',
+    (master_doc, 'diffprivlib', 'Diffprivlib Documentation',
+     author, 'diffprivlib', 'One line description of project.',
      'Miscellaneous'),
 ]
 
