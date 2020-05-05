@@ -359,3 +359,23 @@ class TestBudgetAccountant(TestCase):
 
         acc.spend(1, 0)
         self.assertEqual(3, len(acc))
+
+    def test_repr(self):
+        acc = BudgetAccountant()
+
+        self.assertIn("BudgetAccountant(", repr(acc))
+        self.assertEqual("BudgetAccountant()", repr(acc))
+
+        acc = BudgetAccountant(epsilon=1, delta=0.01, slack=0.01)
+        self.assertIn("BudgetAccountant(", repr(acc))
+        self.assertIn("epsilon", repr(acc))
+        self.assertIn("delta", repr(acc))
+        self.assertIn("slack", repr(acc))
+        self.assertNotIn("spent_budget", repr(acc))
+
+        acc = BudgetAccountant(spent_budget=[(1, 0), (0, 1)])
+        self.assertIn("BudgetAccountant(", repr(acc))
+        self.assertNotIn("epsilon", repr(acc))
+        self.assertNotIn("delta", repr(acc))
+        self.assertNotIn("slack", repr(acc))
+        self.assertIn("spent_budget", repr(acc))
