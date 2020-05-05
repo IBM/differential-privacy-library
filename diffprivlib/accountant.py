@@ -87,6 +87,22 @@ class BudgetAccountant:
             except Exception as exc:
                 raise ValueError("spent_budget must be a list of tuples, of the form (epsilon, delta)") from exc
 
+    def __repr__(self):
+        params = []
+        if self.epsilon != float("inf"):
+            params.append("epsilon=%g" % self.epsilon)
+
+        if self.delta != 1:
+            params.append("delta=%g" % self.delta)
+
+        if self.slack > 0:
+            params.append("slack=%g" % self.slack)
+
+        if len(self.__spent_budget):
+            params.append("spent_budget=%s" % str(self.__spent_budget))
+
+        return "BudgetAccountant(" + ", ".join(params) + ")"
+
     def __enter__(self):
         self.old_default = self.pop_default()
         self.set_default()
