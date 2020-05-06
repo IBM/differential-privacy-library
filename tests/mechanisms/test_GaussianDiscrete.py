@@ -76,16 +76,16 @@ class TestGaussianDiscrete(TestCase):
     def test_neighbors_prob(self):
         epsilon = 1
         runs = 10000
-        self.mech.set_epsilon_delta(0.5, 0.1)
+        self.mech.set_epsilon_delta(epsilon, 0.1)
         count = [0, 0]
 
         for i in range(runs):
             val0 = self.mech.randomise(0)
-            if val0 <= 0.5:
+            if val0 <= 0:
                 count[0] += 1
 
             val1 = self.mech.randomise(1)
-            if val1 <= 0.5:
+            if val1 <= 0:
                 count[1] += 1
 
         self.assertGreater(count[0], count[1])
