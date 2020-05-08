@@ -27,14 +27,21 @@ class TestGaussianDiscrete(TestCase):
             self.mech.randomise(1)
 
     def test_no_epsilon(self):
-        self.mech
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
     def test_no_delta(self):
-        self.mech
         with self.assertRaises(ValueError):
             self.mech.set_epsilon(0.5)
+
+    def test_no_sensitivity(self):
+        self.mech.set_epsilon_delta(1.5, 0.1)
+        self.assertIsNotNone(self.mech.randomise(0))
+
+    def test_non_int_sensitivity(self):
+        self.mech.set_epsilon_delta(1.5, 0.1)
+        with self.assertRaises(TypeError):
+            self.mech.set_sensitivity(1.5)
 
     def test_large_epsilon(self):
         self.mech.set_epsilon_delta(1.5, 0.1)
@@ -67,7 +74,17 @@ class TestGaussianDiscrete(TestCase):
         self.mech.set_epsilon_delta(0.5, 0.1)
         vals = []
 
-        for i in range(20000):
+        for i in range(10000):
+            vals.append(self.mech.randomise(1))
+
+        median = float(np.median(vals))
+        self.assertAlmostEqual(np.abs(median), 1, delta=0.1)
+
+    def test_zero_median_sens_prob(self):
+        self.mech.set_epsilon_delta(0.5, 0.1).set_sensitivity(2)
+        vals = []
+
+        for i in range(10000):
             vals.append(self.mech.randomise(1))
 
         median = float(np.median(vals))
@@ -114,3 +131,18 @@ class TestGaussianDiscrete(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech.set_epsilon_delta(1, 0.5))
         self.assertIn(".GaussianDiscrete(", repr_)
+
+    def test_bernoulli_exp_prob(self):
+        vals = []
+        runs = 30000
+
+        for i in range(runs):
+            vals.append(self.mech._bernoulli_exp(-np.log(0.5)))
+
+        self.assertAlmostEqual(sum(vals) / runs, 0.5, places=2)
+
+        vals = []
+        for i in range(runs):
+            vals.append(self.mech._bernoulli_exp(-np.log(0.1)))
+
+        self.assertAlmostEqual(sum(vals) / runs, 0.1, places=2)

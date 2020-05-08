@@ -241,6 +241,7 @@ class GaussianDiscrete(DPMechanism):
     def __init__(self):
         super().__init__()
         self._scale = None
+        self._sensitivity = 1
 
     def set_epsilon_delta(self, epsilon, delta):
         r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
@@ -265,6 +266,18 @@ class GaussianDiscrete(DPMechanism):
 
         self._scale = None
         return super().set_epsilon_delta(epsilon, delta)
+
+    @copy_docstring(Geometric.set_sensitivity)
+    def set_sensitivity(self, sensitivity):
+        if not isinstance(sensitivity, Integral):
+            raise TypeError("Sensitivity must be an integer")
+
+        if sensitivity <= 0:
+            raise ValueError("Sensitivity must be strictly positive")
+
+        self._scale = None
+        self._sensitivity = sensitivity
+        return self
 
     @copy_docstring(Geometric.check_inputs)
     def check_inputs(self, value):
@@ -297,40 +310,44 @@ class GaussianDiscrete(DPMechanism):
         sigma2 = self._scale ** 2
 
         while True:
-            geom_x, bern_a = -1, 1
-
-            while bern_a == 1:
+            geom_x = 0
+            while self._bernoulli_exp(tau):
                 geom_x += 1
-                bern_a = np.random.binomial(1, np.exp(-tau))
 
             bern_b = np.random.binomial(1, 0.5)
-            if bern_b == 1 and geom_x == 0:
+            if bern_b and not geom_x:
                 continue
 
             lap_y = int((1 - 2 * bern_b) * geom_x)
-            bern_c = np.random.binomial(1, np.exp(-(abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2))
-            if bern_c == 1:
+            bern_c = self._bernoulli_exp((abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2)
+            if bern_c:
                 return lap_y + value
 
     def _find_scale(self):
+        """Determine the scale of the mechanism's distribution given epsilon and delta.
+        """
         if self._epsilon is None or self._delta is None:
             raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
 
-        def objective(sigma, epsilon_, delta_):
+        def objective(sigma, epsilon_, delta_, sensitivity_):
             """Function for which we are seeking its root. """
-            idx_0 = int(np.floor(epsilon_ * sigma ** 2 - 1 / 2)) + 1
+            idx_0 = int(np.floor(epsilon_ * sigma ** 2 / sensitivity_ - sensitivity_ / 2))
+            idx_1 = int(np.floor(epsilon_ * sigma ** 2 / sensitivity_ + sensitivity_ / 2))
             idx = 1
 
-            lhs, rhs, denom = float(not idx_0), 0, 1
+            lhs, rhs, denom = float(idx_0 < 0), 0, 1
             _term, diff = 1, 1
 
             while _term > 0 and diff > 0:
                 _term = np.exp(-idx ** 2 / 2 / sigma ** 2)
 
-                if idx >= idx_0:
+                if idx > idx_0:
                     lhs += _term
 
-                    if idx > idx_0:
+                    if idx_0 < -idx:
+                        lhs += _term
+
+                    if idx > idx_1:
                         diff = -rhs
                         rhs += _term
                         diff += rhs
@@ -344,25 +361,26 @@ class GaussianDiscrete(DPMechanism):
 
         epsilon = self._epsilon
         delta = self._delta
+        sensitivity = self._sensitivity
 
         # Begin by locating the root within an interval [2**i, 2**(i+1)]
         guess_0 = 1
-        f_0 = objective(guess_0, epsilon, delta)
+        f_0 = objective(guess_0, epsilon, delta, sensitivity)
         pwr = 1 if f_0 > 0 else -1
         guess_1 = 2 ** pwr
-        f_1 = objective(guess_1, epsilon, delta)
+        f_1 = objective(guess_1, epsilon, delta, sensitivity)
 
         while f_0 * f_1 > 0:
             guess_0 *= 2 ** pwr
             guess_1 *= 2 ** pwr
 
             f_0 = f_1
-            f_1 = objective(guess_1, epsilon, delta)
+            f_1 = objective(guess_1, epsilon, delta, sensitivity)
 
         # Find the root (sigma) using the bisection method
         while not np.isclose(guess_0, guess_1, atol=1e-12, rtol=1e-6):
             guess_mid = (guess_0 + guess_1) / 2
-            f_mid = objective(guess_mid, epsilon, delta)
+            f_mid = objective(guess_mid, epsilon, delta, sensitivity)
 
             if f_mid * f_0 <= 0:
                 f_1 = f_mid
@@ -372,3 +390,24 @@ class GaussianDiscrete(DPMechanism):
                 guess_0 = guess_mid
 
         return (guess_0 + guess_1) / 2
+
+    def _bernoulli_exp(self, gamma):
+        """Sample from Bernoulli(exp(-gamma))
+
+        Adapted from Appendix A of https://arxiv.org/pdf/1805.06530.pdf
+
+        """
+        if gamma > 1:
+            gamma_ceil = np.ceil(gamma)
+            for _ in np.arange(gamma_ceil):
+                if not self._bernoulli_exp(gamma / gamma_ceil):
+                    return 0
+
+            return 1
+
+        counter = 1
+
+        while np.random.binomial(1, gamma / counter):
+            counter += 1
+
+        return counter % 2
