@@ -36,6 +36,7 @@ class TestGaussianDiscrete(TestCase):
 
     def test_no_sensitivity(self):
         self.mech.set_epsilon_delta(1.5, 0.1)
+        self.assertEqual(1, self.mech._sensitivity)
         self.assertIsNotNone(self.mech.randomise(0))
 
     def test_neg_sensitivity(self):
