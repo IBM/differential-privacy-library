@@ -59,6 +59,61 @@ class BudgetAccountant:
     spent_budget : list of tuples of the form (epsilon, delta)
         The list of privacy spends recorded by the accountant. Can be used in the initialisation of a new accountant.
 
+    Examples
+    --------
+
+    A ``BudgetAccountant`` is typically passed to diffprivlib functions as an ``accountant`` parameter. If ``epsilon``
+    and ``delta`` are not set, the accountant has an infinite budget by default, allowing you to track privacy spend
+    without imposing a hard limit. By allowing a ``slack`` in the composition, the overall epsilon privacy spend can be
+    reduced (at the cost of extra delta spend).
+
+    >>> import diffprivlib as dp
+    >>> from numpy.random import random
+    >>> X = random(100)
+    >>> acc = dp.BudgetAccountant(epsilon=1.5, delta=0)
+    >>> dp.tools.mean(X, range=1, accountant=acc)
+    0.4547006207923884
+    >>> acc.total()
+    (1.0, 0)
+    >>> dp.tools.std(X, range=1, epsilon=0.25, accountant=acc)
+    0.2630216611181259
+    >>> acc.total()
+    (1.25, 0)
+
+    >>> acc2 = dp.BudgetAccountant() # infinite budget
+    >>> first_half = dp.tools.mean(X[:50], epsilon=0.25, range=1, accountant=acc2)
+    >>> last_half = dp.tools.mean(X[50:], epsilon=0.25, range=1, accountant=acc2)
+    >>> acc2.total()
+    (0.5, 0)
+    >>> acc2.remaining()
+    (inf, 1.0)
+
+    >>> acc3 = dp.BudgetAccountant(slack=1e-3)
+    >>> for i in range(20):
+    ...     dp.tools.mean(X, epsilon=0.05, range=1, accountant=acc3)
+    >>> acc3.total() # Slack has reduced the epsilon spend by almost 25%
+    (0.7613352285668463, 0.001)
+
+    Using ``set_default()``, an accountant is used by default in all diffprivlib functions in that script. Accountants
+    also act as context managers, allowing for use in a ``with`` statement. Passing an accountant as a parameter
+    overrides all other methods.
+
+    >>> acc4 = dp.BudgetAccountant()
+    >>> acc4.set_default()
+    BudgetAccountant()
+    >>> Y = random((100, 2)) - 0.5
+    >>> clf = dp.models.PCA(1, centered=True, data_norm=1.4)
+    >>> clf.fit(Y)
+    PCA(accountant=BudgetAccountant(spent_budget=[(1.0, 0)]), centered=True, copy=True, data_norm=1.4, epsilon=1.0,
+    n_components=1, random_state=None, range=None, whiten=False)
+    >>> acc4.total()
+    (1.0, 0)
+
+    >>> with dp.BudgetAccountant() as acc5:
+    ...     dp.tools.mean(Y, range=1, epsilon=1/3)
+    >>> acc5.total()
+    (0.3333333333333333, 0)
+
     References
     ----------
     .. [KOV17] Kairouz, Peter, Sewoong Oh, and Pramod Viswanath. "The composition theorem for differential privacy."
@@ -79,13 +134,8 @@ class BudgetAccountant:
             if not isinstance(spent_budget, list):
                 raise TypeError("spent_budget must be a list")
 
-            try:
-                for _epsilon, _delta in spent_budget:
-                    self.spend(_epsilon, _delta)
-            except BudgetError:
-                raise
-            except Exception as exc:
-                raise ValueError("spent_budget must be a list of tuples, of the form (epsilon, delta)") from exc
+            for _epsilon, _delta in spent_budget:
+                self.spend(_epsilon, _delta)
 
     def __repr__(self):
         params = []
@@ -98,7 +148,7 @@ class BudgetAccountant:
         if self.slack > 0:
             params.append("slack=%g" % self.slack)
 
-        if len(self.__spent_budget):
+        if self.__spent_budget:
             params.append("spent_budget=%s" % str(self.__spent_budget))
 
         return "BudgetAccountant(" + ", ".join(params) + ")"
