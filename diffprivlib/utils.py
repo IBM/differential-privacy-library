@@ -94,7 +94,8 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
     """Checks that epsilon and delta are valid values for differential privacy. Throws an error if checks fail,
     otherwise returns nothing.
 
-    As well as the requirements of epsilon and delta separately, both cannot be simultaneously zero.
+    As well as the requirements of epsilon and delta separately, both cannot be simultaneously zero, unless
+    ``allow_zero`` is set to ``True``.
 
     Parameters
     ----------
@@ -105,7 +106,7 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
         Delta parameter for differential privacy. Must be on the unit interval, [0, 1].
 
     allow_zero : bool, default: False
-        Allow for epsilon and delta both being zero.
+        Allow epsilon and delta both be zero.
 
     """
     if not isinstance(epsilon, Real) or not isinstance(delta, Real):
@@ -122,11 +123,11 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
 
 
 class Budget(tuple):
-    """Custom tuple subclass for privacy budget of the form (epsilon, delta).
+    """Custom tuple subclass for privacy budgets of the form (epsilon, delta).
 
-    The ``Budget`` class allows for correct comparison of privacy budget, ensuring that both epsilon and delta satisfy
-    the comparison (tuples by default are compared lexicographically). Additionally, this class labels are added to the
-    tuple when printed.
+    The ``Budget`` class allows for correct comparison/ordering of privacy budget, ensuring that both epsilon and delta
+    satisfy the comparison (tuples are compared lexicographically). Additionally, tuples are represented with added
+    verbosity, labelling epsilon and delta appropriately.
 
     Examples
     --------
@@ -136,7 +137,7 @@ class Budget(tuple):
     (epsilon=1, delta=0.5)
     >>> Budget(2, 0) >= Budget(1, 0.5)
     False
-    >>> (2, 0) >= (1, 0.5)
+    >>> (2, 0) >= (1, 0.5) # Tuples are compared with lexicographic ordering
     True
 
     """
