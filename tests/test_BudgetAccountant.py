@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import BudgetError
+from diffprivlib.utils import Budget, BudgetError
 
 
 class TestBudgetAccountant(TestCase):
@@ -348,6 +348,22 @@ class TestBudgetAccountant(TestCase):
         with self.assertRaises(BudgetError):
             with BudgetAccountant(1):
                 self.sample_model(2)
+
+    def test_budget_output(self):
+        acc = BudgetAccountant()
+        self.assertIsInstance(acc.total(), Budget)
+        self.assertIsInstance(acc.remaining(), Budget)
+        self.assertIsInstance(acc.remaining(5), Budget)
+
+        acc.spend(1, 0.5)
+        self.assertIsInstance(acc.total(), Budget)
+        self.assertIsInstance(acc.remaining(), Budget)
+        self.assertIsInstance(acc.remaining(5), Budget)
+
+        acc.slack = 0.5
+        self.assertIsInstance(acc.total(), Budget)
+        self.assertIsInstance(acc.remaining(), Budget)
+        self.assertIsInstance(acc.remaining(5), Budget)
 
     def test_len(self):
         acc = BudgetAccountant()

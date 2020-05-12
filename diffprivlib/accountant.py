@@ -22,7 +22,7 @@ from numbers import Integral
 
 import numpy as np
 
-from diffprivlib.utils import check_epsilon_delta, BudgetError
+from diffprivlib.utils import check_epsilon_delta, Budget, BudgetError
 
 
 class BudgetAccountant:
@@ -74,25 +74,25 @@ class BudgetAccountant:
     >>> dp.tools.mean(X, range=1, accountant=acc)
     0.4547006207923884
     >>> acc.total()
-    (1.0, 0)
+    (epsilon=1.0, delta=0)
     >>> dp.tools.std(X, range=1, epsilon=0.25, accountant=acc)
     0.2630216611181259
     >>> acc.total()
-    (1.25, 0)
+    (epsilon=1.25, delta=0)
 
     >>> acc2 = dp.BudgetAccountant() # infinite budget
     >>> first_half = dp.tools.mean(X[:50], epsilon=0.25, range=1, accountant=acc2)
     >>> last_half = dp.tools.mean(X[50:], epsilon=0.25, range=1, accountant=acc2)
     >>> acc2.total()
-    (0.5, 0)
+    (epsilon=0.5, delta=0)
     >>> acc2.remaining()
-    (inf, 1.0)
+    (epsilon=inf, delta=1.0)
 
     >>> acc3 = dp.BudgetAccountant(slack=1e-3)
     >>> for i in range(20):
     ...     dp.tools.mean(X, epsilon=0.05, range=1, accountant=acc3)
     >>> acc3.total() # Slack has reduced the epsilon spend by almost 25%
-    (0.7613352285668463, 0.001)
+    (epsilon=0.7613352285668463, delta=0.001)
 
     Using ``set_default()``, an accountant is used by default in all diffprivlib functions in that script. Accountants
     also act as context managers, allowing for use in a ``with`` statement. Passing an accountant as a parameter
@@ -107,12 +107,12 @@ class BudgetAccountant:
     PCA(accountant=BudgetAccountant(spent_budget=[(1.0, 0)]), centered=True, copy=True, data_norm=1.4, epsilon=1.0,
     n_components=1, random_state=None, range=None, whiten=False)
     >>> acc4.total()
-    (1.0, 0)
+    (epsilon=1.0, delta=0)
 
     >>> with dp.BudgetAccountant() as acc5:
     ...     dp.tools.mean(Y, range=1, epsilon=1/3)
     >>> acc5.total()
-    (0.3333333333333333, 0)
+    (epsilon=0.3333333333333333, delta=0)
 
     References
     ----------
@@ -236,13 +236,13 @@ class BudgetAccountant:
         total_delta = self.__total_delta_safe(spent_budget, slack)
 
         if slack == 0:
-            return total_epsilon_naive, total_delta
+            return Budget(total_epsilon_naive, total_delta)
 
         total_epsilon_drv = epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum * np.log(1 / slack))
         total_epsilon_kov = epsilon_exp_sum + np.sqrt(2 * epsilon_sq_sum *
                                                       np.log(np.exp(1) + np.sqrt(epsilon_sq_sum) / slack))
 
-        return min(total_epsilon_naive, total_epsilon_drv, total_epsilon_kov), total_delta
+        return Budget(min(total_epsilon_naive, total_epsilon_drv, total_epsilon_kov), total_delta)
 
     def check(self, epsilon, delta):
         """Checks if the provided budget can be spent while staying within the accountant's target budget.
@@ -275,9 +275,7 @@ class BudgetAccountant:
 
         spent_budget = self.__spent_budget + [(epsilon, delta)]
 
-        epsilon_spent, delta_spent = self.total(spent_budget=spent_budget)
-
-        if self.epsilon >= epsilon_spent and self.delta >= delta_spent:
+        if Budget(self.epsilon, self.delta) >= self.total(spent_budget=spent_budget):
             return True
 
         raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
@@ -331,7 +329,7 @@ class BudgetAccountant:
 
         epsilon = (upper + lower) / 2
 
-        return epsilon, delta
+        return Budget(epsilon, delta)
 
     def spend(self, epsilon, delta):
         """Spend the given privacy budget.

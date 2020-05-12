@@ -90,7 +90,7 @@ def warn_unused_args(args):
                       "warning." % arg, DiffprivlibCompatibilityWarning)
 
 
-def check_epsilon_delta(epsilon, delta):
+def check_epsilon_delta(epsilon, delta, allow_zero=False):
     """Checks that epsilon and delta are valid values for differential privacy. Throws an error if checks fail,
     otherwise returns nothing.
 
@@ -104,6 +104,9 @@ def check_epsilon_delta(epsilon, delta):
     delta : float
         Delta parameter for differential privacy. Must be on the unit interval, [0, 1].
 
+    allow_zero : bool, default: False
+        Allow for epsilon and delta both being zero.
+
     """
     if not isinstance(epsilon, Real) or not isinstance(delta, Real):
         raise TypeError("Epsilon and delta must be numeric")
@@ -114,8 +117,55 @@ def check_epsilon_delta(epsilon, delta):
     if not 0 <= delta <= 1:
         raise ValueError("Delta must be in [0, 1]")
 
-    if epsilon + delta == 0:
+    if not allow_zero and epsilon + delta == 0:
         raise ValueError("Epsilon and Delta cannot both be zero")
+
+
+class Budget(tuple):
+    """Custom tuple subclass for privacy budget of the form (epsilon, delta).
+
+    The ``Budget`` class allows for correct comparison of privacy budget, ensuring that both epsilon and delta satisfy
+    the comparison (tuples by default are compared lexicographically). Additionally, this class labels are added to the
+    tuple when printed.
+
+    Examples
+    --------
+
+    >>> from diffprivlib.utils import Budget
+    >>> Budget(1, 0.5)
+    (epsilon=1, delta=0.5)
+    >>> Budget(2, 0) >= Budget(1, 0.5)
+    False
+    >>> (2, 0) >= (1, 0.5)
+    True
+
+    """
+    def __new__(cls, epsilon, delta):
+        check_epsilon_delta(epsilon, delta, allow_zero=True)
+        return tuple.__new__(cls, (epsilon, delta))
+
+    def __gt__(self, other):
+        if self.__ge__(other) and not self.__eq__(other):
+            return True
+        return False
+
+    def __ge__(self, other):
+        if self[0] >= other[0] and self[1] >= other[1]:
+            return True
+        return False
+
+    def __lt__(self, other):
+        if self.__le__(other) and not self.__eq__(other):
+            return True
+        return False
+
+    def __le__(self, other):
+        if self[0] <= other[0] and self[1] <= other[1]:
+            return True
+        return False
+
+    def __repr__(self):
+        return "(epsilon=%r, delta=%r)" % self
 
 
 class BudgetError(ValueError):
