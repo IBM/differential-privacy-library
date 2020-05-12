@@ -9,6 +9,11 @@ Exceptions and warnings
 .. autoexception:: BudgetError
 
 
+General classes
+---------------
+.. autoclass:: Budget
+
+
 General functions
 -----------------
 
