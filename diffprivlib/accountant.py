@@ -30,22 +30,28 @@ class BudgetAccountant:
 
     This class creates a privacy budget accountant to track privacy spend across queries and other data accesses. Once
     initialised, the BudgetAccountant stores each privacy spend and iteratively updates the total budget spend, raising
-    an error when the total budget (if specified) is exceeded. The accountant can be initialised without any maximum
+    an error when the budget ceiling (if specified) is exceeded. The accountant can be initialised without any maximum
     budget, to enable users track the total privacy spend of their actions without hindrance.
+
+    Diffprivlib functions can make use of a BudgetAccountant in three different ways (see examples for more details):
+
+        - Passed as an ``accountant`` parameter to the function (e.g., ``mean(..., accountant=acc)``)
+        - Set as the default using the ``set_default()`` method (all subsequent diffprivlib functions will use the
+          accountant by default)
+        - As a context manager using a ``with`` statement (the accountant is used for that block of code)
 
     Implements the accountant rules as given in [KOV17]_.
 
     Parameters
     ----------
     epsilon : float, default: infinity
-        Target epsilon budget for the accountant.
+        Epsilon budget ceiling of the accountant.
 
-    delta : float, default : 1
-        Target delta budget for the accountant.
+    delta : float, default : 1.0
+        Delta budget ceiling of the accountant.
 
-    slack : float, default : 0
-        Slack allowed in delta for composition. Greater slack gives a smaller epsilon composition, but degrades the
-        privacy guarantee offered by delta.
+    slack : float, default : 0.0
+        Slack allowed in delta spend. Greater slack may reduce the overall epsilon spend.
 
     spent_budget : list of tuples of the form (epsilon, delta), default : None
         List of tuples of pre-existing budget spends. Allows for a new accountant to be initialised with spends
@@ -64,8 +70,8 @@ class BudgetAccountant:
 
     A ``BudgetAccountant`` is typically passed to diffprivlib functions as an ``accountant`` parameter. If ``epsilon``
     and ``delta`` are not set, the accountant has an infinite budget by default, allowing you to track privacy spend
-    without imposing a hard limit. By allowing a ``slack`` in the composition, the overall epsilon privacy spend can be
-    reduced (at the cost of extra delta spend).
+    without imposing a hard limit. By allowing a ``slack`` in the budget calculation, the overall epsilon privacy spend
+    can be reduced (at the cost of extra delta spend).
 
     >>> import diffprivlib as dp
     >>> from numpy.random import random
@@ -122,7 +128,7 @@ class BudgetAccountant:
     """
     _default = None
 
-    def __init__(self, epsilon=float("inf"), delta=1, slack=0, spent_budget=None):
+    def __init__(self, epsilon=float("inf"), delta=1.0, slack=0.0, spent_budget=None):
         check_epsilon_delta(epsilon, delta)
         self.epsilon = epsilon
         self.min_epsilon = 0 if epsilon == float("inf") else epsilon * 1e-14
@@ -245,7 +251,7 @@ class BudgetAccountant:
         return Budget(min(total_epsilon_naive, total_epsilon_drv, total_epsilon_kov), total_delta)
 
     def check(self, epsilon, delta):
-        """Checks if the provided budget can be spent while staying within the accountant's target budget.
+        """Checks if the provided (epsilon,delta) can be spent without exceeding the accountant's budget ceiling.
 
         Parameters
         ----------
@@ -263,7 +269,7 @@ class BudgetAccountant:
         Raises
         ------
         BudgetError
-            If the specified budget spend will result in the target budget being exceeded.
+            If the specified budget spend will result in the budget ceiling being exceeded.
 
         """
         check_epsilon_delta(epsilon, delta)
@@ -286,7 +292,7 @@ class BudgetAccountant:
         """Calculates the budget that remains to be spent.
 
         Calculates the privacy budget that can be spent on `k` queries. Spending this budget on `k` queries will
-        match the total budget, assuming no floating point errors.
+        match the budget ceiling, assuming no floating point errors.
 
         Parameters
         ----------
@@ -364,6 +370,7 @@ class BudgetAccountant:
         ----------
         spent_budget: list of tuples of the form (epsilon, delta)
             List of budget spends, for which the total delta spend is to be calculated.
+
         slack: float
             Delta slack parameter for composition of spends.
 
@@ -406,8 +413,7 @@ class BudgetAccountant:
         """
         if accountant is None:
             if BudgetAccountant._default is None:
-                default = BudgetAccountant()
-                BudgetAccountant._default = default
+                BudgetAccountant._default = BudgetAccountant()
 
             return BudgetAccountant._default
 
