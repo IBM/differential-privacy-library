@@ -91,6 +91,7 @@ class KMeans(sk_cluster.KMeans):
         self.labels_ = None
         self.inertia_ = None
         self.n_iter_ = None
+        self._n_threads = 1
 
     def fit(self, X, y=None, sample_weight=None):
         """Computes k-means clustering with differential privacy.

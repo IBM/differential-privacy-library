@@ -196,6 +196,8 @@ class StandardScaler(sk_pp.StandardScaler):
 
         X = check_array(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=FLOAT_DTYPES,
                         force_all_finite='allow-nan')
+        # Hotfix for sklearn v 0.23
+        self.n_features_in_ = X.shape[1]
 
         if self.range is None:
             warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
