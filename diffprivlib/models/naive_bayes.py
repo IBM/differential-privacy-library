@@ -75,7 +75,7 @@ class GaussianNB(sk_nb.GaussianNB):
     """
 
     def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9):
-        super().__init__(priors, var_smoothing)
+        super().__init__(priors=priors, var_smoothing=var_smoothing)
 
         self.epsilon = epsilon
         self.bounds = bounds
