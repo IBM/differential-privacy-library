@@ -46,10 +46,7 @@ Principal Component Analysis with differential privacy
 import warnings
 
 import numpy as np
-try:
-    import sklearn.decomposition._pca as sk_pca
-except ImportError:
-    import sklearn.decomposition.pca as sk_pca
+import sklearn.decomposition._pca as sk_pca
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
 from diffprivlib.accountant import BudgetAccountant

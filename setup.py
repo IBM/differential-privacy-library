@@ -22,7 +22,7 @@ def get_version(file_path):
 
 install_requires = ['numpy >= 1.15.0',
                     'setuptools >= 39.0.1',
-                    'scikit-learn >= 0.20.3',
+                    'scikit-learn >= 0.22.0',
                     'scipy >= 1.2.1',
                     'joblib >= 0.13.2',
                     ]
@@ -50,6 +50,7 @@ setuptools.setup(name='diffprivlib',
                      'Intended Audience :: Education',
                      'Intended Audience :: Science/Research',
                      'License :: OSI Approved',
+                     'License :: OSI Approved :: MIT License',
                      'Natural Language :: English',
                      'Programming Language :: Python :: 3',
                      'Programming Language :: Python :: 3 :: Only',

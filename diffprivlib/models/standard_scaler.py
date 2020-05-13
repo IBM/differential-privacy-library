@@ -47,10 +47,7 @@ import warnings
 
 import numpy as np
 import sklearn.preprocessing as sk_pp
-try:
-    from sklearn.preprocessing._data import _handle_zeros_in_scale
-except ImportError:
-    from sklearn.preprocessing.data import _handle_zeros_in_scale
+from sklearn.preprocessing._data import _handle_zeros_in_scale
 from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
