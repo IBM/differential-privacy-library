@@ -39,9 +39,12 @@ def _check_bounds(bounds, dims=1, min_separation=1e-5):
 
         lower, upper = bound
 
-        if not isinstance(lower, Real) or not isinstance(upper, Real) or lower > upper:
-            raise ValueError("For each feature bound, lower bound must be smaller than upper bound and both must be "
-                             "numeric (error found in bound %s: %s)" % (str(bound), str(lower) + ", " + str(upper)))
+        if not isinstance(lower, Real) or not isinstance(upper, Real):
+            raise TypeError("Each bound must be numeric, got {} ({}) and {} ({}).".format(lower, type(lower),
+                                                                                          upper, type(upper)))
+        if lower > upper:
+            raise ValueError("For each bound, lower bound must be smaller than upper bound, got {}, {})".format(
+                lower, upper))
 
         if upper - lower <= min_separation:
             bound = (lower - min_separation, upper + min_separation)
