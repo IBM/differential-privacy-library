@@ -26,10 +26,12 @@ class TestGeometric(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
-    def test_no_sensitivity(self):
+    def test_default_sensitivity(self):
         self.mech.set_epsilon(1)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
+
+        self.assertEqual(1, self.mech._sensitivity)
+        self.assertIsNotNone(self.mech.randomise(1))
+
 
     def test_neg_sensitivity(self):
         self.mech.set_epsilon(1)
@@ -114,3 +116,9 @@ class TestGeometric(TestCase):
 
     def test_bias(self):
         self.assertEqual(0.0, self.mech.get_bias(0))
+
+    def test_variance(self):
+        self.mech.set_epsilon(-np.log(0.5))
+
+        # Expected answer gives \sum_{i \in Z} i^2 (1/2)^i  = 2 \sum_{i > 0} i^2 (1/2)^i
+        self.assertAlmostEqual(6 * 2 / 3, self.mech.get_variance(0))

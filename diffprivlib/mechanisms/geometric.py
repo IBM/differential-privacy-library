@@ -37,7 +37,7 @@ class Geometric(DPMechanism):
     """
     def __init__(self):
         super().__init__()
-        self._sensitivity = None
+        self._sensitivity = 1
         self._scale = None
 
     def __repr__(self):
@@ -66,6 +66,7 @@ class Geometric(DPMechanism):
             raise ValueError("Sensitivity must be strictly positive")
 
         self._sensitivity = sensitivity
+        self._scale = None
         return self
 
     def check_inputs(self, value):
@@ -94,6 +95,9 @@ class Geometric(DPMechanism):
 
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set")
+
+        if self._scale is None:
+            self._scale = - self._epsilon / self._sensitivity
 
     def set_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
@@ -128,6 +132,15 @@ class Geometric(DPMechanism):
     def get_bias(self, value):
         return 0.0
 
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        self.check_inputs(value)
+
+        leading_factor = (1 - np.exp(self._scale)) / (1 + np.exp(self._scale))
+        geom_series = np.exp(self._scale) / (1 - np.exp(self._scale))
+
+        return 2 * leading_factor * (geom_series + 3 * (geom_series ** 2) + 2 * (geom_series ** 3))
+
     def randomise(self, value):
         """Randomise `value` with the mechanism.
 
@@ -143,9 +156,6 @@ class Geometric(DPMechanism):
 
         """
         self.check_inputs(value)
-
-        if self._scale is None:
-            self._scale = - self._epsilon / self._sensitivity
 
         # Need to account for overlap of 0-value between distributions of different sign
         unif_rv = random() - 0.5
@@ -197,6 +207,10 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_bias)
     def get_bias(self, value):
+        pass
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_variance(self, value):
         pass
 
     @copy_docstring(Geometric.randomise)
@@ -252,6 +266,10 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_bias)
     def get_bias(self, value):
+        pass
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_variance(self, value):
         pass
 
     @copy_docstring(Geometric.randomise)

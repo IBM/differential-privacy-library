@@ -57,7 +57,7 @@ Geometric mechanisms
 .. autoclass:: Geometric
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,deepcopy,set_epsilon_delta
 
 .. autoclass:: GeometricTruncated
    :members:

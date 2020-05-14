@@ -26,10 +26,11 @@ class TestGeometricTruncated(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
-    def test_no_sensitivity(self):
+    def test_default_sensitivity(self):
         self.mech.set_epsilon(1).set_bounds(0, 10)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
+
+        self.assertEqual(1, self.mech._sensitivity)
+        self.assertIsNotNone(self.mech.randomise(1))
 
     def test_non_integer_sensitivity(self):
         self.mech.set_epsilon(1).set_bounds(0, 10)
