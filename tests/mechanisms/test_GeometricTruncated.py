@@ -120,3 +120,6 @@ class TestGeometricTruncated(TestCase):
 
     def test_bias(self):
         self.assertIsNone(self.mech.get_bias(0))
+
+    def test_variance(self):
+        self.assertIsNone(self.mech.get_variance(0))

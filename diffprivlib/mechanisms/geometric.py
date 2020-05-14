@@ -93,9 +93,6 @@ class Geometric(DPMechanism):
         if not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
-        if self._sensitivity is None:
-            raise ValueError("Sensitivity must be set")
-
         if self._scale is None:
             self._scale = - self._epsilon / self._sensitivity
 
