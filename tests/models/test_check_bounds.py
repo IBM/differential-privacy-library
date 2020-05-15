@@ -42,3 +42,6 @@ class TestGaussianNB(TestCase):
     def test_min_separation(self):
         bounds = _check_bounds([(1, 1)], min_separation=1)
         self.assertEqual((0.5, 1.5), bounds[0])
+
+        bounds = _check_bounds([(0.9, 1.1)], min_separation=1)
+        self.assertEqual((0.5, 1.5), bounds[0])
