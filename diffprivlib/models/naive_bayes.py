@@ -40,14 +40,15 @@ class GaussianNB(sk_nb.GaussianNB):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon` for the model.
 
-    bounds : list or None, default: None
-        Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
-        are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
+    bounds : tuple, optional
+        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
+        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
+        :class:`.PrivacyLeakWarning`.
 
     priors : array-like, shape (n_classes,)
         Prior probabilities of the classes. If specified the priors are not adjusted according to the data.
 
-    var_smoothing : float, optional (default=1e-9)
+    var_smoothing : float, default: 1e-9
         Portion of the largest variance of all features that is added to variances for calculation stability.
 
     accountant : BudgetAccountant, optional
@@ -98,9 +99,9 @@ class GaussianNB(sk_nb.GaussianNB):
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-            self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = _check_bounds(self.bounds, X.shape[1])
+        self.bounds = _check_bounds(self.bounds, shape=X.shape[1])
 
         super()._partial_fit(X, y, classes, _refit, sample_weight=None)
 
@@ -184,14 +185,11 @@ class GaussianNB(sk_nb.GaussianNB):
         local_epsilon = self.epsilon / 2
         local_epsilon /= features
 
-        if len(self.bounds) != features:
-            raise ValueError("Bounds must be specified for each feature dimension")
-
         new_mu = np.zeros_like(mean)
         new_var = np.zeros_like(var)
 
         for feature in range(features):
-            local_diameter = self.bounds[feature][1] - self.bounds[feature][0]
+            local_diameter = self.bounds[1][feature] - self.bounds[0][feature]
             mech_mu = Laplace().set_sensitivity(local_diameter / n_samples).set_epsilon(local_epsilon)
             mech_var = LaplaceBoundedDomain().set_sensitivity((n_samples - 1) * local_diameter ** 2 / n_samples ** 2)\
                 .set_epsilon(local_epsilon).set_bounds(0, float("inf"))

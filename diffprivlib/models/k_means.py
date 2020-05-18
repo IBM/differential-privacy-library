@@ -37,14 +37,15 @@ class KMeans(sk_cluster.KMeans):
 
     Parameters
     ----------
-    epsilon : float, optional, default: 1.0
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds : list or None, optional, default: None
-        Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
-        are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
+    bounds : tuple, optional
+        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
+        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
+        :class:`.PrivacyLeakWarning`.
 
-    n_clusters : int, optional, default: 8
+    n_clusters : int, default: 8
         The number of clusters to form as well as the number of centroids to generate.
 
     accountant : BudgetAccountant, optional
@@ -132,7 +133,7 @@ class KMeans(sk_cluster.KMeans):
             warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
-            self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
         self.bounds = _check_bounds(self.bounds, n_dims)
 
@@ -161,8 +162,8 @@ class KMeans(sk_cluster.KMeans):
             bounds_processed = np.zeros(shape=(dims, 2))
 
             for dim in range(dims):
-                lower = self.bounds[dim][0]
-                upper = self.bounds[dim][1]
+                lower = self.bounds[0][dim]
+                upper = self.bounds[1][dim]
 
                 bounds_processed[dim, :] = [upper - lower, lower]
 
@@ -235,8 +236,8 @@ class KMeans(sk_cluster.KMeans):
             noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
-                laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0]) \
-                    .set_bounds(noisy_count * self.bounds[i][0], noisy_count * self.bounds[i][1])
+                laplace_mech.set_sensitivity(self.bounds[1][i] - self.bounds[0][i]) \
+                    .set_bounds(noisy_count * self.bounds[0][i], noisy_count * self.bounds[1][i])
                 noisy_sum[i] = laplace_mech.randomise(cluster_sum[i])
 
             centers[cluster, :] = noisy_sum / noisy_count

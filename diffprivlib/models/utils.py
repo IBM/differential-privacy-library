@@ -18,10 +18,12 @@
 """
 Basic functions and other utilities for machine learning models in the differential privacy library
 """
-from numbers import Real
+from numbers import Real, Integral
+
+import numpy as np
 
 
-def _check_bounds(bounds, dims=1, min_separation=1e-5):
+def _check_bounds(bounds, shape=1, min_separation=1e-5):
     """Input validation for the ``bounds`` parameter.
 
     Checks that ``bounds`` is composed of a list of tuples of the form (lower, upper), where lower <= upper and both
@@ -30,10 +32,10 @@ def _check_bounds(bounds, dims=1, min_separation=1e-5):
 
     Parameters
     ----------
-    bounds : list of tuples or None
-        List of bounds of the form (lower, upper).
+    bounds : tuple or None
+        Tuple of bounds of the form (min, max).
 
-    dims : int, default: 1
+    shape : tuple or int, default: 1
         Number of dimensions to be expected in ``bounds``.
 
     min_separation : float, default: 1e-5
@@ -42,33 +44,51 @@ def _check_bounds(bounds, dims=1, min_separation=1e-5):
 
     Returns
     -------
-    bounds : list of tuples
+    bounds : tuple
 
     """
     if bounds is None:
         return None
 
-    if not isinstance(bounds, list):
-        raise TypeError("Bounds must be specified as a list of tuples, got {}.".format(type(bounds)))
+    if not isinstance(bounds, tuple):
+        raise TypeError("Bounds must be specified as a tuple of (min, max), got {}.".format(type(bounds)))
 
-    new_bounds = list()
+    if isinstance(shape, Integral):
+        shape = (shape, )
 
-    if len(bounds) != dims:
-        raise ValueError("Number of bounds ({}) must match the dimensions ({}) of input data".format(len(bounds), dims))
+    lower, upper = bounds
 
-    for lower, upper in bounds:
-        if not isinstance(lower, Real) or not isinstance(upper, Real):
-            raise TypeError("Each bound must be numeric, got {} ({}) and {} ({}).".format(lower, type(lower),
-                                                                                          upper, type(upper)))
-        if lower > upper:
+    if isinstance(lower, Real) and isinstance(upper, Real):
+        lower = np.ones(shape=shape, dtype=type(lower)) * lower
+        upper = np.ones(shape=shape, dtype=type(upper)) * upper
+    else:
+        lower = np.asarray(lower)
+        upper = np.asarray(upper)
+
+        if lower.shape != shape or upper.shape != shape:
+            raise ValueError("Shape of min/max bounds must match input data {}, got min: {}, max: {}.".format(
+                shape, lower.shape, upper.shape
+            ))
+
+    iterator = np.nditer(lower, flags=['multi_index'])
+
+    while not iterator.finished:
+        _lower = lower[iterator.multi_index]
+        _upper = upper[iterator.multi_index]
+
+        if not isinstance(_lower, Real) or not isinstance(_upper, Real):
+            raise TypeError("Each bound must be numeric, got {} ({}) and {} ({}).".format(_lower, type(_lower),
+                                                                                          _upper, type(_upper)))
+
+        if _lower > _upper:
             raise ValueError("For each bound, lower bound must be smaller than upper bound, got {}, {})".format(
                 lower, upper))
 
-        if upper - lower < min_separation:
+        if _upper - _lower < min_separation:
             mid = (upper + lower) / 2
-            lower = mid - min_separation / 2
-            upper = mid + min_separation / 2
+            lower[iterator.multi_index] = mid - min_separation / 2
+            upper[iterator.multi_index] = mid + min_separation / 2
 
-        new_bounds.append((lower, upper))
+        iterator.iternext()
 
-    return new_bounds
+    return lower, upper

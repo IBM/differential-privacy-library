@@ -10,13 +10,13 @@ from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompat
 
 class TestGaussianNB(TestCase):
     def test_not_none(self):
-        clf = GaussianNB(epsilon=1, bounds=[(0, 1)])
+        clf = GaussianNB(epsilon=1, bounds=(0, 1))
         self.assertIsNotNone(clf)
 
     def test_zero_epsilon(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=0, bounds=[(0, 1)])
+        clf = GaussianNB(epsilon=0, bounds=(0, 1))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
@@ -24,7 +24,7 @@ class TestGaussianNB(TestCase):
     def test_neg_epsilon(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=-1, bounds=[(0, 1)])
+        clf = GaussianNB(epsilon=-1, bounds=(0, 1))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
@@ -32,7 +32,7 @@ class TestGaussianNB(TestCase):
     def test_sample_weight_warning(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=1, bounds=[(0, 1), (0, 1)])
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
         w = abs(np.random.randn(10))
 
         with self.assertWarns(DiffprivlibCompatibilityWarning):
@@ -42,7 +42,7 @@ class TestGaussianNB(TestCase):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
 
-        clf = GaussianNB(epsilon=1, bounds=[(0, 1), (1, 0)])
+        clf = GaussianNB(epsilon=1, bounds=([0, 1], [1, 0]))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
@@ -58,10 +58,10 @@ class TestGaussianNB(TestCase):
         self.assertIsNotNone(clf)
 
     def test_missing_bounds(self):
-        X = np.random.random((10, 2))
+        X = np.random.random((10, 3))
         y = np.random.randint(2, size=10)
 
-        clf = GaussianNB(epsilon=1, bounds=[(0, 1)])
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
@@ -76,7 +76,7 @@ class TestGaussianNB(TestCase):
 
         x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2)
 
-        bounds = [(4.3, 7.9), (2.0, 4.4), (1.0, 6.9), (0.1, 2.5)]
+        bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
         clf_dp = GaussianNB(epsilon=1.0, bounds=bounds)
         clf_non_private = sk_nb()
@@ -96,7 +96,7 @@ class TestGaussianNB(TestCase):
 
         x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2)
 
-        bounds = [(4.3, 7.9), (2.0, 4.4), (1.0, 6.9), (0.1, 2.5)]
+        bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
         clf = GaussianNB(epsilon=1.0, bounds=bounds)
         clf.fit(x_train, y_train)
@@ -117,12 +117,12 @@ class TestGaussianNB(TestCase):
         x_train = np.random.random((10, 2))
         y_train = np.random.randint(2, size=10)
 
-        clf = GaussianNB(epsilon=1.0, bounds=[(0, 1)]*2, accountant=acc)
+        clf = GaussianNB(epsilon=1.0, bounds=(0, 1), accountant=acc)
         clf.fit(x_train, y_train)
         self.assertEqual((1, 0), acc.total())
 
         with BudgetAccountant(1.5, 0) as acc2:
-            clf = GaussianNB(epsilon=1.0, bounds=[(0, 1)]*2)
+            clf = GaussianNB(epsilon=1.0, bounds=(0, 1))
             clf.fit(x_train, y_train)
             self.assertEqual((1, 0), acc2.total())
 
