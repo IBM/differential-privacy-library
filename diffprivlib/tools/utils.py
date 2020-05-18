@@ -584,19 +584,17 @@ def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
     return ret
 
 
-def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
-        initial=np._NoValue, where=np._NoValue):
+def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    actual_sum = np.sum(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims, initial=initial, where=where)
+    actual_sum = np.sum(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        bounds = (np.min(a, axis=axis, keepdims=keepdims, where=where),
-                  np.max(a, axis=axis, keepdims=keepdims, where=where))
+        bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
     elif isinstance(bounds[0], Real) and isinstance(bounds[1], Real):
         bounds = (np.ones_like(actual_sum) * bounds[0], np.ones_like(actual_sum) * bounds[1])
     else:
