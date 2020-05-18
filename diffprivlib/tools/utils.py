@@ -43,16 +43,18 @@
 General utilities and tools for performing differentially private operations on data.
 """
 import warnings
-from numbers import Real
+from numbers import Real, Integral
 import numpy as np
 from numpy.core import multiarray as mu
 from numpy.core import umath as um
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
+from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric
+from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning
 
 _range = range
+_sum = sum
 
 
 def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
@@ -580,3 +582,46 @@ def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
         ret = um.sqrt(ret)
 
     return ret
+
+
+def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
+        initial=np._NoValue, where=np._NoValue):
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
+    actual_sum = np.sum(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims, initial=initial, where=where)
+
+    if bounds is None:
+        warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                      "result in additional privacy leakage. To ensure differential privacy and no additional "
+                      "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+        bounds = (np.min(a, axis=axis, keepdims=keepdims, where=where),
+                  np.max(a, axis=axis, keepdims=keepdims, where=where))
+    elif isinstance(bounds[0], Real) and isinstance(bounds[1], Real):
+        bounds = (np.ones_like(actual_sum) * bounds[0], np.ones_like(actual_sum) * bounds[1])
+    else:
+        bounds = (np.array(bounds[0]), np.array(bounds[1]))
+
+    bounds = _check_bounds(bounds, actual_sum.shape if isinstance(actual_sum, np.ndarray) else 1)
+    dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
+
+    if isinstance(actual_sum, np.ndarray):
+        dp_sum = np.zeros_like(actual_sum, dtype=dtype)
+        iterator = np.nditer(actual_sum, flags=['multi_index'])
+
+        while not iterator.finished:
+            idx = iterator.multi_index
+
+            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][idx] - bounds[0][idx])
+            dp_sum[idx] = mech.randomise(actual_sum[idx])
+            iterator.iternext()
+
+        accountant.spend(epsilon, 0)
+
+        return dp_sum
+
+    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][0] - bounds[0][0])
+
+    accountant.spend(epsilon, 0)
+
+    return mech.randomise(actual_sum)
