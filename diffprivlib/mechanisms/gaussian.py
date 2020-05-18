@@ -58,10 +58,10 @@ class Gaussian(DPMechanism):
         Parameters
         ----------
         epsilon : float
-            Epsilon value of the mechanism. Must satisfy 0 < `epsilon` <= 1.
+            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon` <= 1.
 
         delta : float
-            Delta value of the mechanism. Must satisfy 0 < `delta` <= 1.
+            Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
 
         Returns
         -------
@@ -151,10 +151,10 @@ class GaussianAnalytic(Gaussian):
         Parameters
         ----------
         epsilon : float
-            Epsilon value of the mechanism. Must satisfy 0 < `epsilon`.
+            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon`.
 
         delta : float
-            Delta value of the mechanism. Must satisfy 0 < `delta` < 1.
+            Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
 
         Returns
         -------
@@ -251,10 +251,10 @@ class GaussianDiscrete(DPMechanism):
         Parameters
         ----------
         epsilon : float
-            Epsilon value of the mechanism. Must satisfy 0 < `epsilon`.
+            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon`.
 
         delta : float
-            Delta value of the mechanism. Must satisfy 0 < `delta` < 1.
+            Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
 
         Returns
         -------

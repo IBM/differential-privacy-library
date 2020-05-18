@@ -46,7 +46,7 @@ class GaussianNB(sk_nb.GaussianNB):
         :class:`.PrivacyLeakWarning`.
 
     priors : array-like, shape (n_classes,)
-        Prior probabilities of the classes. If specified the priors are not adjusted according to the data.
+        Prior probabilities of the classes.  If specified the priors are not adjusted according to the data.
 
     var_smoothing : float, default: 1e-9
         Portion of the largest variance of all features that is added to variances for calculation stability.
@@ -125,7 +125,7 @@ class GaussianNB(sk_nb.GaussianNB):
         Parameters
         ----------
         n_past : int
-            Number of samples represented in old mean and variance. If sample weights were given, this should contain
+            Number of samples represented in old mean and variance.  If sample weights were given, this should contain
             the sum of sample weights represented in old mean and variance.
 
         mu : array-like, shape (number of Gaussians,)

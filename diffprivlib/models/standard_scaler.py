@@ -94,7 +94,7 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
 # noinspection PyPep8Naming,PyAttributeOutsideInit
 class StandardScaler(sk_pp.StandardScaler):
     """Standardize features by removing the mean and scaling to unit variance, calculated with differential privacy
-    guarantees. Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
+    guarantees.  Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
     transformed output will certainly not satisfy differential privacy.
 
     The standard score of a sample `x` is calculated as:
@@ -105,23 +105,24 @@ class StandardScaler(sk_pp.StandardScaler):
     (differentially private) standard deviation of the training samples or one if `with_std=False`.
 
     Centering and scaling happen independently on each feature by computing the relevant statistics on the samples in
-    the training set. Mean and standard deviation are then stored to be used on later data using the `transform` method.
+    the training set.  Mean and standard deviation are then stored to be used on later data using the `transform` 
+    method.
 
     For further information, users are referred to :class:`sklearn.preprocessing.StandardScaler`.
 
     Parameters
     ----------
-    epsilon: float, optional, default 1.0
+    epsilon: float, default: 1.0
         The privacy budget to be allocated to learning the mean and variance of the training sample.  If
         `with_std=True`,  the privacy budget is split evenly between mean and variance (the mean must be calculated even
         when `with_mean=False`, as it is used in the calculation of the variance.
 
-    range:  array_like or None, default None
-        Range of each feature of the sample. Same shape as np.ptp(X, axis=0). If not specified, `range` will be
+    range:  array_like, optional
+        Range of each feature of the sample.  Same shape as np.ptp(X, axis=0).  If not specified, `range` will be
         calculated on the data, triggering a :class:`.PrivacyLeakWarning`.
 
-    copy : boolean, optional, default True
-        If False, try to avoid a copy and do inplace scaling instead. This is not guaranteed to always work inplace;
+    copy : boolean, default: True
+        If False, try to avoid a copy and do inplace scaling instead.  This is not guaranteed to always work inplace;
         e.g. if the data is not a NumPy array, a copy may still be returned.
 
     with_mean : boolean, True by default
@@ -137,18 +138,18 @@ class StandardScaler(sk_pp.StandardScaler):
     Attributes
     ----------
     scale_ : ndarray or None, shape (n_features,)
-        Per feature relative scaling of the data. This is calculated using `np.sqrt(var_)`. Equal to ``None`` when
+        Per feature relative scaling of the data.  This is calculated using `np.sqrt(var_)`.  Equal to ``None`` when
         ``with_std=False``.
 
     mean_ : ndarray or None, shape (n_features,)
-        The mean value for each feature in the training set. Equal to ``None`` when ``with_mean=False``.
+        The mean value for each feature in the training set.  Equal to ``None`` when ``with_mean=False``.
 
     var_ : ndarray or None, shape (n_features,)
-        The variance for each feature in the training set. Used to compute `scale_`. Equal to ``None`` when
+        The variance for each feature in the training set.  Used to compute `scale_`.  Equal to ``None`` when
         ``with_std=False``.
 
     n_samples_seen_ : int or array, shape (n_features,)
-        The number of samples processed by the estimator for each feature. If there are not missing samples, the
+        The number of samples processed by the estimator for each feature.  If there are not missing samples, the
         ``n_samples_seen`` will be an integer, otherwise it will be an array.
         Will be reset on new calls to fit, but increments across ``partial_fit`` calls.
 
@@ -171,9 +172,9 @@ class StandardScaler(sk_pp.StandardScaler):
         self.accountant = BudgetAccountant.load_default(accountant)
 
     def partial_fit(self, X, y=None):
-        """Online computation of mean and std with differential privacy on X for later scaling. All of X is processed as
-        a single batch. This is intended for cases when `fit` is not feasible due to very large number of `n_samples` or
-        because X is read from a continuous stream.
+        """Online computation of mean and std with differential privacy on X for later scaling.  All of X is processed
+        as a single batch.  This is intended for cases when `fit` is not feasible due to very large number of
+        `n_samples` or because X is read from a continuous stream.
 
         The algorithm for incremental mean and std is given in Equation 1.5a,b in Chan, Tony F., Gene H. Golub, and
         Randall J. LeVeque. "Algorithms for computing the sample variance: Analysis and recommendations." The American
@@ -198,7 +199,7 @@ class StandardScaler(sk_pp.StandardScaler):
 
         if self.range is None:
             warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                          "This will result in additional privacy leakage. To ensure differential privacy with no "
+                          "This will result in additional privacy leakage.  To ensure differential privacy with no "
                           "additional privacy loss, specify `range` for each valued returned by np.mean().",
                           PrivacyLeakWarning)
 

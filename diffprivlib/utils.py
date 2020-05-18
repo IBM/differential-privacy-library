@@ -91,7 +91,7 @@ def warn_unused_args(args):
 
 
 def check_epsilon_delta(epsilon, delta, allow_zero=False):
-    """Checks that epsilon and delta are valid values for differential privacy. Throws an error if checks fail,
+    """Checks that epsilon and delta are valid values for differential privacy.  Throws an error if checks fail,
     otherwise returns nothing.
 
     As well as the requirements of epsilon and delta separately, both cannot be simultaneously zero, unless
@@ -100,10 +100,10 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
     Parameters
     ----------
     epsilon : float
-        Epsilon parameter for differential privacy. Must be non-negative.
+        Epsilon parameter for differential privacy.  Must be non-negative.
 
     delta : float
-        Delta parameter for differential privacy. Must be on the unit interval, [0, 1].
+        Delta parameter for differential privacy.  Must be on the unit interval, [0, 1].
 
     allow_zero : bool, default: False
         Allow epsilon and delta both be zero.
@@ -126,7 +126,7 @@ class Budget(tuple):
     """Custom tuple subclass for privacy budgets of the form (epsilon, delta).
 
     The ``Budget`` class allows for correct comparison/ordering of privacy budget, ensuring that both epsilon and delta
-    satisfy the comparison (tuples are compared lexicographically). Additionally, tuples are represented with added
+    satisfy the comparison (tuples are compared lexicographically).  Additionally, tuples are represented with added
     verbosity, labelling epsilon and delta appropriately.
 
     Examples

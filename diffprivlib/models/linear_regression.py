@@ -92,7 +92,7 @@ class LinearRegression(sk_lr.LinearRegression):
     Ordinary least squares Linear Regression with differential privacy.
 
     LinearRegression fits a linear model with coefficients w = (w1, ..., wp) to minimize the residual sum of squares
-    between the observed targets in the dataset, and the targets predicted by the linear approximation. Differential
+    between the observed targets in the dataset, and the targets predicted by the linear approximation.  Differential
     privacy is guaranteed with respect to the training sample.
 
     Differential privacy is achieved by adding noise to the second moment matrix using the :class:`.Wishart` mechanism.
@@ -101,32 +101,32 @@ class LinearRegression(sk_lr.LinearRegression):
 
     Parameters
     ----------
-    epsilon : float, optional, default 1.0
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    data_norm : float, default: None
+    data_norm : float, optional
         The max l2 norm of any row of the concatenated dataset A = [X; y].  This defines the spread of data that will be
         protected by differential privacy.
 
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
     range_X : array_like
-        Range of each feature of the training sample X. Its non-private equivalent is np.ptp(X, axis=0).
+        Range of each feature of the training sample X.  Its non-private equivalent is np.ptp(X, axis=0).
 
         If not specified, the range is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `range_X` should be selected independently of the data, i.e. with domain knowledge.
 
     range_y : array_like
         Same as `range_X`, but for the training label set `y`.
 
-    fit_intercept : bool, optional, default True
-        Whether to calculate the intercept for this model. If set to False, no intercept will be used in calculations
+    fit_intercept : bool, default: True
+        Whether to calculate the intercept for this model.  If set to False, no intercept will be used in calculations
         (i.e. data is expected to be centered).
 
-    copy_X : bool, optional, default True
+    copy_X : bool, default: True
         If True, X will be copied; else, it may be overwritten.
 
     accountant : BudgetAccountant, optional
@@ -135,7 +135,7 @@ class LinearRegression(sk_lr.LinearRegression):
     Attributes
     ----------
     coef_ : array of shape (n_features, ) or (n_targets, n_features)
-        Estimated coefficients for the linear regression problem. If multiple targets are passed during the fit (y 2D),
+        Estimated coefficients for the linear regression problem.  If multiple targets are passed during the fit (y 2D),
         this is a 2D array of shape (n_targets, n_features), while if only one target is passed, this is a 1D array of
         length n_features.
 
@@ -146,7 +146,7 @@ class LinearRegression(sk_lr.LinearRegression):
         Singular values of `X`.
 
     intercept_ : float or array of shape of (n_targets,)
-        Independent term in the linear model. Set to 0.0 if `fit_intercept = False`.
+        Independent term in the linear model.  Set to 0.0 if `fit_intercept = False`.
 
     References
     ----------
@@ -179,10 +179,10 @@ class LinearRegression(sk_lr.LinearRegression):
             Training data
 
         y : array_like, shape (n_samples, n_targets)
-            Target values. Will be cast to X's dtype if necessary
+            Target values.  Will be cast to X's dtype if necessary
 
         sample_weight : ignored
-            Ignored by diffprivlib. Present for consistency with sklearn API.
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         Returns
         -------

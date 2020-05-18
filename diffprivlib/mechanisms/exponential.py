@@ -257,8 +257,8 @@ class Exponential(DPMechanism):
 
             if unif_rv <= cum_prob:
                 return _target_value
-
-        return _target_value
+        else:
+            raise ValueError("")
 
 
 class ExponentialHierarchical(Exponential):

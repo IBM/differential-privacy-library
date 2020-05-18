@@ -109,13 +109,13 @@ class DPMachine(abc.ABC):
 
 class DPMechanism(DPMachine, abc.ABC):
     r"""
-    Base class for all mechanisms. Instantiated from :class:`.DPMachine`.
+    Base class for all mechanisms.  Instantiated from :class:`.DPMachine`.
 
     Notes
     -----
     * Each `DPMechanism` must define a `randomise` method, to handle the application of differential privacy
     * Mechanisms that only operate in a limited window of :math:`\epsilon` or :math:`\delta` must define a
-      `set_epsilon_delta` method. Error-checking, for example for non-zero :math:`\delta` should be done in
+      `set_epsilon_delta` method.  Error-checking, for example for non-zero :math:`\delta` should be done in
       `set_epsilon_delta`; `set_epsilon` should be left unchanged.
     * When new methods are added, `__repr__` should be updated accordingly in the mechanism.
     * Each mechanism's
@@ -271,7 +271,7 @@ class DPMechanism(DPMachine, abc.ABC):
 
 class TruncationAndFoldingMixin:
     """
-    Mixin for truncating or folding the outputs of a mechanism. Must be instantiated with a :class:`.DPMechanism`.
+    Mixin for truncating or folding the outputs of a mechanism.  Must be instantiated with a :class:`.DPMechanism`.
     """
     def __init__(self):
         if not isinstance(self, DPMechanism):

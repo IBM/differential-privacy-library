@@ -136,7 +136,7 @@ class Vector(DPMechanism):
         function_sensitivity : float
             The function sensitivity of the mechanism.
 
-        data_sensitivity : float, default 1.0
+        data_sensitivity : float, default: 1.0
             The data sensitivity of the mechanism.
 
         Returns

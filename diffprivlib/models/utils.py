@@ -39,8 +39,8 @@ def _check_bounds(bounds, shape=1, min_separation=1e-5):
         Number of dimensions to be expected in ``bounds``.
 
     min_separation : float, default: 1e-5
-        The minimum separation between `lower` and `upper` of each dimension. This separation is enforced if not already
-        satisfied.
+        The minimum separation between `lower` and `upper` of each dimension.  This separation is enforced if not
+        already satisfied.
 
     Returns
     -------

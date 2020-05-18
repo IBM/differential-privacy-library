@@ -62,23 +62,23 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
     Compute the differentially private arithmetic mean along the specified axis.
 
     Returns the average of the array elements with differential privacy.  The average is taken over the flattened array
-    by default, otherwise over the specified axis. Noise is added using :class:`.Laplace` to satisfy differential
+    by default, otherwise over the specified axis.  Noise is added using :class:`.Laplace` to satisfy differential
     privacy, where sensitivity is calculated using `range`.  Users are advised to consult the documentation of
     :obj:`numpy.mean` for further details, as the behaviour of `mean` closely follows its Numpy variant.
 
     Parameters
     ----------
     a : array_like
-        Array containing numbers whose mean is desired. If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned mean. Same shape as np.mean(a)
+    range : array_like, optional
+        Range of each dimension of the returned mean.  Same shape as np.mean(a)
 
-    axis : None or int or tuple of ints, optional
-        Axis or axes along which the means are computed. The default is to compute the mean of the flattened array.
+    axis : int or tuple of ints, optional
+        Axis or axes along which the means are computed.  The default is to compute the mean of the flattened array.
 
         If this is a tuple of ints, a mean is performed over multiple axes, instead of a single axis or all the axes as
         before.
@@ -92,8 +92,8 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
         same shape as the expected output, but the type will be cast if necessary.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -121,7 +121,7 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
     Returns the average of the array elements with differential privacy.  The average is taken over the flattened array
-    by default, otherwise over the specified axis. Noise is added using :class:`.Laplace` to satisfy differential
+    by default, otherwise over the specified axis.  Noise is added using :class:`.Laplace` to satisfy differential
     privacy, where sensitivity is calculated using `range`.  Users are advised to consult the documentation of
     :obj:`numpy.mean` for further details, as the behaviour of `mean` closely follows its Numpy variant.
 
@@ -130,16 +130,16 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     Parameters
     ----------
     a : array_like
-        Array containing numbers whose mean is desired. If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned mean. Same shape as np.mean(a)
+    range : array_like, optional
+        Range of each dimension of the returned mean.  Same shape as np.mean(a)
 
-    axis : None or int or tuple of ints, optional
-        Axis or axes along which the means are computed. The default is to compute the mean of the flattened array.
+    axis : int or tuple of ints, optional
+        Axis or axes along which the means are computed.  The default is to compute the mean of the flattened array.
 
         If this is a tuple of ints, a mean is performed over multiple axes, instead of a single axis or all the axes as
         before.
@@ -153,8 +153,8 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
         same shape as the expected output, but the type will be cast if necessary.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -203,7 +203,7 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
 
     if range is None:
         warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                      "This will result in additional privacy leakage. To ensure differential privacy with no "
+                      "This will result in additional privacy leakage.  To ensure differential privacy with no "
                       "additional privacy loss, specify `range` for each valued returned by np.mean().",
                       PrivacyLeakWarning)
 
@@ -245,23 +245,23 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     Compute the differentially private variance along the specified axis.
 
     Returns the variance of the array elements, a measure of the spread of a distribution, with differential privacy.
-    The variance is computer for the flattened array by default, otherwise over the specified axis. Noise is added using
-    :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`. Users
-    are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var` closely
-    follows its Numpy variant.
+    The variance is computer for the flattened array by default, otherwise over the specified axis.  Noise is added
+    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`.
+    Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var`
+    closely follows its Numpy variant.
 
     Parameters
     ----------
     a : array_like
         Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned var. Same shape as np.var(a)
+    range : array_like, optional
+        Range of each dimension of the returned var.  Same shape as np.var(a)
 
-    axis : None or int or tuple of ints, optional
+    axis : int or tuple of ints, optional
         Axis or axes along which the variance is computed.  The default is to compute the variance of the flattened
         array.
 
@@ -278,11 +278,11 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
 
     ddof : int, optional
         "Delta Degrees of Freedom": the divisor used in the calculation is ``N - ddof``, where ``N`` represents the
-        number of elements. By default `ddof` is zero.
+        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `var` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -310,10 +310,10 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
     Returns the variance of the array elements, a measure of the spread of a distribution, with differential privacy.
-    The variance is computer for the flattened array by default, otherwise over the specified axis. Noise is added using
-    :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`. Users
-    are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var` closely
-    follows its Numpy variant.
+    The variance is computer for the flattened array by default, otherwise over the specified axis.  Noise is added
+    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`.
+    Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var`
+    closely follows its Numpy variant.
 
     For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
 
@@ -322,13 +322,13 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     a : array_like
         Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned var. Same shape as np.var(a)
+    range : array_like, optional
+        Range of each dimension of the returned var.  Same shape as np.var(a)
 
-    axis : None or int or tuple of ints, optional
+    axis : int or tuple of ints, optional
         Axis or axes along which the variance is computed.  The default is to compute the variance of the flattened
         array.
 
@@ -345,11 +345,11 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
 
     ddof : int, optional
         "Delta Degrees of Freedom": the divisor used in the calculation is ``N - ddof``, where ``N`` represents the
-        number of elements. By default `ddof` is zero.
+        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `var` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -452,34 +452,34 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     a : array_like
         Calculate the standard deviation of these values.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned var. Same shape as np.var(a)
+    range : array_like, optional
+        Range of each dimension of the returned var.  Same shape as np.var(a)
 
-    axis : None or int or tuple of ints, optional
-        Axis or axes along which the standard deviation is computed. The default is to compute the standard deviation of
-        the flattened array.
+    axis : int or tuple of ints, optional
+        Axis or axes along which the standard deviation is computed.  The default is to compute the standard deviation
+        of the flattened array.
 
         If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single axis or
         all the axes as before.
 
     dtype : dtype, optional
-        Type to use in computing the standard deviation. For arrays of integer type the default is float64, for arrays
+        Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
     out : ndarray, optional
-        Alternative output array in which to place the result. It must have the same shape as the expected output but
+        Alternative output array in which to place the result.  It must have the same shape as the expected output but
         the type (of the calculated values) will be cast if necessary.
 
     ddof : int, optional
         Means Delta Degrees of Freedom.  The divisor used in calculations is ``N - ddof``, where ``N`` represents the
-        number of elements. By default `ddof` is zero.
+        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `std` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -519,34 +519,34 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     a : array_like
         Calculate the standard deviation of these values.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like
-        Range of each dimension of the returned var. Same shape as np.var(a)
+    range : array_like, optional
+        Range of each dimension of the returned var.  Same shape as np.var(a)
 
-    axis : None or int or tuple of ints, optional
-        Axis or axes along which the standard deviation is computed. The default is to compute the standard deviation of
-        the flattened array.
+    axis : int or tuple of ints, optional
+        Axis or axes along which the standard deviation is computed.  The default is to compute the standard deviation
+        of the flattened array.
 
         If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single axis or
         all the axes as before.
 
     dtype : dtype, optional
-        Type to use in computing the standard deviation. For arrays of integer type the default is float64, for arrays
+        Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
     out : ndarray, optional
-        Alternative output array in which to place the result. It must have the same shape as the expected output but
+        Alternative output array in which to place the result.  It must have the same shape as the expected output but
         the type (of the calculated values) will be cast if necessary.
 
     ddof : int, optional
         Means Delta Degrees of Freedom.  The divisor used in calculations is ``N - ddof``, where ``N`` represents the
-        number of elements. By default `ddof` is zero.
+        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `std` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any

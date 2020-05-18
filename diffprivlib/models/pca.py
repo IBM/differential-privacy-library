@@ -84,7 +84,7 @@ class PCA(sk_pca.PCA):
 
             n_components == min(n_samples, n_features) - 1
 
-    centered : bool, default=False
+    centered : bool, default: False
         If False, the data will be centered before calculating the principal components.  This will be calculated with
         differential privacy, consuming privacy budget from epsilon.
 
@@ -95,23 +95,23 @@ class PCA(sk_pca.PCA):
         Privacy parameter :math:`\epsilon`.  If ``centered=False``, half of epsilon is used to calculate the
         differentially private mean to center the data prior to the calculation of principal components.
 
-    data_norm : float, default: None
+    data_norm : float, optional
         The max l2 norm of any row of the data.  This defines the spread of data that will be protected by
         differential privacy.
 
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
     range : array_like or float, optional
-        Range of each feature of the sample X, but only required when ``centered=False``. Used to calculate the
+        Range of each feature of the sample X, but only required when ``centered=False``.  Used to calculate the
         differentially private mean of the sample.
 
-    copy : bool, default=True
+    copy : bool, default: True
         If False, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected
         results, use fit_transform(X) instead.
 
-    whiten : bool, optional (default False)
+    whiten : bool, default: False
         When True (False by default) the `components_` vectors are multiplied by the square root of n_samples and
         then divided by the singular values to ensure uncorrelated outputs with unit component-wise variances.
 
@@ -119,7 +119,7 @@ class PCA(sk_pca.PCA):
         components) but can sometime improve the predictive accuracy of the downstream estimators by making their
         data respect some hard-wired assumptions.
 
-    random_state : int, RandomState instance or None, optional (default None)
+    random_state : int or RandomState instance, optional
         If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
         is the random number generator.
 
@@ -134,7 +134,7 @@ class PCA(sk_pca.PCA):
     Attributes
     ----------
     components_ : array, shape (n_components, n_features)
-        Principal axes in feature space, representing the directions of maximum variance in the data. The components
+        Principal axes in feature space, representing the directions of maximum variance in the data.  The components
         are sorted by ``explained_variance_``.
 
     explained_variance_ : array, shape (n_components,)
@@ -148,7 +148,7 @@ class PCA(sk_pca.PCA):
         If ``n_components`` is not set then all components are stored and the sum of the ratios is equal to 1.0.
 
     singular_values_ : array, shape (n_components,)
-        The singular values corresponding to each of the selected components. The singular values are equal to the
+        The singular values corresponding to each of the selected components.  The singular values are equal to the
         2-norms of the ``n_components`` variables in the lower-dimensional space.
 
     mean_ : array, shape (n_features,)
@@ -157,8 +157,8 @@ class PCA(sk_pca.PCA):
         Equal to `X.mean(axis=0)`.
 
     n_components_ : int
-        The estimated number of components. When n_components is set to 'mle' or a number between 0 and 1 (with
-        svd_solver == 'full') this number is estimated from input data. Otherwise it equals the parameter
+        The estimated number of components.  When n_components is set to 'mle' or a number between 0 and 1 (with
+        svd_solver == 'full') this number is estimated from input data.  Otherwise it equals the parameter
         n_components, or the lesser value of n_features and n_samples if n_components is None.
 
     n_features_ : int
@@ -168,9 +168,9 @@ class PCA(sk_pca.PCA):
         Number of samples in the training data.
 
     noise_variance_ : float
-        The estimated noise covariance following the Probabilistic PCA model from Tipping and Bishop 1999. See
+        The estimated noise covariance following the Probabilistic PCA model from Tipping and Bishop 1999.  See
         "Pattern Recognition and Machine Learning" by C. Bishop, 12.2.1 p. 574 or
-        http://www.miketipping.com/papers/met-mppca.pdf. It is required to compute the estimated data covariance and
+        http://www.miketipping.com/papers/met-mppca.pdf.  It is required to compute the estimated data covariance and
         score samples.
 
         Equal to the average of (min(n_features, n_samples) - n_components) smallest eigenvalues of the covariance

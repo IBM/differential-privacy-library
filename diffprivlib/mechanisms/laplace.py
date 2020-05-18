@@ -256,7 +256,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
 
 class LaplaceBoundedDomain(LaplaceTruncated):
     """
-    The bounded Laplace mechanism on a bounded domain. The mechanism draws values directly from the domain, without any
+    The bounded Laplace mechanism on a bounded domain.  The mechanism draws values directly from the domain, without any
     post-processing.
     """
     def __init__(self):

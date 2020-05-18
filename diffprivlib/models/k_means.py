@@ -49,16 +49,16 @@ class KMeans(sk_cluster.KMeans):
         The number of clusters to form as well as the number of centroids to generate.
 
     accountant : BudgetAccountant, optional
-        Accountant to keep track of privacy budget.
+        Accountant to keep track of privacy budget.(
 
     **unused_args :
-        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any
+        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`.  Specifying any
         of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
 
     Attributes
     ----------
     cluster_centers_ : array, [n_clusters, n_features]
-        Coordinates of cluster centers. If the algorithm stops before fully converging, these will not be consistent
+        Coordinates of cluster centers.  If the algorithm stops before fully converging, these will not be consistent
         with ``labels_``.
 
     labels_ :
@@ -106,7 +106,7 @@ class KMeans(sk_cluster.KMeans):
             not used, present here for API consistency by convention.
 
         sample_weight : ignored
-            Ignored by diffprivlib. Present for consistency with sklearn API.
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         Returns
         -------

@@ -74,7 +74,7 @@ class LogisticRegression(linear_model.LogisticRegression):
     including:
 
         - The only permitted solver is 'lbfgs'.  Specifying the ``solver`` option will result in a warning.
-        - Consequently, the only permitted penalty is 'l2'. Specifying the ``penalty`` option will result in a warning.
+        - Consequently, the only permitted penalty is 'l2'.  Specifying the ``penalty`` option will result in a warning.
         - In the multiclass case, only the one-vs-rest (OvR) scheme is permitted.  Specifying the ``multi_class`` option
           will result in a warning.
 
@@ -83,19 +83,19 @@ class LogisticRegression(linear_model.LogisticRegression):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    data_norm : float, default: None
+    data_norm : float, optional
         The max l2 norm of any row of the data.  This defines the spread of data that will be protected by
         differential privacy.
 
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
     tol : float, default: 1e-4
         Tolerance for stopping criteria.
 
     C : float, default: 1.0
-        Inverse of regularization strength; must be a positive float. Like in support vector machines, smaller values
+        Inverse of regularization strength; must be a positive float.  Like in support vector machines, smaller values
         specify stronger regularization.
 
     fit_intercept : bool, default: True
@@ -112,7 +112,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         When set to ``True``, reuse the solution of the previous call to fit as initialization, otherwise, just erase
         the previous solution.
 
-    n_jobs : int or None, default: None
+    n_jobs : int, optional
         Number of CPU cores used when parallelising over classes.  ``None`` means 1 unless in a context. ``-1`` means
         using all processors.
 
@@ -140,7 +140,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         given problem is binary.
 
     n_iter_ : array, shape (n_classes,) or (1, )
-        Actual number of iterations for all classes. If binary, it returns only 1 element.
+        Actual number of iterations for all classes.  If binary, it returns only 1 element.
 
     Examples
     --------
@@ -195,7 +195,7 @@ class LogisticRegression(linear_model.LogisticRegression):
             Target vector relative to X.
 
         sample_weight : ignored
-            Ignored by diffprivlib. Present for consistency with sklearn API.
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         Returns
         -------
@@ -285,7 +285,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         return self
 
 
-def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
+def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
                               tol=1e-4, verbose=0, coef=None, check_input=True, **unused_args):
     """Compute a Logistic Regression model with differential privacy for a list of regularization parameters.  Takes
     inspiration from ``_logistic_regression_path`` in scikit-learn, specified to the LBFGS solver and one-vs-rest
@@ -305,38 +305,39 @@ def _logistic_regression_path(X, y, epsilon=1.0, data_norm=1.0, pos_class=None, 
     data_norm : float
         Max norm of the data for which differential privacy is satisfied.
 
-    pos_class : int, None The class with respect to which we perform a one-vs-all fit. If None, then it is assumed
-        that the given problem is binary.
+    pos_class : int, optional
+        The class with respect to which we perform a one-vs-all fit.  If None, then it is assumed that the given problem
+        is binary.
 
     Cs : int | array-like, shape (n_cs,)
         List of values for the regularization parameter or integer specifying the number of regularization parameters
-        that should be used. In this case, the parameters will be chosen in a logarithmic scale between 1e-4 and 1e4.
+        that should be used.  In this case, the parameters will be chosen in a logarithmic scale between 1e-4 and 1e4.
 
     fit_intercept : bool
-        Whether to fit an intercept for the model. In this case the shape of the returned array is
+        Whether to fit an intercept for the model.  In this case the shape of the returned array is
         (n_cs, n_features + 1).
 
     max_iter : int
         Maximum number of iterations for the solver.
 
     tol : float
-        Stopping criterion. For the newton-cg and lbfgs solvers, the iteration will stop when ``max{|g_i | i = 1,
+        Stopping criterion.  For the newton-cg and lbfgs solvers, the iteration will stop when ``max{|g_i | i = 1,
         ..., n} <= tol`` where ``g_i`` is the i-th component of the gradient.
 
     verbose : int
         For the liblinear and lbfgs solvers set verbose to any positive number for verbosity.
 
-    coef : array-like, shape (n_features,), default None
-        Initialization value for coefficients of logistic regression. Useless for liblinear solver.
+    coef : array-like, shape (n_features,), optional
+        Initialization value for coefficients of logistic regression.  Useless for liblinear solver.
 
-    check_input : bool, default True
+    check_input : bool, default: True
         If False, the input arrays X and y will not be checked.
 
     Returns
     -------
     coefs : ndarray, shape (n_cs, n_features) or (n_cs, n_features + 1)
-        List of coefficients for the Logistic Regression model. If fit_intercept is set to True then the second
-        dimension will be n_features + 1, where the last item represents the intercept. For
+        List of coefficients for the Logistic Regression model.  If fit_intercept is set to True then the second
+        dimension will be n_features + 1, where the last item represents the intercept.  For
         ``multiclass='multinomial'``, the shape is (n_classes, n_cs, n_features) or (n_classes, n_cs, n_features + 1).
 
     Cs : ndarray

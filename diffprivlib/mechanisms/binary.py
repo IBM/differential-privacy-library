@@ -35,7 +35,7 @@ class Binary(DPMechanism):
 
     Notes
     -----
-    * The binary attributes, known as `labels`, must be specified as strings. If non-string labels are required (e.g.
+    * The binary attributes, known as `labels`, must be specified as strings.  If non-string labels are required (e.g.
       integer-valued labels), a :class:`.DPTransformer` can be used (e.g. :class:`.IntToString`).
     """
     def __init__(self):

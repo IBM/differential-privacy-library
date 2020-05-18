@@ -28,9 +28,9 @@ from diffprivlib.utils import check_epsilon_delta, Budget, BudgetError
 class BudgetAccountant:
     """Privacy budget accountant for differential privacy.
 
-    This class creates a privacy budget accountant to track privacy spend across queries and other data accesses. Once
+    This class creates a privacy budget accountant to track privacy spend across queries and other data accesses.  Once
     initialised, the BudgetAccountant stores each privacy spend and iteratively updates the total budget spend, raising
-    an error when the budget ceiling (if specified) is exceeded. The accountant can be initialised without any maximum
+    an error when the budget ceiling (if specified) is exceeded.  The accountant can be initialised without any maximum
     budget, to enable users track the total privacy spend of their actions without hindrance.
 
     Diffprivlib functions can make use of a BudgetAccountant in three different ways (see examples for more details):
@@ -47,30 +47,30 @@ class BudgetAccountant:
     epsilon : float, default: infinity
         Epsilon budget ceiling of the accountant.
 
-    delta : float, default : 1.0
+    delta : float, default: 1.0
         Delta budget ceiling of the accountant.
 
-    slack : float, default : 0.0
-        Slack allowed in delta spend. Greater slack may reduce the overall epsilon spend.
+    slack : float, default: 0.0
+        Slack allowed in delta spend.  Greater slack may reduce the overall epsilon spend.
 
-    spent_budget : list of tuples of the form (epsilon, delta), default : None
-        List of tuples of pre-existing budget spends. Allows for a new accountant to be initialised with spends
+    spent_budget : list of tuples of the form (epsilon, delta), optional
+        List of tuples of pre-existing budget spends.  Allows for a new accountant to be initialised with spends
         extracted from a previous instance.
 
     Attributes
     ----------
     slack : float
-        The accountant's slack. Can be modified at runtime, subject to the privacy budget not being exceeded.
+        The accountant's slack.  Can be modified at runtime, subject to the privacy budget not being exceeded.
 
     spent_budget : list of tuples of the form (epsilon, delta)
-        The list of privacy spends recorded by the accountant. Can be used in the initialisation of a new accountant.
+        The list of privacy spends recorded by the accountant.  Can be used in the initialisation of a new accountant.
 
     Examples
     --------
 
-    A ``BudgetAccountant`` is typically passed to diffprivlib functions as an ``accountant`` parameter. If ``epsilon``
+    A ``BudgetAccountant`` is typically passed to diffprivlib functions as an ``accountant`` parameter.  If ``epsilon``
     and ``delta`` are not set, the accountant has an infinite budget by default, allowing you to track privacy spend
-    without imposing a hard limit. By allowing a ``slack`` in the budget calculation, the overall epsilon privacy spend
+    without imposing a hard limit.  By allowing a ``slack`` in the budget calculation, the overall epsilon privacy spend
     can be reduced (at the cost of extra delta spend).
 
     >>> import diffprivlib as dp
@@ -100,8 +100,8 @@ class BudgetAccountant:
     >>> acc3.total() # Slack has reduced the epsilon spend by almost 25%
     (epsilon=0.7613352285668463, delta=0.001)
 
-    Using ``set_default()``, an accountant is used by default in all diffprivlib functions in that script. Accountants
-    also act as context managers, allowing for use in a ``with`` statement. Passing an accountant as a parameter
+    Using ``set_default()``, an accountant is used by default in all diffprivlib functions in that script.  Accountants
+    also act as context managers, allowing for use in a ``with`` statement.  Passing an accountant as a parameter
     overrides all other methods.
 
     >>> acc4 = dp.BudgetAccountant()
@@ -205,11 +205,11 @@ class BudgetAccountant:
 
         Parameters
         ----------
-        spent_budget : list of tuples of the form (epsilon, delta), default: None
-            List of tuples of budget spends. If not provided, the accountant's spends will be used.
+        spent_budget : list of tuples of the form (epsilon, delta), optional
+            List of tuples of budget spends.  If not provided, the accountant's spends will be used.
 
-        slack : float, default : None
-            Slack in delta for composition. If not provided, the accountant's slack will be used.
+        slack : float, optional
+            Slack in delta for composition.  If not provided, the accountant's slack will be used.
 
         Returns
         -------
@@ -291,7 +291,7 @@ class BudgetAccountant:
     def remaining(self, k=1):
         """Calculates the budget that remains to be spent.
 
-        Calculates the privacy budget that can be spent on `k` queries. Spending this budget on `k` queries will
+        Calculates the privacy budget that can be spent on `k` queries.  Spending this budget on `k` queries will
         match the budget ceiling, assuming no floating point errors.
 
         Parameters
@@ -397,13 +397,13 @@ class BudgetAccountant:
         """Loads the default privacy budget accountant if none is supplied, otherwise checks that the supplied
         accountant is a BudgetAccountant class.
 
-        An accountant can be set as the default using the `set_default()` method. If no default has been set, a default
+        An accountant can be set as the default using the `set_default()` method.  If no default has been set, a default
         is created.
 
         Parameters
         ----------
         accountant : BudgetAccountant or None
-            The supplied budget accountant. If None, the default accountant is returned.
+            The supplied budget accountant.  If None, the default accountant is returned.
 
         Returns
         -------
