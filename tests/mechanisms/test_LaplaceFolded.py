@@ -31,6 +31,12 @@ class TestLaplaceFolded(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_sensitivity(0).set_epsilon(1).set_bounds(0, 2)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1).set_bounds(0, 1)
         with self.assertRaises(ValueError):

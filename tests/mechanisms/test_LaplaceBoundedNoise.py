@@ -31,6 +31,12 @@ class TestLaplaceBoundedNoise(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_sensitivity(0).set_epsilon_delta(1, 0.1)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1)
         with self.assertRaises(ValueError):

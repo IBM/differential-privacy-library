@@ -65,6 +65,12 @@ class TestUniform(TestCase):
         with self.assertRaises(TypeError):
             self.mech.set_sensitivity("1")
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon_delta(0, 0.2).set_sensitivity(0)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_non_numeric(self):
         self.mech.set_sensitivity(1).set_epsilon_delta(0, 0.2)
         with self.assertRaises(TypeError):

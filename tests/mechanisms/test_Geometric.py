@@ -32,6 +32,11 @@ class TestGeometric(TestCase):
         self.assertEqual(1, self.mech._sensitivity)
         self.assertIsNotNone(self.mech.randomise(1))
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon(1).set_sensitivity(0)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
 
     def test_neg_sensitivity(self):
         self.mech.set_epsilon(1)

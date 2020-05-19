@@ -31,6 +31,12 @@ class TestStaircase(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon(1).set_gamma(0.5).set_sensitivity(0)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1).set_gamma(0.5)
         with self.assertRaises(ValueError):

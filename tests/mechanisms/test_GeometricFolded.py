@@ -37,6 +37,12 @@ class TestGeometricFolded(TestCase):
         with self.assertRaises(TypeError):
             self.mech.set_sensitivity(0.5)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon(1).set_sensitivity(0).set_bounds(0, 2)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1).set_bounds(0, 10)
         with self.assertRaises(ValueError):

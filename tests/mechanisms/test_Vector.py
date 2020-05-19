@@ -72,6 +72,14 @@ class TestVector(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(self.func)
 
+    def test_zero_data_sensitivity(self):
+        self.mech.set_dimension(3).set_sensitivity(1, 0).set_epsilon(1)
+
+        for i in range(100):
+            noisy_func = self.mech.randomise(self.func)
+            self.assertAlmostEqual(noisy_func(np.zeros(3)), 0)
+            self.assertAlmostEqual(noisy_func(np.ones(3)), 3)
+
     def test_wrong_alpha(self):
         self.mech.set_dimension(3).set_epsilon(1)
 

@@ -68,6 +68,14 @@ class TestWishart(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(self.generate_data())
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon(1).set_sensitivity(0)
+
+        for i in range(100):
+            data = self.generate_data()
+            noisy_data = self.mech.randomise(data)
+            self.assertTrue(np.allclose(data, noisy_data))
+
     def test_numeric_input(self):
         self.mech.set_epsilon(1).set_sensitivity(1)
 

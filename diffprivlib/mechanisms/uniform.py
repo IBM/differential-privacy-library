@@ -83,8 +83,8 @@ class Uniform(DPMechanism):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._sensitivity = float(sensitivity)
         return self

@@ -62,8 +62,8 @@ class Geometric(DPMechanism):
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._sensitivity = sensitivity
         self._scale = None
@@ -94,7 +94,7 @@ class Geometric(DPMechanism):
             raise TypeError("Value to be randomised must be an integer")
 
         if self._scale is None:
-            self._scale = - self._epsilon / self._sensitivity
+            self._scale = - self._epsilon / self._sensitivity if self._sensitivity > 0 else - float("inf")
 
     def set_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.

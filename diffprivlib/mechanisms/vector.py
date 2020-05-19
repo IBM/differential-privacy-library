@@ -147,8 +147,8 @@ class Vector(DPMechanism):
         if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
             raise TypeError("Sensitivities must be numeric")
 
-        if function_sensitivity <= 0 or data_sensitivity <= 0:
-            raise ValueError("Sensitivities must be strictly positive")
+        if function_sensitivity < 0 or data_sensitivity < 0:
+            raise ValueError("Sensitivities must be non-negative")
 
         self._function_sensitivity = function_sensitivity
         self._data_sensitivity = data_sensitivity
@@ -214,7 +214,7 @@ class Vector(DPMechanism):
                      - 0.5 * self._alpha)
             epsilon_p = self._epsilon / 2
 
-        scale = epsilon_p / 2 / self._data_sensitivity
+        scale = epsilon_p / 2 / self._data_sensitivity if self._data_sensitivity > 0 else float("inf")
 
         normed_noisy_vector = np.random.normal(0, 1, self._vector_dim)
         norm = np.linalg.norm(normed_noisy_vector, 2)

@@ -82,8 +82,8 @@ class Gaussian(DPMechanism):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._scale = None
         self._sensitivity = sensitivity
@@ -131,7 +131,7 @@ class Gaussian(DPMechanism):
             standard_normal = self._stored_gaussian
             self._stored_gaussian = None
 
-        return standard_normal * self._scale + value
+        return value + standard_normal * self._scale
 
 
 class GaussianAnalytic(Gaussian):
