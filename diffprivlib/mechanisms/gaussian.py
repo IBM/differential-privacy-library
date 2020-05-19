@@ -181,6 +181,8 @@ class GaussianAnalytic(Gaussian):
             raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
         if self._sensitivity is None:
             raise ValueError("Sensitivity must be set before calling _find_scale().")
+        if self._sensitivity / self._epsilon == 0:
+            return 0.0
 
         epsilon = self._epsilon
         delta = self._delta
@@ -272,8 +274,8 @@ class GaussianDiscrete(DPMechanism):
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._scale = None
         self._sensitivity = sensitivity
@@ -306,6 +308,9 @@ class GaussianDiscrete(DPMechanism):
     def randomise(self, value):
         self.check_inputs(value)
 
+        if self._scale == 0:
+            return value
+
         tau = 1 / (1 + np.floor(self._scale))
         sigma2 = self._scale ** 2
 
@@ -321,13 +326,15 @@ class GaussianDiscrete(DPMechanism):
             lap_y = int((1 - 2 * bern_b) * geom_x)
             bern_c = self._bernoulli_exp((abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2)
             if bern_c:
-                return lap_y + value
+                return value + lap_y
 
     def _find_scale(self):
         """Determine the scale of the mechanism's distribution given epsilon and delta.
         """
         if self._epsilon is None or self._delta is None:
             raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
+        if self._sensitivity / self._epsilon == 0:
+            return 0
 
         def objective(sigma, epsilon_, delta_, sensitivity_):
             """Function for which we are seeking its root. """
@@ -394,7 +401,7 @@ class GaussianDiscrete(DPMechanism):
     def _bernoulli_exp(self, gamma):
         """Sample from Bernoulli(exp(-gamma))
 
-        Adapted from Appendix A of https://arxiv.org/pdf/1805.06530.pdf
+        Adapted from Appendix A of https://arxiv.org/pdf/2004.00010.pdf
 
         """
         if gamma > 1:

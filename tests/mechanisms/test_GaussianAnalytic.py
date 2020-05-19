@@ -51,6 +51,12 @@ class TestGaussianAnalytic(TestCase):
         self.mech.set_sensitivity(1).set_epsilon_delta(1.5, 0.1)
         self.assertIsNotNone(self.mech.randomise(0))
 
+    def test_inf_epsilon(self):
+        self.mech.set_epsilon_delta(float("inf"), 0.1).set_sensitivity(1)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_complex_epsilon(self):
         with self.assertRaises(TypeError):
             self.mech.set_epsilon_delta(1+2j, 0.1)
