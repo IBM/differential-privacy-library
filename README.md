@@ -53,7 +53,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 epsilons = np.logspace(-2, 2, 50)
-bounds = [(4.3, 7.9), (2.0, 4.4), (1.1, 6.9), (0.1, 2.5)]
+bounds = ([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5])
 accuracy = list()
 
 for epsilon in epsilons:
