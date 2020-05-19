@@ -113,7 +113,8 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
     std, var, nanmean
 
     """
-    return _mean(a, epsilon, range, axis, dtype, out, keepdims, accountant, False)
+    return _mean(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+                 accountant=accountant, nan=False)
 
 
 def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
@@ -174,7 +175,8 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     std, var, mean
 
     """
-    return _mean(a, epsilon, range, axis, dtype, out, keepdims, accountant, True)
+    return _mean(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+                 accountant=accountant, nan=True)
 
 
 def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
@@ -196,10 +198,8 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
     for i in temp_axis:
         num_datapoints *= a.shape[i]
 
-    if nan:
-        actual_mean = np.nanmean(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-    else:
-        actual_mean = np.mean(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    _func = np.nanmean if nan else np.mean
+    actual_mean = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     if range is None:
         warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
@@ -302,7 +302,8 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     std , mean, nanvar
 
     """
-    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, False)
+    return _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+                accountant=accountant, nan=False)
 
 
 def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
@@ -369,7 +370,8 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     std , mean, var
 
     """
-    return _var(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, True)
+    return _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+                accountant=accountant, nan=True)
 
 
 def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
@@ -391,10 +393,8 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
     for i in temp_axis:
         num_datapoints *= a.shape[i]
 
-    if nan:
-        actual_var = np.nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
-    else:
-        actual_var = np.var(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
+    _func = np.nanvar if nan else np.var
+    actual_var = _func(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
 
     if range is None:
         warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
@@ -499,7 +499,8 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     var, mean, nanstd
 
     """
-    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, False)
+    return _std(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+                accountant=accountant, nan=False)
 
 
 def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
@@ -566,7 +567,8 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     var, mean, std
 
     """
-    return _std(a, epsilon, range, axis, dtype, out, ddof, keepdims, accountant, True)
+    return _std(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+                accountant=accountant, nan=True)
 
 
 def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
@@ -584,11 +586,13 @@ def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
     return ret
 
 
-def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
+         nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    actual_sum = np.sum(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    _func = np.nansum if nan else np.sum
+    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -623,3 +627,123 @@ def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out
     accountant.spend(epsilon, 0)
 
     return mech.randomise(actual_sum)
+
+
+def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+    r"""Sum of array elements over a given axis with differential privacy.
+
+    Parameters
+    ----------
+    a : array_like
+        Elements to sum.
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.
+
+    bounds : tuple, optional
+        Tuple of bounds of each dimension of the returned sum, of the form (min, max).  Min and max must be either
+        numeric or array-like with the same shape as the resulting sum.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+    axis : None or int or tuple of ints, optional
+        Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
+        array.  If axis is negative it counts from the last to the first axis.
+
+        If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a single
+        axis or all the axes as before.
+
+    dtype : dtype, optional
+        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `a` is
+        used by default unless `a` has an integer dtype of less precision than the default platform integer.  In that
+        case, if `a` is signed then the platform integer is used while if `a` is unsigned then an unsigned integer of
+        the same precision as the platform integer is used.
+
+    out : ndarray, optional
+        Alternative output array in which to place the result. It must have the same shape as the expected output, but
+        the type of the output values will be cast if necessary.
+
+    keepdims : bool, optional
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+        option, the result will broadcast correctly against the input array.
+
+        If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
+        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
+        exceptions will be raised.
+
+    Returns
+    -------
+    sum_along_axis : ndarray
+        An array with the same shape as `a`, with the specified axis removed.   If `a` is a 0-d array, or if `axis` is
+        None, a scalar is returned.  If an output array is specified, a reference to `out` is returned.
+
+    See Also
+    --------
+    ndarray.sum : Equivalent non-private method.
+
+    mean, nansum
+
+    """
+    return _sum(a, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
+                keepdims=keepdims, nan=False)
+
+
+def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+    r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
+
+    Parameters
+    ----------
+    a : array_like
+        Elements to sum.
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.
+
+    bounds : tuple, optional
+        Tuple of bounds of each dimension of the returned sum, of the form (min, max).  Min and max must be either
+        numeric or array-like with the same shape as the resulting sum.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+    axis : None or int or tuple of ints, optional
+        Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
+        array.  If axis is negative it counts from the last to the first axis.
+
+        If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a single
+        axis or all the axes as before.
+
+    dtype : dtype, optional
+        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `a` is
+        used by default unless `a` has an integer dtype of less precision than the default platform integer.  In that
+        case, if `a` is signed then the platform integer is used while if `a` is unsigned then an unsigned integer of
+        the same precision as the platform integer is used.
+
+    out : ndarray, optional
+        Alternative output array in which to place the result. It must have the same shape as the expected output, but
+        the type of the output values will be cast if necessary.
+
+    keepdims : bool, optional
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
+        option, the result will broadcast correctly against the input array.
+
+        If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
+        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
+        exceptions will be raised.
+
+    Returns
+    -------
+    sum_along_axis : ndarray
+        An array with the same shape as `a`, with the specified axis removed.   If `a` is a 0-d array, or if `axis` is
+        None, a scalar is returned.  If an output array is specified, a reference to `out` is returned.
+
+    See Also
+    --------
+    ndarray.sum : Equivalent non-private method.
+
+    mean, sum
+
+    """
+    return _sum(a, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
+                keepdims=keepdims, nan=True)

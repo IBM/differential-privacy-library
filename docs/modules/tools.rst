@@ -20,6 +20,10 @@ General Utilities
 
 .. autofunction:: nanstd
 
+.. autofunction:: sum
+
+.. autofunction:: nansum
+
 .. autofunction:: var
 
 .. autofunction:: nanvar
