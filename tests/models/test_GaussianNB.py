@@ -66,6 +66,20 @@ class TestGaussianNB(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
+    def test_noisy_count(self):
+        y = np.random.randint(20, size=10000)
+        actual_counts = np.array([(y == y_i).sum() for y_i in np.unique(y)])
+
+        clf = GaussianNB(epsilon=3)
+        noisy_counts = clf._noisy_class_counts(y)
+        self.assertEqual(y.shape[0], noisy_counts.sum())
+        self.assertFalse(np.all(noisy_counts == actual_counts))
+
+        clf = GaussianNB(epsilon=float("inf"))
+        noisy_counts = clf._noisy_class_counts(y)
+        self.assertEqual(y.shape[0], noisy_counts.sum())
+        self.assertTrue(np.all(noisy_counts == actual_counts))
+
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn.naive_bayes import GaussianNB as sk_nb
@@ -108,7 +122,7 @@ class TestGaussianNB(TestCase):
 
         clf.partial_fit(x_train, y_train)
         new_counts = clf.class_count_
-        self.assertTrue(np.all(new_counts == 2 * counts ))
+        self.assertEqual(np.sum(new_counts), np.sum(counts) * 2)
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
