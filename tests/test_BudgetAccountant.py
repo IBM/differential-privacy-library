@@ -395,3 +395,10 @@ class TestBudgetAccountant(TestCase):
         self.assertNotIn("delta", repr(acc))
         self.assertNotIn("slack", repr(acc))
         self.assertIn("spent_budget", repr(acc))
+
+        acc = BudgetAccountant(spent_budget=[(1., 0.)] * 10 + [(5., 0.5)])
+        self.assertIn("BudgetAccountant(", repr(acc))
+        self.assertIn("...", repr(acc))
+        self.assertNotIn("5", repr(acc))
+        self.assertNotIn("5", acc.__repr__(10))
+        self.assertIn("5", acc.__repr__(11))

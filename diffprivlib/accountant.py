@@ -143,7 +143,7 @@ class BudgetAccountant:
             for _epsilon, _delta in spent_budget:
                 self.spend(_epsilon, _delta)
 
-    def __repr__(self):
+    def __repr__(self, n_budget_max=5):
         params = []
         if self.epsilon != float("inf"):
             params.append("epsilon=%g" % self.epsilon)
@@ -155,7 +155,10 @@ class BudgetAccountant:
             params.append("slack=%g" % self.slack)
 
         if self.__spent_budget:
-            params.append("spent_budget=%s" % str(self.__spent_budget))
+            if len(self.__spent_budget) > n_budget_max:
+                params.append("spent_budget=%s" % str(self.__spent_budget[:n_budget_max] + ["..."]).replace("'", ""))
+            else:
+                params.append("spent_budget=%s" % str(self.__spent_budget))
 
         return "BudgetAccountant(" + ", ".join(params) + ")"
 
