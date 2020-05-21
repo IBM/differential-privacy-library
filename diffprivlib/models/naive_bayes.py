@@ -26,7 +26,7 @@ from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric, GeometricTruncated
+from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric, GeometricTruncated, LaplaceTruncated
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 from diffprivlib.tools import sum as dp_sum
@@ -82,12 +82,13 @@ class GaussianNB(sk_nb.GaussianNB):
 
     """
 
-    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
+    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9, accountant=None, epsilon_split=0.5):
         super().__init__(priors=priors, var_smoothing=var_smoothing)
 
         self.epsilon = epsilon
         self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
+        self.epsilon_split = epsilon_split
 
     def _partial_fit(self, X, y, classes=None, _refit=False, sample_weight=None):
         self.accountant.check(self.epsilon, 0)
@@ -224,7 +225,7 @@ class GaussianNB(sk_nb.GaussianNB):
             warn_unused_args("sample_weight")
 
         n_features = X.shape[1]
-        local_epsilon = self.epsilon / 4 / n_features
+        local_epsilon = self.epsilon / 2 / n_features
 
         new_mu = np.zeros((n_features,))
         new_var = np.zeros((n_features,))
@@ -233,15 +234,17 @@ class GaussianNB(sk_nb.GaussianNB):
             local_diameter = self.bounds[1][feature] - self.bounds[0][feature]
             _X = X[:, feature]
 
-            mech_mu = Laplace().set_epsilon(local_epsilon).set_sensitivity(local_diameter)
+            mech_mu = LaplaceTruncated().\
+                set_bounds(self.bounds[0][feature] * n_noisy, self.bounds[1][feature] * n_noisy).\
+                set_epsilon(local_epsilon * self.epsilon_split).\
+                set_sensitivity(local_diameter)
             _mu = mech_mu.randomise(_X.sum()) / n_noisy
-            _mu = np.clip(_mu, self.bounds[0][feature], self.bounds[1][feature])
             new_mu[feature] = _mu
 
-            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon).set_sensitivity(local_diameter ** 2).\
+            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon * (1 - self.epsilon_split)).\
+                set_sensitivity(local_diameter ** 2).\
                 set_bounds(0, float("inf"))
-            _var = mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy
-            _var = np.clip(_var, 0, local_diameter ** 2)
+            _var = np.minimum(mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy, local_diameter ** 2)
             new_var[feature] = _var
 
         if n_past == 0:
