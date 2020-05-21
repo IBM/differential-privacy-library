@@ -22,9 +22,11 @@ import warnings
 
 import numpy as np
 import sklearn.naive_bayes as sk_nb
+from sklearn.utils import check_X_y
+from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain
+from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
@@ -92,9 +94,6 @@ class GaussianNB(sk_nb.GaussianNB):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        # Store size of current X to apply differential privacy later on
-        self.new_n_samples = X.shape[0]
-
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
@@ -103,13 +102,77 @@ class GaussianNB(sk_nb.GaussianNB):
 
         self.bounds = _check_bounds(self.bounds, shape=X.shape[1])
 
-        super()._partial_fit(X, y, classes, _refit, sample_weight=None)
+        X, y = check_X_y(X, y)
+
+        self.epsilon_ = self.var_smoothing
+
+        if _refit:
+            self.classes_ = None
+
+        if _check_partial_fit_first_call(self, classes):
+            n_features = X.shape[1]
+            n_classes = len(self.classes_)
+            self.theta_ = np.zeros((n_classes, n_features))
+            self.sigma_ = np.zeros((n_classes, n_features))
+
+            self.class_count_ = np.zeros(n_classes, dtype=np.float64)
+
+            if self.priors is not None:
+                priors = np.asarray(self.priors)
+
+                if len(priors) != n_classes:
+                    raise ValueError("Number of priors must match number of classes.")
+                if not np.isclose(priors.sum(), 1.0):
+                    raise ValueError("The sum of the priors should be 1.")
+                if (priors < 0).any():
+                    raise ValueError("Priors must be non-negative.")
+                self.class_prior_ = priors
+            else:
+                # Initialize the priors to zeros for each class
+                self.class_prior_ = np.zeros(len(self.classes_), dtype=np.float64)
+        else:
+            if X.shape[1] != self.theta_.shape[1]:
+                msg = "Number of features %d does not match previous data %d."
+                raise ValueError(msg % (X.shape[1], self.theta_.shape[1]))
+            # Put epsilon back in each time
+            self.sigma_[:, :] -= self.epsilon_
+
+        classes = self.classes_
+
+        unique_y = np.unique(y)
+        unique_y_in_classes = np.in1d(unique_y, classes)
+
+        if not np.all(unique_y_in_classes):
+            raise ValueError("The target label(s) %s in y do not exist in the initial classes %s" %
+                             (unique_y[~unique_y_in_classes], classes))
+
+        noisy_class_counts = self._noisy_class_counts(y)
+
+        for _i, y_i in enumerate(unique_y):
+            i = classes.searchsorted(y_i)
+            X_i = X[y == y_i, :]
+
+            N_i = noisy_class_counts[_i]
+
+            new_theta, new_sigma = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
+                                                              self.sigma_[i, :], X_i, n_noisy=N_i)
+
+            self.theta_[i, :] = new_theta
+            self.sigma_[i, :] = new_sigma
+            self.class_count_[i] += N_i
+
+        self.sigma_[:, :] += self.epsilon_
+
+        # Update if only no priors is provided
+        if self.priors is None:
+            # Empirical prior, with sample_weight taken into account
+            self.class_prior_ = self.class_count_ / self.class_count_.sum()
 
         self.accountant.spend(self.epsilon, 0)
-        del self.new_n_samples
+
         return self
 
-    def _update_mean_variance(self, n_past, mu, var, X, sample_weight=None):
+    def _update_mean_variance(self, n_past, mu, var, X, sample_weight=None, n_noisy=None):
         """Compute online update of Gaussian mean and variance.
 
         Given starting sample count, mean, and variance, a new set of points X return the updated mean and variance.
@@ -137,6 +200,9 @@ class GaussianNB(sk_nb.GaussianNB):
         sample_weight : ignored
             Ignored in diffprivlib.
 
+        n_noisy : int, optional
+            Noisy count of the given class, satisfying differential privacy.
+
         Returns
         -------
         total_mu : array-like, shape (number of Gaussians,)
@@ -145,56 +211,76 @@ class GaussianNB(sk_nb.GaussianNB):
         total_var : array-like, shape (number of Gaussians,)
             Updated variance for each Gaussian over the combined set.
         """
-        if X.shape[0] == 0:
+        if n_noisy is None:
+            warnings.warn("Noisy class count has not been specified and will be read from the data. To use this "
+                          "method correctly, make sure it is run by the parent GaussianNB class.", PrivacyLeakWarning)
+            n_noisy = X.shape[0]
+
+        if not n_noisy:
             return mu, var
 
-        # Compute (potentially weighted) mean and variance of new datapoints
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        n_new = X.shape[0]
-        new_var = np.var(X, axis=0)
-        new_mu = np.mean(X, axis=0)
+        # Split epsilon between each feature, using 1/3 of total budget for each of mean and variance
+        n_features = X.shape[1]
+        local_epsilon = self.epsilon / 3 / n_features
 
-        # Apply differential privacy to the new means and variances
-        new_mu, new_var = self._randomise(new_mu, new_var, self.new_n_samples)
+        new_mu = np.zeros((n_features,))
+        new_var = np.zeros((n_features,))
+
+        for feature in range(n_features):
+            _X = X[:, feature]
+            lower, upper = self.bounds[0][feature], self.bounds[1][feature]
+            local_diameter = upper - lower
+
+            mech_mu = LaplaceTruncated().set_bounds(lower * n_noisy, upper * n_noisy).set_epsilon(local_epsilon).\
+                set_sensitivity(local_diameter)
+            _mu = mech_mu.randomise(_X.sum()) / n_noisy
+
+            sens = max(_mu - lower, upper - _mu) ** 2
+            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon).set_sensitivity(sens).\
+                set_bounds(0, sens * n_noisy)
+            _var = mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy
+
+            new_mu[feature] = _mu
+            new_var[feature] = _var
 
         if n_past == 0:
             return new_mu, new_var
 
-        n_total = float(n_past + n_new)
+        n_total = float(n_past + n_noisy)
 
         # Combine mean of old and new data, taking into consideration
         # (weighted) number of observations
-        total_mu = (n_new * new_mu + n_past * mu) / n_total
+        total_mu = (n_noisy * new_mu + n_past * mu) / n_total
 
         # Combine variance of old and new data, taking into consideration
         # (weighted) number of observations. This is achieved by combining
         # the sum-of-squared-differences (ssd)
         old_ssd = n_past * var
-        new_ssd = n_new * new_var
-        total_ssd = old_ssd + new_ssd + (n_past / float(n_new * n_total)) * (n_new * mu - n_new * new_mu) ** 2
+        new_ssd = n_noisy * new_var
+        total_ssd = old_ssd + new_ssd + (n_past / float(n_noisy * n_total)) * (n_noisy * mu - n_noisy * new_mu) ** 2
         total_var = total_ssd / n_total
 
         return total_mu, total_var
 
-    def _randomise(self, mean, var, n_samples):
-        """Randomises the learned means and variances subject to differential privacy."""
-        features = var.shape[0]
+    def _noisy_class_counts(self, y):
+        unique_y = np.unique(y)
+        n_total = y.shape[0]
 
-        local_epsilon = self.epsilon / 2
-        local_epsilon /= features
+        # Use 1/3 of total epsilon budget for getting noisy class counts
+        mech = GeometricTruncated().set_epsilon(self.epsilon / 3).set_sensitivity(1).set_bounds(1, n_total)
+        noisy_counts = np.array([mech.randomise((y == y_i).sum()) for y_i in unique_y])
 
-        new_mu = np.zeros_like(mean)
-        new_var = np.zeros_like(var)
+        argsort = np.argsort(noisy_counts)
+        i = 0 if noisy_counts.sum() > n_total else len(unique_y) - 1
 
-        for feature in range(features):
-            local_diameter = self.bounds[1][feature] - self.bounds[0][feature]
-            mech_mu = Laplace().set_sensitivity(local_diameter / n_samples).set_epsilon(local_epsilon)
-            mech_var = LaplaceBoundedDomain().set_sensitivity((n_samples - 1) * local_diameter ** 2 / n_samples ** 2)\
-                .set_epsilon(local_epsilon).set_bounds(0, float("inf"))
+        while np.sum(noisy_counts) != n_total:
+            _i = argsort[i]
+            sgn = np.sign(n_total - noisy_counts.sum())
+            noisy_counts[_i] = np.clip(noisy_counts[_i] + sgn, 1, n_total)
 
-            new_mu[feature] = mech_mu.randomise(mean[feature])
-            new_var[feature] = mech_var.randomise(var[feature])
+            i = (i - sgn) % len(unique_y)
 
-        return new_mu, new_var
+        return noisy_counts

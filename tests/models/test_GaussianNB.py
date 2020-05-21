@@ -66,6 +66,20 @@ class TestGaussianNB(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
+    def test_noisy_count(self):
+        y = np.random.randint(20, size=10000)
+        actual_counts = np.array([(y == y_i).sum() for y_i in np.unique(y)])
+
+        clf = GaussianNB(epsilon=3)
+        noisy_counts = clf._noisy_class_counts(y)
+        self.assertEqual(y.shape[0], noisy_counts.sum())
+        self.assertFalse(np.all(noisy_counts == actual_counts))
+
+        clf = GaussianNB(epsilon=float("inf"))
+        noisy_counts = clf._noisy_class_counts(y)
+        self.assertEqual(y.shape[0], noisy_counts.sum())
+        self.assertTrue(np.all(noisy_counts == actual_counts))
+
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn.naive_bayes import GaussianNB as sk_nb
@@ -98,17 +112,16 @@ class TestGaussianNB(TestCase):
 
         bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
-        clf = GaussianNB(epsilon=1.0, bounds=bounds)
+        clf = GaussianNB(epsilon=5.0, bounds=bounds)
         clf.fit(x_train, y_train)
 
         accuracy = clf.score(x_test, y_test)
         counts = clf.class_count_.copy()
-        # print(accuracy)
         self.assertGreater(accuracy, 0.5)
 
         clf.partial_fit(x_train, y_train)
         new_counts = clf.class_count_
-        self.assertTrue(np.all(new_counts == 2 * counts ))
+        self.assertEqual(np.sum(new_counts), np.sum(counts) * 2)
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
@@ -128,3 +141,35 @@ class TestGaussianNB(TestCase):
 
             with self.assertRaises(BudgetError):
                 clf.fit(x_train, y_train)
+
+    def test_priors(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(0.75, 0.25))
+        self.assertIsNotNone(clf.fit(X, y))
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(1,))
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(0.5, 0.7))
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(-0.5, 1.5))
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
+
+    def test_refit(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf.fit(X, y)
+
+        X2 = np.random.random((10, 3))
+        clf.bounds = ([0, 0, 0], [1, 1, 1])
+
+        with self.assertRaises(ValueError):
+            clf.partial_fit(X2, y)
