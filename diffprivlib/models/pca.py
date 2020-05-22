@@ -53,6 +53,7 @@ from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools import mean
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
+from diffprivlib.validation import clip_to_norm
 
 
 # noinspection PyPep8Naming
@@ -219,19 +220,13 @@ class PCA(sk_pca.PCA):
 
         X -= self.mean_
 
-        max_norm = np.linalg.norm(X, axis=1).max()
-
         if self.data_norm is None:
             warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
-            self.data_norm = max_norm
+            self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        if max_norm > self.data_norm:
-            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
-                          "Got %f\n"
-                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
-                          % (self.data_norm, max_norm), PrivacyLeakWarning)
+        X = clip_to_norm(X, self.data_norm)
 
         XtX = np.dot(X.T, X)
 

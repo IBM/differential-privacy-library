@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from diffprivlib.utils import check_epsilon_delta
+from diffprivlib.validation import check_epsilon_delta
 
 
 class TestCheckEpsilonDelta(TestCase):

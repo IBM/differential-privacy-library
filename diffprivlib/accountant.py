@@ -22,7 +22,8 @@ from numbers import Integral
 
 import numpy as np
 
-from diffprivlib.utils import check_epsilon_delta, Budget, BudgetError
+from diffprivlib.utils import Budget, BudgetError
+from diffprivlib.validation import check_epsilon_delta
 
 
 class BudgetAccountant:

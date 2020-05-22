@@ -17,7 +17,6 @@ General classes
 General functions
 -----------------
 
-.. autofunction:: check_epsilon_delta
 .. autofunction:: copy_docstring
 .. autofunction:: global_seed
 .. autofunction:: warn_unused_args

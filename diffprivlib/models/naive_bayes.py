@@ -27,8 +27,8 @@ from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
-from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.validation import check_bounds, clip_to_bounds
 
 
 class GaussianNB(sk_nb.GaussianNB):
@@ -94,15 +94,16 @@ class GaussianNB(sk_nb.GaussianNB):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
+        X, y = check_X_y(X, y)
+
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = _check_bounds(self.bounds, shape=X.shape[1])
-
-        X, y = check_X_y(X, y)
+        self.bounds = check_bounds(self.bounds, shape=X.shape[1])
+        X = clip_to_bounds(X, self.bounds)
 
         self.epsilon_ = self.var_smoothing
 
@@ -152,14 +153,14 @@ class GaussianNB(sk_nb.GaussianNB):
             i = classes.searchsorted(y_i)
             X_i = X[y == y_i, :]
 
-            N_i = noisy_class_counts[_i]
+            n_i = noisy_class_counts[_i]
 
             new_theta, new_sigma = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
-                                                              self.sigma_[i, :], X_i, n_noisy=N_i)
+                                                              self.sigma_[i, :], X_i, n_noisy=n_i)
 
             self.theta_[i, :] = new_theta
             self.sigma_[i, :] = new_sigma
-            self.class_count_[i] += N_i
+            self.class_count_[i] += n_i
 
         self.sigma_[:, :] += self.epsilon_
 
@@ -238,9 +239,9 @@ class GaussianNB(sk_nb.GaussianNB):
                 set_sensitivity(local_diameter)
             _mu = mech_mu.randomise(_X.sum()) / n_noisy
 
-            sens = max(_mu - lower, upper - _mu) ** 2
-            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon).set_sensitivity(sens).\
-                set_bounds(0, sens * n_noisy)
+            local_sq_sens = max(_mu - lower, upper - _mu) ** 2
+            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon).set_sensitivity(local_sq_sens).\
+                set_bounds(0, local_sq_sens * n_noisy)
             _var = mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy
 
             new_mu[feature] = _mu

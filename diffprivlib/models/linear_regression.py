@@ -54,12 +54,13 @@ from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.validation import clip_to_norm, check_bounds, clip_to_bounds
 
 _range = range
 
 
 # noinspection PyPep8Naming
-def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=None, copy=True, check_input=True,
+def _preprocess_data(X, y, fit_intercept, epsilon=1.0, bounds_X=None, bounds_y=None, copy=True, check_input=True,
                      **unused_args):
     warn_unused_args(unused_args)
 
@@ -72,9 +73,26 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, range_X=None, range_y=Non
     X_scale = np.ones(X.shape[1], dtype=X.dtype)
 
     if fit_intercept:
-        X_offset = mean(X, axis=0, range=range_X, epsilon=epsilon, accountant=BudgetAccountant())
+        if bounds_X is None or bounds_y is None:
+            warnings.warn("Bounds parameters haven't been specified, so falling back to determining bounds from the "
+                          "data.\n"
+                          "This will result in additional privacy leakage. To ensure differential privacy with no "
+                          "additional privacy loss, specify `bounds_X` and `bounds_y`.",
+                          PrivacyLeakWarning)
+
+            if bounds_X is None:
+                bounds_X = (np.min(X, axis=0), np.max(X, axis=0))
+            if bounds_y is None:
+                bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
+
+        bounds_X = check_bounds(bounds_X, X.shape[1])
+        bounds_y = check_bounds(bounds_y, y.shape[1] if y.ndim > 1 else 1)
+        X = clip_to_bounds(X, bounds_X)
+        y = clip_to_bounds(y, bounds_y)
+
+        X_offset = mean(X, axis=0, range=bounds_X[1] - bounds_X[0], epsilon=epsilon, accountant=BudgetAccountant())
         X -= X_offset
-        y_offset = mean(y, axis=0, range=range_y, epsilon=epsilon, accountant=BudgetAccountant())
+        y_offset = mean(y, axis=0, range=bounds_y[1] - bounds_y[0], epsilon=epsilon, accountant=BudgetAccountant())
         y = y - y_offset
     else:
         X_offset = np.zeros(X.shape[1], dtype=X.dtype)
@@ -112,15 +130,16 @@ class LinearRegression(sk_lr.LinearRegression):
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
-    range_X : array_like
-        Range of each feature of the training sample X.  Its non-private equivalent is np.ptp(X, axis=0).
+    bounds_X : tuple
+        Bounds of each feature of the training sample X of the form (min, max).  Its non-private equivalent is
+        (np.min(X, axis=0), np.max(X, axis=0)).
 
-        If not specified, the range is taken from the data when ``.fit()`` is first called, but will result in a
+        If not specified, the bounds is taken from the data when ``.fit()`` is first called, but will result in a
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
-        `range_X` should be selected independently of the data, i.e. with domain knowledge.
+        `bounds_X` should be selected independently of the data, i.e. with domain knowledge.
 
-    range_y : array_like
-        Same as `range_X`, but for the training label set `y`.
+    bounds_y : tuple
+        Same as `bounds_X`, but for the training label set `y`.
 
     fit_intercept : bool, default: True
         Whether to calculate the intercept for this model.  If set to False, no intercept will be used in calculations
@@ -157,14 +176,14 @@ class LinearRegression(sk_lr.LinearRegression):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, epsilon=1.0, data_norm=None, range_X=None, range_y=None, fit_intercept=True, copy_X=True,
+    def __init__(self, epsilon=1.0, data_norm=None, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True,
                  accountant=None, **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 
         self.epsilon = epsilon
         self.data_norm = data_norm
-        self.range_X = range_X
-        self.range_y = range_y
+        self.bounds_X = bounds_X
+        self.bounds_y = bounds_y
         self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
@@ -193,41 +212,23 @@ class LinearRegression(sk_lr.LinearRegression):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        max_norm = np.linalg.norm(X, axis=1).max()
-
-        if self.data_norm is None:
-            warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
-                          "result in additional privacy leakage. To ensure differential privacy and no additional "
-                          "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
-            self.data_norm = max_norm
-
-        if max_norm > self.data_norm:
-            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
-                          "Got %f\n"
-                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
-                          % (self.data_norm, max_norm), PrivacyLeakWarning)
-
-        if self.fit_intercept and (self.range_X is None or self.range_y is None):
-            warnings.warn("Range parameters haven't been specified, so falling back to determining range from the "
-                          "data.\n"
-                          "This will result in additional privacy leakage. To ensure differential privacy with no "
-                          "additional privacy loss, specify `range_X` and `range_y`.",
-                          PrivacyLeakWarning)
-
-            if self.range_X is None:
-                self.range_X = np.maximum(np.ptp(X, axis=0), 1e-5)
-            if self.range_y is None:
-                self.range_y = np.maximum(np.ptp(y, axis=0), 1e-5)
-
         X, y = check_X_y(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
         n_features = X.shape[1]
         epsilon_intercept_scale = 1 / (n_features + 1) if self.fit_intercept else 0
 
         X, y, X_offset, y_offset, X_scale = self._preprocess_data(X, y, fit_intercept=self.fit_intercept,
-                                                                  range_X=self.range_X, range_y=self.range_y,
+                                                                  bounds_X=self.bounds_X, bounds_y=self.bounds_y,
                                                                   epsilon=self.epsilon * epsilon_intercept_scale,
                                                                   copy=self.copy_X)
+
+        if self.data_norm is None:
+            warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
+            self.data_norm = np.linalg.norm(X, axis=1).max()
+
+        X = clip_to_norm(X, self.data_norm)
 
         A = np.hstack((X, y[:, np.newaxis] if y.ndim == 1 else y))
         AtA = np.dot(A.T, A)

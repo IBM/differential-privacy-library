@@ -22,11 +22,12 @@ import warnings
 
 import numpy as np
 import sklearn.cluster as sk_cluster
+from sklearn.utils import check_array
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
-from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.validation import check_bounds, clip_to_bounds
 
 
 class KMeans(sk_cluster.KMeans):
@@ -120,12 +121,11 @@ class KMeans(sk_cluster.KMeans):
 
         del y
 
-        if X.ndim != 2:
-            raise ValueError(
-                "Expected 2D array, got array with %d dimensions instead. Reshape your data using array.reshape(-1, 1),"
-                "or array.reshape(1, -1) if your data contains only one sample." % X.ndim)
-
+        X = check_array(X, accept_sparse=False, dtype=[np.float64, np.float32])
         n_samples, n_dims = X.shape
+
+        if n_samples < self.n_clusters:
+            raise ValueError("n_samples=%d should be >= n_clusters=%d" % (n_samples, self.n_clusters))
 
         iters = self._calc_iters(n_dims, n_samples)
 
@@ -135,7 +135,8 @@ class KMeans(sk_cluster.KMeans):
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = _check_bounds(self.bounds, n_dims)
+        self.bounds = check_bounds(self.bounds, n_dims)
+        X = clip_to_bounds(X, self.bounds)
 
         centers = self._init_centers(n_dims)
         labels = None

@@ -1,6 +1,8 @@
 from unittest import TestCase
 
 import numpy as np
+import pytest
+
 try:
     import sklearn.decomposition._pca as sk_pca
 except ImportError:
@@ -54,10 +56,9 @@ class TestPCA(TestCase):
              5.00, 5.50])
         X = X[:, np.newaxis]
 
-        clf = PCA(data_norm=1.0)
+        clf = PCA(data_norm=1.0, centered=True)
 
-        with self.assertWarns(PrivacyLeakWarning):
-            clf.fit(X)
+        self.assertIsNotNone(clf.fit(X))
 
     def test_solver_warning(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
@@ -94,6 +95,7 @@ class TestPCA(TestCase):
 
             self.assertAlmostEqual(clf.score(X), sk_clf.score(X), places=4)
 
+    @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn import datasets
         from sklearn.model_selection import train_test_split

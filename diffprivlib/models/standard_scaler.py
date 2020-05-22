@@ -54,6 +54,7 @@ from sklearn.utils.validation import FLOAT_DTYPES
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
+from diffprivlib.validation import clip_to_bounds
 
 range_ = range
 
@@ -117,9 +118,10 @@ class StandardScaler(sk_pp.StandardScaler):
         `with_std=True`,  the privacy budget is split evenly between mean and variance (the mean must be calculated even
         when `with_mean=False`, as it is used in the calculation of the variance.
 
-    range:  array_like, optional
-        Range of each feature of the sample.  Same shape as np.ptp(X, axis=0).  If not specified, `range` will be
-        calculated on the data, triggering a :class:`.PrivacyLeakWarning`.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
+        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
+        :class:`.PrivacyLeakWarning`.
 
     copy : boolean, default: True
         If False, try to avoid a copy and do inplace scaling instead.  This is not guaranteed to always work inplace;
@@ -164,11 +166,12 @@ class StandardScaler(sk_pp.StandardScaler):
     Notes
     -----
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
+    
     """  # noqa
-    def __init__(self, epsilon=1.0, range=None, copy=True, with_mean=True, with_std=True, accountant=None):
+    def __init__(self, epsilon=1.0, bounds=None, copy=True, with_mean=True, with_std=True, accountant=None):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
-        self.range = range
+        self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
     def partial_fit(self, X, y=None):
@@ -187,6 +190,7 @@ class StandardScaler(sk_pp.StandardScaler):
 
         y
             Ignored
+
         """
         self.accountant.check(self.epsilon, 0)
 
@@ -197,13 +201,14 @@ class StandardScaler(sk_pp.StandardScaler):
         # Hotfix for sklearn v 0.23
         self.n_features_in_ = X.shape[1]
 
-        if self.range is None:
+        if self.bounds is None:
             warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
                           "This will result in additional privacy leakage.  To ensure differential privacy with no "
                           "additional privacy loss, specify `range` for each valued returned by np.mean().",
                           PrivacyLeakWarning)
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-            self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
+        X = clip_to_bounds(X, self.bounds)
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
         # computation of the var See incr_mean_variance_axis and _incremental_mean_variance_axis
@@ -229,7 +234,8 @@ class StandardScaler(sk_pp.StandardScaler):
             self.var_ = None
             self.n_samples_seen_ += X.shape[0] - np.isnan(X).sum(axis=0)
         else:
-            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(X, epsilon_0, self.range,
+            _range = self.bounds[1] - self.bounds[0]
+            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(X, epsilon_0, _range,
                                                                                     self.mean_, self.var_,
                                                                                     self.n_samples_seen_)
 

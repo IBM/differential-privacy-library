@@ -59,6 +59,7 @@ from sklearn.utils.multiclass import check_classification_targets
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args
+from diffprivlib.validation import clip_to_norm
 
 
 class LogisticRegression(linear_model.LogisticRegression):
@@ -214,25 +215,18 @@ class LogisticRegression(linear_model.LogisticRegression):
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
 
-        max_norm = np.linalg.norm(X, axis=1).max()
-
         if self.data_norm is None:
             warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
-            self.data_norm = max_norm
-
-        if max_norm > self.data_norm:
-            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
-                          "Got %f\n"
-                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
-                          % (self.data_norm, max_norm), PrivacyLeakWarning)
+            self.data_norm = np.linalg.norm(X, axis=1).max()
 
         solver = _check_solver(self.solver, self.penalty, self.dual)
 
         _dtype = np.float64
 
         X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C", accept_large_sparse=solver != 'liblinear')
+        X = clip_to_norm(X, self.data_norm)
         check_classification_targets(y)
         self.classes_ = np.unique(y)
         _, n_features = X.shape

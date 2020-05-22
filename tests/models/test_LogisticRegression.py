@@ -64,8 +64,7 @@ class TestLogisticRegression(TestCase):
 
         clf = LogisticRegression(data_norm=1.0)
 
-        with self.assertWarns(PrivacyLeakWarning):
-            clf.fit(X, y)
+        self.assertIsNotNone(clf.fit(X, y))
 
     def test_sample_weight_warning(self):
         X = np.array(

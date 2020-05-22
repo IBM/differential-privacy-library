@@ -50,8 +50,8 @@ from numpy.core import umath as um
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric
-from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.validation import check_bounds
 
 _range = range
 _sum = sum
@@ -214,9 +214,10 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
         ranges = np.array(range)
 
     if not (ranges > 0).all():
-        raise ValueError("Ranges must be specified for each value returned by np.mean(), and must be non-negative")
-    if ranges.shape != actual_mean.shape:
-        raise ValueError("Shape of range must be same as shape of np.mean")
+        raise ValueError("Ranges must be non-negative")
+    if actual_mean.shape and ranges.shape != actual_mean.shape:
+        raise ValueError("Shape of range {} must be same as shape of np.mean {}".format(ranges.shape,
+                                                                                        actual_mean.shape))
 
     if isinstance(actual_mean, np.ndarray):
         dp_mean = np.zeros_like(actual_mean)
@@ -604,7 +605,7 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
     else:
         bounds = (np.array(bounds[0]), np.array(bounds[1]))
 
-    bounds = _check_bounds(bounds, actual_sum.shape if isinstance(actual_sum, np.ndarray) else 1)
+    bounds = check_bounds(bounds, actual_sum.shape if isinstance(actual_sum, np.ndarray) else 1)
     dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
 
     if isinstance(actual_sum, np.ndarray):
