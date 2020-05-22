@@ -21,7 +21,7 @@ class TestSum(TestCase):
         a = np.array([1, 2, 3])
         self.assertIsNotNone(sum(a, bounds=(1, 3)))
 
-    def test_no_range(self):
+    def test_no_bounds(self):
         a = np.array([1, 2, 3])
         with self.assertWarns(PrivacyLeakWarning):
             res = sum(a, epsilon=1)

@@ -53,7 +53,7 @@ from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools import mean
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
-from diffprivlib.validation import clip_to_norm
+from diffprivlib.validation import clip_to_norm, check_bounds
 
 
 # noinspection PyPep8Naming
@@ -104,9 +104,10 @@ class PCA(sk_pca.PCA):
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
-    range : array_like or float, optional
-        Range of each feature of the sample X, but only required when ``centered=False``.  Used to calculate the
-        differentially private mean of the sample.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     copy : bool, default: True
         If False, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected
@@ -187,14 +188,14 @@ class PCA(sk_pca.PCA):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, range=None, copy=True,
+    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, bounds=None, copy=True,
                  whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
         self.centered = centered
         self.epsilon = epsilon
         self.data_norm = data_norm
-        self.range = range
+        self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
@@ -207,16 +208,17 @@ class PCA(sk_pca.PCA):
         if self.centered:
             self.mean_ = np.zeros_like(np.mean(X, axis=0))
         else:
-            if self.range is None:
+            if self.bounds is None:
                 warnings.warn(
-                    "Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                    "Bounds parameter hasn't been specified, so falling back to determining range from the data.\n"
                     "This will result in additional privacy leakage. To ensure differential privacy with no "
                     "additional privacy loss, specify `range` for each valued returned by np.mean().",
                     PrivacyLeakWarning)
 
-                self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
+                self.bounds = (np.min(X, axis=0), np.min(X, axis=0))
 
-            self.mean_ = mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0, accountant=BudgetAccountant())
+            self.bounds = check_bounds(self.bounds, n_features)
+            self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())
 
         X -= self.mean_
 

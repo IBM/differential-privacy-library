@@ -79,9 +79,9 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, bounds_X=None, bounds_y=N
         X = clip_to_bounds(X, bounds_X)
         y = clip_to_bounds(y, bounds_y)
 
-        X_offset = mean(X, axis=0, range=bounds_X[1] - bounds_X[0], epsilon=epsilon, accountant=BudgetAccountant())
+        X_offset = mean(X, axis=0, bounds=bounds_X, epsilon=epsilon, accountant=BudgetAccountant())
         X -= X_offset
-        y_offset = mean(y, axis=0, range=bounds_y[1] - bounds_y[0], epsilon=epsilon, accountant=BudgetAccountant())
+        y_offset = mean(y, axis=0, bounds=bounds_y, epsilon=epsilon, accountant=BudgetAccountant())
         y = y - y_offset
     else:
         X_offset = np.zeros(X.shape[1], dtype=X.dtype)
@@ -119,13 +119,10 @@ class LinearRegression(sk_lr.LinearRegression):
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
-    bounds_X : tuple
-        Bounds of each feature of the training sample X of the form (min, max).  Its non-private equivalent is
-        (np.min(X, axis=0), np.max(X, axis=0)).
-
-        If not specified, the bounds is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
-        `bounds_X` should be selected independently of the data, i.e. with domain knowledge.
+    bounds_X:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     bounds_y : tuple
         Same as `bounds_X`, but for the training label set `y`.

@@ -41,10 +41,10 @@ class KMeans(sk_cluster.KMeans):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds : tuple, optional
-        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
-        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
-        :class:`.PrivacyLeakWarning`.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     n_clusters : int, default: 8
         The number of clusters to form as well as the number of centroids to generate.

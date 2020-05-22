@@ -43,7 +43,7 @@
 General utilities and tools for performing differentially private operations on data.
 """
 import warnings
-from numbers import Real, Integral
+from numbers import Integral
 import numpy as np
 from numpy.core import multiarray as mu
 from numpy.core import umath as um
@@ -53,17 +53,16 @@ from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.validation import check_bounds
 
-_range = range
-_sum = sum
+_sum_ = sum
 
 
-def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
     Returns the average of the array elements with differential privacy.  The average is taken over the flattened array
     by default, otherwise over the specified axis.  Noise is added using :class:`.Laplace` to satisfy differential
-    privacy, where sensitivity is calculated using `range`.  Users are advised to consult the documentation of
+    privacy, where sensitivity is calculated using `bounds`.  Users are advised to consult the documentation of
     :obj:`numpy.mean` for further details, as the behaviour of `mean` closely follows its Numpy variant.
 
     Parameters
@@ -74,8 +73,8 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned mean.  Same shape as np.mean(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the means are computed.  The default is to compute the mean of the flattened array.
@@ -113,17 +112,17 @@ def mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=n
     std, var, nanmean
 
     """
-    return _mean(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    return _mean(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
                  accountant=accountant, nan=False)
 
 
-def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def nanmean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
     Returns the average of the array elements with differential privacy.  The average is taken over the flattened array
     by default, otherwise over the specified axis.  Noise is added using :class:`.Laplace` to satisfy differential
-    privacy, where sensitivity is calculated using `range`.  Users are advised to consult the documentation of
+    privacy, where sensitivity is calculated using `bounds`.  Users are advised to consult the documentation of
     :obj:`numpy.mean` for further details, as the behaviour of `mean` closely follows its Numpy variant.
 
     For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
@@ -136,8 +135,8 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned mean.  Same shape as np.mean(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the means are computed.  The default is to compute the mean of the flattened array.
@@ -175,11 +174,11 @@ def nanmean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdim
     std, var, mean
 
     """
-    return _mean(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    return _mean(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
                  accountant=accountant, nan=True)
 
 
-def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
+def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
           nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
@@ -192,7 +191,7 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
         except TypeError:
             temp_axis = (axis,)
     else:
-        temp_axis = tuple(_range(len(a.shape)))
+        temp_axis = tuple(range(len(a.shape)))
 
     num_datapoints = 1
     for i in temp_axis:
@@ -200,31 +199,27 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
 
     _func = np.nanmean if nan else np.mean
     actual_mean = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    vector_out = (np.ndim(actual_mean) == 1)
 
-    if range is None:
-        warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                      "This will result in additional privacy leakage.  To ensure differential privacy with no "
-                      "additional privacy loss, specify `range` for each valued returned by np.mean().",
-                      PrivacyLeakWarning)
+    if bounds is None:
+        warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                      "result in additional privacy leakage. To ensure differential privacy and no additional "
+                      "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+        if np.ndim(actual_mean) <= 1:
+            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+        else:
+            bounds = (np.min(a), np.max(a))
 
-        ranges = np.maximum(np.ptp(a, axis=axis), 1e-5)
-    elif isinstance(range, Real):
-        ranges = np.ones_like(actual_mean) * range
-    else:
-        ranges = np.array(range)
-
-    if not (ranges > 0).all():
-        raise ValueError("Ranges must be non-negative")
-    if actual_mean.shape and ranges.shape != actual_mean.shape:
-        raise ValueError("Shape of range {} must be same as shape of np.mean {}".format(ranges.shape,
-                                                                                        actual_mean.shape))
+    lower, upper = check_bounds(bounds, actual_mean.shape[0] if vector_out else 1, dtype=dtype or float)
 
     if isinstance(actual_mean, np.ndarray):
         dp_mean = np.zeros_like(actual_mean)
         iterator = np.nditer(actual_mean, flags=['multi_index'])
 
         while not iterator.finished:
-            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(ranges[iterator.multi_index] / num_datapoints)
+            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
+                upper[0] - lower[0]
+            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / num_datapoints)
 
             dp_mean[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -233,23 +228,23 @@ def _mean(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, keepdims=
 
         return dp_mean
 
-    range = np.ravel(ranges)[0]
-    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(range / num_datapoints)
+    local_diam = upper[0] - lower[0]
+    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / num_datapoints)
 
     accountant.spend(epsilon, 0)
 
     return dp_mech.randomise(actual_mean)
 
 
-def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis.
 
     Returns the variance of the array elements, a measure of the spread of a distribution, with differential privacy.
     The variance is computer for the flattened array by default, otherwise over the specified axis.  Noise is added
-    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`.
-    Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var`
-    closely follows its Numpy variant.
+    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using
+    `bounds`.  Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour
+    of `var` closely follows its Numpy variant.
 
     Parameters
     ----------
@@ -259,8 +254,8 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned var.  Same shape as np.var(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the variance is computed.  The default is to compute the variance of the flattened
@@ -303,19 +298,19 @@ def var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     std , mean, nanvar
 
     """
-    return _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=False)
 
 
-def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanvar(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
     Returns the variance of the array elements, a measure of the spread of a distribution, with differential privacy.
     The variance is computer for the flattened array by default, otherwise over the specified axis.  Noise is added
-    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using `range`.
-    Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var`
-    closely follows its Numpy variant.
+    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using
+    `bounds`.  Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour
+    of `var` closely follows its Numpy variant.
 
     For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
 
@@ -327,8 +322,8 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned var.  Same shape as np.var(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the variance is computed.  The default is to compute the variance of the flattened
@@ -371,11 +366,11 @@ def nanvar(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     std , mean, var
 
     """
-    return _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=True)
 
 
-def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
          nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
@@ -388,7 +383,7 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
         except TypeError:
             temp_axis = (axis,)
     else:
-        temp_axis = tuple(_range(len(a.shape)))
+        temp_axis = tuple(range(len(a.shape)))
 
     num_datapoints = 1
     for i in temp_axis:
@@ -396,31 +391,28 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
 
     _func = np.nanvar if nan else np.var
     actual_var = _func(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
+    vector_out = (np.ndim(actual_var) == 1)
 
-    if range is None:
-        warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                      "This will result in additional privacy leakage. To ensure differential privacy with no "
-                      "additional privacy loss, specify `range` for each valued returned by np.mean().",
-                      PrivacyLeakWarning)
+    if bounds is None:
+        warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                      "result in additional privacy leakage. To ensure differential privacy and no additional "
+                      "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+        if np.ndim(actual_var) <= 1:
+            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+        else:
+            bounds = (np.min(a), np.max(a))
 
-        ranges = np.maximum(np.ptp(a, axis=axis), 1e-5)
-    elif isinstance(range, Real):
-        ranges = np.ones_like(actual_var) * range
-    else:
-        ranges = np.array(range)
-
-    if not (ranges > 0).all():
-        raise ValueError("Ranges must be specified for each value returned by np.var(), and must be non-negative")
-    if ranges.shape != actual_var.shape:
-        raise ValueError("Shape of range must be same as shape of np.var()")
+    lower, upper = check_bounds(bounds, actual_var.shape[0] if vector_out else 1, dtype=dtype or float)
 
     if isinstance(actual_var, np.ndarray):
         dp_var = np.zeros_like(actual_var)
         iterator = np.nditer(actual_var, flags=['multi_index'])
 
         while not iterator.finished:
+            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
+                upper[0] - lower[0]
             dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")) \
-                .set_sensitivity((ranges[iterator.multi_index] / num_datapoints) ** 2 * (num_datapoints - 1))
+                .set_sensitivity((local_diam / num_datapoints) ** 2 * (num_datapoints - 1))
 
             dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -429,23 +421,23 @@ def _var(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
 
         return dp_var
 
-    range = np.ravel(ranges)[0]
+    local_diam = upper[0] - lower[0]
     dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")). \
-        set_sensitivity(range ** 2 / num_datapoints)
+        set_sensitivity(local_diam ** 2 / num_datapoints)
 
     accountant.spend(epsilon, 0)
 
     return dp_mech.randomise(actual_var)
 
 
-def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis.
 
     Returns the standard deviation of the array elements, a measure of the spread of a distribution, with differential
     privacy.  The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
     Noise is added using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is
-    calculated using `range`.  Users are advised to consult the documentation of :obj:`numpy.std` for further details,
+    calculated using `bounds`.  Users are advised to consult the documentation of :obj:`numpy.std` for further details,
     as the behaviour of `std` closely follows its Numpy variant.
 
     Parameters
@@ -456,8 +448,8 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned var.  Same shape as np.var(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the standard deviation is computed.  The default is to compute the standard deviation
@@ -500,18 +492,18 @@ def std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, kee
     var, mean, nanstd
 
     """
-    return _std(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _std(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=False)
 
 
-def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanstd(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
     Returns the standard deviation of the array elements, a measure of the spread of a distribution, with differential
     privacy.  The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
     Noise is added using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is
-    calculated using `range`.  Users are advised to consult the documentation of :obj:`numpy.std` for further details,
+    calculated using `bounds`.  Users are advised to consult the documentation of :obj:`numpy.std` for further details,
     as the behaviour of `std` closely follows its Numpy variant.
 
     For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
@@ -524,8 +516,8 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    range : array_like, optional
-        Range of each dimension of the returned var.  Same shape as np.var(a)
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
 
     axis : int or tuple of ints, optional
         Axis or axes along which the standard deviation is computed.  The default is to compute the standard deviation
@@ -568,13 +560,13 @@ def nanstd(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, 
     var, mean, std
 
     """
-    return _std(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _std(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=True)
 
 
-def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+def _std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
          nan=False):
-    ret = _var(a, epsilon=epsilon, range=range, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    ret = _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                accountant=accountant, nan=nan)
 
     if isinstance(ret, mu.ndarray):
@@ -585,52 +577,6 @@ def _std(a, epsilon=1.0, range=None, axis=None, dtype=None, out=None, ddof=0, ke
         ret = um.sqrt(ret)
 
     return ret
-
-
-def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
-         nan=False):
-    accountant = BudgetAccountant.load_default(accountant)
-    accountant.check(epsilon, 0)
-
-    _func = np.nansum if nan else np.sum
-    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-
-    if bounds is None:
-        warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
-                      "result in additional privacy leakage. To ensure differential privacy and no additional "
-                      "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(actual_sum) <= 1:
-            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
-        else:
-            bounds = (np.min(a), np.max(a))
-    elif isinstance(bounds[0], Real) and isinstance(bounds[1], Real):
-        bounds = (np.ones_like(actual_sum) * bounds[0], np.ones_like(actual_sum) * bounds[1])
-    else:
-        bounds = (np.array(bounds[0]), np.array(bounds[1]))
-
-    bounds = check_bounds(bounds, actual_sum.shape[0] if np.ndim(actual_sum) == 1 else 1, dtype=dtype or float)
-    dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
-
-    if isinstance(actual_sum, np.ndarray):
-        dp_sum = np.zeros_like(actual_sum, dtype=dtype)
-        iterator = np.nditer(actual_sum, flags=['multi_index'])
-
-        while not iterator.finished:
-            idx = iterator.multi_index
-
-            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][idx] - bounds[0][idx])
-            dp_sum[idx] = mech.randomise(actual_sum[idx])
-            iterator.iternext()
-
-        accountant.spend(epsilon, 0)
-
-        return dp_sum
-
-    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][0] - bounds[0][0])
-
-    accountant.spend(epsilon, 0)
-
-    return mech.randomise(actual_sum)
 
 
 def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
@@ -645,8 +591,7 @@ def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out
         Privacy parameter :math:`\epsilon`.
 
     bounds : tuple, optional
-        Tuple of bounds of each dimension of the returned sum, of the form (min, max).  Min and max must be either
-        numeric or array-like with the same shape as the resulting sum.
+        Bounds of the values of the array, of the form (min, max).
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -705,8 +650,7 @@ def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, 
         Privacy parameter :math:`\epsilon`.
 
     bounds : tuple, optional
-        Tuple of bounds of each dimension of the returned sum, of the form (min, max).  Min and max must be either
-        numeric or array-like with the same shape as the resulting sum.
+        Bounds of the values of the array, of the form (min, max).
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -751,3 +695,45 @@ def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, 
     """
     return _sum(a, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
                 keepdims=keepdims, nan=True)
+
+
+def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
+         nan=False):
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
+    _func = np.nansum if nan else np.sum
+    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
+    if bounds is None:
+        warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                      "result in additional privacy leakage. To ensure differential privacy and no additional "
+                      "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+        if np.ndim(actual_sum) <= 1:
+            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+        else:
+            bounds = (np.min(a), np.max(a))
+
+    bounds = check_bounds(bounds, actual_sum.shape[0] if np.ndim(actual_sum) == 1 else 1, dtype=dtype or float)
+    dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
+
+    if isinstance(actual_sum, np.ndarray):
+        dp_sum = np.zeros_like(actual_sum, dtype=dtype)
+        iterator = np.nditer(actual_sum, flags=['multi_index'])
+
+        while not iterator.finished:
+            idx = iterator.multi_index
+
+            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][idx] - bounds[0][idx])
+            dp_sum[idx] = mech.randomise(actual_sum[idx])
+            iterator.iternext()
+
+        accountant.spend(epsilon, 0)
+
+        return dp_sum
+
+    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][0] - bounds[0][0])
+
+    accountant.spend(epsilon, 0)
+
+    return mech.randomise(actual_sum)

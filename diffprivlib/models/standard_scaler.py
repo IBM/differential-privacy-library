@@ -59,12 +59,12 @@ from diffprivlib.validation import clip_to_bounds, check_bounds
 range_ = range
 
 
-def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_sample_count):
+def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last_sample_count):
     # old = stats until now
     # new = the current increment
     # updated = the aggregated stats
     last_sum = last_mean * last_sample_count
-    new_mean = nanmean(X, epsilon=epsilon, axis=0, range=range, accountant=BudgetAccountant())
+    new_mean = nanmean(X, epsilon=epsilon, axis=0, bounds=bounds, accountant=BudgetAccountant())
     new_sample_count = np.sum(~np.isnan(X), axis=0)
     new_sum = new_mean * new_sample_count
     updated_sample_count = last_sample_count + new_sample_count
@@ -74,7 +74,7 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
     if last_variance is None:
         updated_variance = None
     else:
-        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, range=range,
+        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, bounds=bounds,
                                            accountant=BudgetAccountant()) * new_sample_count
         last_unnormalized_variance = last_variance * last_sample_count
 
@@ -119,9 +119,9 @@ class StandardScaler(sk_pp.StandardScaler):
         when `with_mean=False`, as it is used in the calculation of the variance.
 
     bounds:  tuple, optional
-        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
-        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
-        :class:`.PrivacyLeakWarning`.
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering 
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed 
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     copy : boolean, default: True
         If False, try to avoid a copy and do inplace scaling instead.  This is not guaranteed to always work inplace;
@@ -236,9 +236,9 @@ class StandardScaler(sk_pp.StandardScaler):
             self.n_samples_seen_ += X.shape[0] - np.isnan(X).sum(axis=0)
         else:
             _range = self.bounds[1] - self.bounds[0]
-            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(X, epsilon_0, _range,
-                                                                                    self.mean_, self.var_,
-                                                                                    self.n_samples_seen_)
+            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(
+                X, epsilon_0, self.bounds, self.mean_, self.var_, self.n_samples_seen_
+            )
 
         # for backward-compatibility, reduce n_samples_seen_ to an integer
         # if the number of samples is the same for each feature (i.e. no

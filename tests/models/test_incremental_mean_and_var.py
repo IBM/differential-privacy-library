@@ -11,12 +11,12 @@ class TestIncrementalMeanAndVar(TestCase):
     def test_no_range(self):
         X = np.random.rand(5, 10)
         with self.assertWarns(PrivacyLeakWarning):
-            _incremental_mean_and_var(X, epsilon=float("inf"), range=None, last_mean=0., last_variance=None,
+            _incremental_mean_and_var(X, epsilon=float("inf"), bounds=None, last_mean=0., last_variance=None,
                                       last_sample_count=0)
 
     def test_inf_epsilon(self):
         X = np.random.rand(5, 10)
-        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), range=1, last_mean=0.,
+        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), bounds=(0, 1), last_mean=0.,
                                                               last_variance=None,
                                                               last_sample_count=np.zeros(X.shape[1], dtype=np.int64))
         sk_mean, sk_var, sk_count = sk_incremental_mean_and_var(X, last_mean=0., last_variance=None,
@@ -27,7 +27,7 @@ class TestIncrementalMeanAndVar(TestCase):
         self.assertIsNone(sk_var)
         self.assertTrue((dp_count == sk_count).all())
 
-        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), range=1, last_mean=0.,
+        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), bounds=(0, 1), last_mean=0.,
                                                               last_variance=0.,
                                                               last_sample_count=np.zeros(X.shape[1], dtype=np.int64))
         sk_mean, sk_var, sk_count = sk_incremental_mean_and_var(X, last_mean=0., last_variance=0.,
@@ -39,17 +39,17 @@ class TestIncrementalMeanAndVar(TestCase):
 
     def test_increment_inf_epsilon(self):
         X = np.ones((5, 1))
-        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), range=1, last_mean=0.,
+        dp_mean, dp_var, dp_count = _incremental_mean_and_var(X, epsilon=float("inf"), bounds=(0, 1), last_mean=0.,
                                                               last_variance=None, last_sample_count=5)
         self.assertAlmostEqual(dp_mean, 0.5, places=5)
         self.assertEqual(dp_count, 10)
 
     def test_duplicate_dataset(self):
         X = np.random.rand(10, 5)
-        mean1, var1, count1 = _incremental_mean_and_var(X, epsilon=float("inf"), range=1, last_mean=0.,
+        mean1, var1, count1 = _incremental_mean_and_var(X, epsilon=float("inf"), bounds=(0, 1), last_mean=0.,
                                                         last_variance=0., last_sample_count=0)
 
-        mean2, var2, count2 = _incremental_mean_and_var(X, epsilon=float("inf"), range=1, last_mean=mean1,
+        mean2, var2, count2 = _incremental_mean_and_var(X, epsilon=float("inf"), bounds=(0, 1), last_mean=mean1,
                                                         last_variance=var1, last_sample_count=count1)
 
         self.assertTrue(np.allclose(mean1, mean2))
@@ -59,10 +59,10 @@ class TestIncrementalMeanAndVar(TestCase):
 
     def test_different_results(self):
         X = np.random.rand(10, 5)
-        mean1, var1, count1 = _incremental_mean_and_var(X, epsilon=1, range=1, last_mean=0., last_variance=0.,
+        mean1, var1, count1 = _incremental_mean_and_var(X, epsilon=1, bounds=(0, 1), last_mean=0., last_variance=0.,
                                                         last_sample_count=0)
 
-        mean2, var2, count2 = _incremental_mean_and_var(X, epsilon=1, range=1, last_mean=0, last_variance=0,
+        mean2, var2, count2 = _incremental_mean_and_var(X, epsilon=1, bounds=(0, 1), last_mean=0, last_variance=0,
                                                         last_sample_count=0)
 
         self.assertFalse(np.allclose(mean1, mean2, atol=1e-2))

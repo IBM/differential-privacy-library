@@ -78,18 +78,18 @@ class BudgetAccountant:
     >>> from numpy.random import random
     >>> X = random(100)
     >>> acc = dp.BudgetAccountant(epsilon=1.5, delta=0)
-    >>> dp.tools.mean(X, range=1, accountant=acc)
+    >>> dp.tools.mean(X, bounds=(0, 1), accountant=acc)
     0.4547006207923884
     >>> acc.total()
     (epsilon=1.0, delta=0)
-    >>> dp.tools.std(X, range=1, epsilon=0.25, accountant=acc)
+    >>> dp.tools.std(X, bounds=(0, 1), epsilon=0.25, accountant=acc)
     0.2630216611181259
     >>> acc.total()
     (epsilon=1.25, delta=0)
 
     >>> acc2 = dp.BudgetAccountant() # infinite budget
-    >>> first_half = dp.tools.mean(X[:50], epsilon=0.25, range=1, accountant=acc2)
-    >>> last_half = dp.tools.mean(X[50:], epsilon=0.25, range=1, accountant=acc2)
+    >>> first_half = dp.tools.mean(X[:50], epsilon=0.25, bounds=(0, 1), accountant=acc2)
+    >>> last_half = dp.tools.mean(X[50:], epsilon=0.25, bounds=(0, 1), accountant=acc2)
     >>> acc2.total()
     (epsilon=0.5, delta=0)
     >>> acc2.remaining()
@@ -97,7 +97,7 @@ class BudgetAccountant:
 
     >>> acc3 = dp.BudgetAccountant(slack=1e-3)
     >>> for i in range(20):
-    ...     dp.tools.mean(X, epsilon=0.05, range=1, accountant=acc3)
+    ...     dp.tools.mean(X, epsilon=0.05, bounds=(0, 1), accountant=acc3)
     >>> acc3.total() # Slack has reduced the epsilon spend by almost 25%
     (epsilon=0.7613352285668463, delta=0.001)
 
@@ -112,12 +112,12 @@ class BudgetAccountant:
     >>> clf = dp.models.PCA(1, centered=True, data_norm=1.4)
     >>> clf.fit(Y)
     PCA(accountant=BudgetAccountant(spent_budget=[(1.0, 0)]), centered=True, copy=True, data_norm=1.4, epsilon=1.0,
-    n_components=1, random_state=None, range=None, whiten=False)
+    n_components=1, random_state=None, bounds=None, whiten=False)
     >>> acc4.total()
     (epsilon=1.0, delta=0)
 
     >>> with dp.BudgetAccountant() as acc5:
-    ...     dp.tools.mean(Y, range=1, epsilon=1/3)
+    ...     dp.tools.mean(Y, bounds=(0, 1), epsilon=1/3)
     >>> acc5.total()
     (epsilon=0.3333333333333333, delta=0)
 

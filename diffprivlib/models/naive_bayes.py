@@ -42,10 +42,10 @@ class GaussianNB(sk_nb.GaussianNB):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon` for the model.
 
-    bounds : tuple, optional
-        Bounds of the data, provided as a tuple of (min, max), with one entry in each of min and max per dimension.  If
-        not provided, the bounds are computed on the data when ``.fit()`` is first called, resulting in a
-        :class:`.PrivacyLeakWarning`.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     priors : array-like, shape (n_classes,)
         Prior probabilities of the classes.  If specified the priors are not adjusted according to the data.

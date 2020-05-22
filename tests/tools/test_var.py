@@ -19,19 +19,19 @@ class TestVar(TestCase):
 
     def test_no_epsilon(self):
         a = np.array([1, 2, 3])
-        self.assertIsNotNone(var(a, range=1))
+        self.assertIsNotNone(var(a, bounds=(0, 1)))
 
-    def test_no_range(self):
+    def test_no_bounds(self):
         a = np.array([1, 2, 3])
         with self.assertWarns(PrivacyLeakWarning):
             var(a, epsilon=1)
 
-    def test_negative_range(self):
+    def test_bad_bounds(self):
         a = np.array([1, 2, 3])
         with self.assertRaises(ValueError):
-            var(a, epsilon=1, range=-1)
+            var(a, epsilon=1, bounds=(0, -1))
 
-    def test_missing_range(self):
+    def test_missing_bounds(self):
         a = np.array([1, 2, 3])
         with self.assertWarns(PrivacyLeakWarning):
             res = var(a, 1, None)
@@ -40,14 +40,14 @@ class TestVar(TestCase):
     def test_large_epsilon(self):
         a = np.random.random(1000)
         res = float(np.var(a))
-        res_dp = var(a, epsilon=1, range=1)
+        res_dp = var(a, epsilon=1, bounds=(0, 1))
 
         self.assertAlmostEqual(res, res_dp, delta=0.01)
 
     def test_large_epsilon_axis(self):
         a = np.random.random((1000, 5))
         res = np.var(a, axis=0)
-        res_dp = var(a, epsilon=1, range=1, axis=0)
+        res_dp = var(a, epsilon=1, bounds=(0, 1), axis=0)
 
         for i in range(res.shape[0]):
             self.assertAlmostEqual(res[i], res_dp[i], delta=0.01)
@@ -56,7 +56,7 @@ class TestVar(TestCase):
         a = np.random.random((5, 5))
         a[2, 2] = np.nan
 
-        res = var(a, range=1)
+        res = var(a, bounds=(0, 1))
         self.assertTrue(np.isnan(res))
 
     def test_accountant(self):
@@ -64,9 +64,9 @@ class TestVar(TestCase):
         acc = BudgetAccountant(1.5, 0)
 
         a = np.random.random((1000, 5))
-        var(a, epsilon=1, range=1, accountant=acc)
+        var(a, epsilon=1, bounds=(0, 1), accountant=acc)
         self.assertEqual((1.0, 0), acc.total())
 
         with acc:
             with self.assertRaises(BudgetError):
-                var(a, epsilon=1, range=1)
+                var(a, epsilon=1, bounds=(0, 1))
