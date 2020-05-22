@@ -599,13 +599,16 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+        if np.ndim(actual_sum) <= 1:
+            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+        else:
+            bounds = (np.min(a), np.max(a))
     elif isinstance(bounds[0], Real) and isinstance(bounds[1], Real):
         bounds = (np.ones_like(actual_sum) * bounds[0], np.ones_like(actual_sum) * bounds[1])
     else:
         bounds = (np.array(bounds[0]), np.array(bounds[1]))
 
-    bounds = check_bounds(bounds, actual_sum.shape if isinstance(actual_sum, np.ndarray) else 1)
+    bounds = check_bounds(bounds, actual_sum.shape[0] if np.ndim(actual_sum) == 1 else 1, dtype=dtype or float)
     dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
 
     if isinstance(actual_sum, np.ndarray):

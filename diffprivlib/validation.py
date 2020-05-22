@@ -55,7 +55,7 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
         raise ValueError("Epsilon and Delta cannot both be zero")
 
 
-def check_bounds(bounds, shape=1, min_separation=1e-5):
+def check_bounds(bounds, shape=0, min_separation=1e-5, dtype=float):
     """Input validation for the ``bounds`` parameter.
 
     Checks that ``bounds`` is composed of a list of tuples of the form (lower, upper), where lower <= upper and both
@@ -65,14 +65,17 @@ def check_bounds(bounds, shape=1, min_separation=1e-5):
     Parameters
     ----------
     bounds : tuple or None
-        Tuple of bounds of the form (min, max).
+        Tuple of bounds of the form (min, max). `min` and `max` can either be scalars or 1-dimensional arrays.
 
-    shape : tuple or int, default: 1
+    shape : int, default: 0
         Number of dimensions to be expected in ``bounds``.
 
     min_separation : float, default: 1e-5
         The minimum separation between `lower` and `upper` of each dimension.  This separation is enforced if not
         already satisfied.
+
+    dtype : data-type, default: float
+        Data type of the returned bounds.
 
     Returns
     -------
@@ -84,29 +87,30 @@ def check_bounds(bounds, shape=1, min_separation=1e-5):
 
     if not isinstance(bounds, tuple):
         raise TypeError("Bounds must be specified as a tuple of (min, max), got {}.".format(type(bounds)))
-
-    if isinstance(shape, Integral):
-        shape = (shape, )
+    if not isinstance(shape, Integral):
+        raise TypeError("shape parameter must be integer-valued, got {}.".format(type(shape)))
 
     lower, upper = bounds
 
-    if isinstance(lower, Real) and isinstance(upper, Real):
-        lower = np.ones(shape=shape, dtype=type(lower)) * lower
-        upper = np.ones(shape=shape, dtype=type(upper)) * upper
+    if np.asarray(lower).size == 1 or np.asarray(upper).size == 1:
+        lower = np.ravel(lower).astype(dtype)
+        upper = np.ravel(upper).astype(dtype)
     else:
-        lower = np.asarray(lower)
-        upper = np.asarray(upper)
+        lower = np.asarray(lower, dtype=dtype)
+        upper = np.asarray(upper, dtype=dtype)
 
-        if lower.shape != shape or upper.shape != shape:
-            raise ValueError("Shape of min/max bounds must match input data {}, got min: {}, max: {}.".format(
-                shape, lower.shape, upper.shape
-            ))
+    if lower.shape != upper.shape:
+        raise ValueError("lower and upper bounds must be the same shape array")
+    if lower.ndim > 1:
+        raise ValueError("lower and upper bounds must be scalar or a 1-dimensional array")
+    if lower.size != shape and lower.size != 1:
+        raise ValueError("lower and upper bounds must have {} element(s), got {}.".format(shape or 1, lower.size))
 
-    iterator = np.nditer(lower, flags=['multi_index'])
+    n_bounds = lower.shape[0]
 
-    while not iterator.finished:
-        _lower = lower[iterator.multi_index]
-        _upper = upper[iterator.multi_index]
+    for i in range(n_bounds):
+        _lower = lower[i]
+        _upper = upper[i]
 
         if not isinstance(_lower, Real) or not isinstance(_upper, Real):
             raise TypeError("Each bound must be numeric, got {} ({}) and {} ({}).".format(_lower, type(_lower),
@@ -117,11 +121,16 @@ def check_bounds(bounds, shape=1, min_separation=1e-5):
                 lower, upper))
 
         if _upper - _lower < min_separation:
-            mid = (upper + lower) / 2
-            lower[iterator.multi_index] = mid - min_separation / 2
-            upper[iterator.multi_index] = mid + min_separation / 2
+            mid = (_upper + _lower) / 2
+            lower[i] = mid - min_separation / 2
+            upper[i] = mid + min_separation / 2
 
-        iterator.iternext()
+    if shape == 0:
+        return lower.item(), upper.item()
+
+    if n_bounds == 1:
+        lower = np.ones(shape, dtype=dtype) * lower.item()
+        upper = np.ones(shape, dtype=dtype) * upper.item()
 
     return lower, upper
 
@@ -183,7 +192,7 @@ def clip_to_bounds(array, bounds):
         raise ValueError("Bounds must be of the same shape, got {} and {}.".format(np.shape(bounds[0]),
                                                                                    np.shape(bounds[1])))
 
-    lower, upper = check_bounds(bounds, np.shape(bounds[0]) or 1, min_separation=0)
+    lower, upper = check_bounds(bounds, np.size(bounds[0]), min_separation=0)
     clipped_array = array.copy()
 
     if np.allclose(lower, np.min(lower)) and np.allclose(upper, np.max(upper)):

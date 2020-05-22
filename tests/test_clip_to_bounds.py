@@ -14,7 +14,7 @@ class TestClipToBounds(TestCase):
             clip_to_bounds(np.ones((5, 1)), [1, 2])
 
         with self.assertRaises(Exception):
-            clip_to_bounds(np.ones((5, 1)), ("1", "2"))
+            clip_to_bounds(np.ones((5, 1)), ("One", "Two"))
 
     def test_simple(self):
         X = np.ones(shape=(5, 1))

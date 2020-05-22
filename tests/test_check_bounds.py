@@ -1,3 +1,4 @@
+from numbers import Real
 from unittest import TestCase
 
 import numpy as np
@@ -5,7 +6,7 @@ import numpy as np
 from diffprivlib.validation import check_bounds
 
 
-class TestGaussianNB(TestCase):
+class TestCheckBounds(TestCase):
     def test_none(self):
         self.assertIsNone(check_bounds(None))
 
@@ -30,9 +31,22 @@ class TestGaussianNB(TestCase):
         self.assertTrue(np.all(bounds[1] == bounds2[1]))
 
     def test_array_output(self):
-        bounds = check_bounds((1, 2))
+        bounds = check_bounds(([1, 1], [2, 2]), shape=2)
         self.assertIsInstance(bounds[0], np.ndarray)
         self.assertIsInstance(bounds[1], np.ndarray)
+
+    def test_scalar_output(self):
+        bounds = check_bounds((1, 2), shape=0)
+        self.assertIsInstance(bounds[0], Real)
+        self.assertIsInstance(bounds[1], Real)
+
+        bounds = check_bounds((1, 2), shape=0, dtype=int)
+        self.assertIsInstance(bounds[0], int)
+        self.assertIsInstance(bounds[1], int)
+
+        bounds = check_bounds((1, 2), shape=0, dtype=float)
+        self.assertIsInstance(bounds[0], float)
+        self.assertIsInstance(bounds[1], float)
 
     def test_wrong_dims(self):
         with self.assertRaises(ValueError):
@@ -44,7 +58,7 @@ class TestGaussianNB(TestCase):
 
     def test_non_numeric(self):
         with self.assertRaises(Exception):
-            check_bounds(("1", "2"))
+            check_bounds(("One", "Two"))
 
     def test_min_separation(self):
         bounds = check_bounds((1, 1), min_separation=2)
