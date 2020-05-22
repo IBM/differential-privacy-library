@@ -198,19 +198,22 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         num_datapoints *= a.shape[i]
 
     _func = np.nanmean if nan else np.mean
-    actual_mean = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
-    vector_out = (np.ndim(actual_mean) == 1)
+    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    vector_out = (np.ndim(output_form) == 1)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(actual_mean) <= 1:
+        if np.ndim(output_form) <= 1:
             bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
         else:
             bounds = (np.min(a), np.max(a))
 
-    lower, upper = check_bounds(bounds, actual_mean.shape[0] if vector_out else 1, dtype=dtype or float)
+    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
+    a = np.clip(a, lower, upper)
+
+    actual_mean = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     if isinstance(actual_mean, np.ndarray):
         dp_mean = np.zeros_like(actual_mean)
@@ -390,19 +393,22 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
         num_datapoints *= a.shape[i]
 
     _func = np.nanvar if nan else np.var
-    actual_var = _func(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
-    vector_out = (np.ndim(actual_var) == 1)
+    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    vector_out = (np.ndim(output_form) == 1)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(actual_var) <= 1:
+        if np.ndim(output_form) <= 1:
             bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
         else:
             bounds = (np.min(a), np.max(a))
 
-    lower, upper = check_bounds(bounds, actual_var.shape[0] if vector_out else 1, dtype=dtype or float)
+    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
+    a = np.clip(a, lower, upper)
+
+    actual_var = _func(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
 
     if isinstance(actual_var, np.ndarray):
         dp_var = np.zeros_like(actual_var)
@@ -703,18 +709,23 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
     accountant.check(epsilon, 0)
 
     _func = np.nansum if nan else np.sum
-    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    vector_out = (np.ndim(output_form) == 1)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(actual_sum) <= 1:
+        if np.ndim(output_form) <= 1:
             bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
         else:
             bounds = (np.min(a), np.max(a))
 
-    bounds = check_bounds(bounds, actual_sum.shape[0] if np.ndim(actual_sum) == 1 else 1, dtype=dtype or float)
+    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
+    a = np.clip(a, lower, upper)
+
+    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+
     dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
 
     if isinstance(actual_sum, np.ndarray):
@@ -722,9 +733,11 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
         iterator = np.nditer(actual_sum, flags=['multi_index'])
 
         while not iterator.finished:
+            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
+                upper[0] - lower[0]
             idx = iterator.multi_index
 
-            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][idx] - bounds[0][idx])
+            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam)
             dp_sum[idx] = mech.randomise(actual_sum[idx])
             iterator.iternext()
 
@@ -732,7 +745,8 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
 
         return dp_sum
 
-    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(bounds[1][0] - bounds[0][0])
+    local_diam = upper[0] - lower[0]
+    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam)
 
     accountant.spend(epsilon, 0)
 
