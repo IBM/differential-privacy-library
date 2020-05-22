@@ -95,6 +95,14 @@ class TestPCA(TestCase):
 
             self.assertAlmostEqual(clf.score(X), sk_clf.score(X), places=4)
 
+    def test_mle_components(self):
+        X = np.random.randn(25000, 21)
+        X -= np.mean(X, axis=0)
+        X /= np.linalg.norm(X, axis=1).max()
+
+        clf = PCA("mle", epsilon=5, centered=True, data_norm=1)
+        self.assertIsNotNone(clf.fit(X))
+
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn import datasets
