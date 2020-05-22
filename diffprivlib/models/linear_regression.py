@@ -73,20 +73,9 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, bounds_X=None, bounds_y=N
     X_scale = np.ones(X.shape[1], dtype=X.dtype)
 
     if fit_intercept:
-        if bounds_X is None or bounds_y is None:
-            warnings.warn("Bounds parameters haven't been specified, so falling back to determining bounds from the "
-                          "data.\n"
-                          "This will result in additional privacy leakage. To ensure differential privacy with no "
-                          "additional privacy loss, specify `bounds_X` and `bounds_y`.",
-                          PrivacyLeakWarning)
-
-            if bounds_X is None:
-                bounds_X = (np.min(X, axis=0), np.max(X, axis=0))
-            if bounds_y is None:
-                bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
-
         bounds_X = check_bounds(bounds_X, X.shape[1])
         bounds_y = check_bounds(bounds_y, y.shape[1] if y.ndim > 1 else 1)
+
         X = clip_to_bounds(X, bounds_X)
         y = clip_to_bounds(y, bounds_y)
 
@@ -213,6 +202,23 @@ class LinearRegression(sk_lr.LinearRegression):
             warn_unused_args("sample_weight")
 
         X, y = check_X_y(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
+
+        if self.fit_intercept:
+            if self.bounds_X is None or self.bounds_y is None:
+                warnings.warn(
+                    "Bounds parameters haven't been specified, so falling back to determining bounds from the "
+                    "data.\n"
+                    "This will result in additional privacy leakage. To ensure differential privacy with no "
+                    "additional privacy loss, specify `bounds_X` and `bounds_y`.",
+                    PrivacyLeakWarning)
+
+                if self.bounds_X is None:
+                    self.bounds_X = (np.min(X, axis=0), np.max(X, axis=0))
+                if self.bounds_y is None:
+                    self.bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
+
+            self.bounds_X = check_bounds(self.bounds_X, X.shape[1])
+            self.bounds_y = check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
 
         n_features = X.shape[1]
         epsilon_intercept_scale = 1 / (n_features + 1) if self.fit_intercept else 0
