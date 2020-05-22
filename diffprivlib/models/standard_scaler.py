@@ -54,7 +54,7 @@ from sklearn.utils.validation import FLOAT_DTYPES
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
-from diffprivlib.validation import clip_to_bounds
+from diffprivlib.validation import clip_to_bounds, check_bounds
 
 range_ = range
 
@@ -208,6 +208,7 @@ class StandardScaler(sk_pp.StandardScaler):
                           PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
+        self.bounds = check_bounds(self.bounds, X.shape[1])
         X = clip_to_bounds(X, self.bounds)
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
