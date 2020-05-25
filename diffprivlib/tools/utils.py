@@ -183,23 +183,10 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    if isinstance(axis, tuple):
-        temp_axis = axis
-    elif axis is not None:
-        try:
-            temp_axis = tuple(axis)
-        except TypeError:
-            temp_axis = (axis,)
-    else:
-        temp_axis = tuple(range(np.ndim(a)))
-
-    num_datapoints = 1
-    for i in temp_axis:
-        num_datapoints *= np.shape(a)[i]
-
     _func = np.nanmean if nan else np.mean
-    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
+    n_datapoints = np.sum(np.ones_like(a), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -222,7 +209,7 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         while not iterator.finished:
             local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
                 upper[0] - lower[0]
-            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / num_datapoints)
+            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints)
 
             dp_mean[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -232,7 +219,7 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         return dp_mean
 
     local_diam = upper[0] - lower[0]
-    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / num_datapoints)
+    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints)
 
     accountant.spend(epsilon, 0)
 
@@ -378,23 +365,10 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    if isinstance(axis, tuple):
-        temp_axis = axis
-    elif axis is not None:
-        try:
-            temp_axis = tuple(axis)
-        except TypeError:
-            temp_axis = (axis,)
-    else:
-        temp_axis = tuple(range(np.ndim(a)))
-
-    num_datapoints = 1
-    for i in temp_axis:
-        num_datapoints *= np.shape(a)[i]
-
     _func = np.nanvar if nan else np.var
-    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
+    n_datapoints = np.sum(np.ones_like(a), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -418,7 +392,7 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
             local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
                 upper[0] - lower[0]
             dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")) \
-                .set_sensitivity((local_diam / num_datapoints) ** 2 * (num_datapoints - 1))
+                .set_sensitivity((local_diam / n_datapoints) ** 2 * (n_datapoints - 1))
 
             dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
             iterator.iternext()
@@ -429,7 +403,7 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
 
     local_diam = upper[0] - lower[0]
     dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")). \
-        set_sensitivity(local_diam ** 2 / num_datapoints)
+        set_sensitivity(local_diam ** 2 / n_datapoints)
 
     accountant.spend(epsilon, 0)
 
@@ -709,7 +683,7 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
     accountant.check(epsilon, 0)
 
     _func = np.nansum if nan else np.sum
-    output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
 
     if bounds is None:
