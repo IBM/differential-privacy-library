@@ -54,6 +54,10 @@ class TestNanStd(TestCase):
         for i in range(res.shape[0]):
             self.assertAlmostEqual(res[i], res_dp[i], delta=0.01)
 
+    def test_array_like(self):
+        self.assertIsNotNone(nanstd([1, 2, 3], bounds=(1, 3)))
+        self.assertIsNotNone(nanstd((1, 2, 3), bounds=(1, 3)))
+
     def test_nan(self):
         a = np.random.random((5, 5))
         a[2, 2] = np.nan

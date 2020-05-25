@@ -191,11 +191,11 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         except TypeError:
             temp_axis = (axis,)
     else:
-        temp_axis = tuple(range(len(a.shape)))
+        temp_axis = tuple(range(np.ndim(a)))
 
     num_datapoints = 1
     for i in temp_axis:
-        num_datapoints *= a.shape[i]
+        num_datapoints *= np.shape(a)[i]
 
     _func = np.nanmean if nan else np.mean
     output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)
@@ -386,11 +386,11 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
         except TypeError:
             temp_axis = (axis,)
     else:
-        temp_axis = tuple(range(len(a.shape)))
+        temp_axis = tuple(range(np.ndim(a)))
 
     num_datapoints = 1
     for i in temp_axis:
-        num_datapoints *= a.shape[i]
+        num_datapoints *= np.shape(a)[i]
 
     _func = np.nanvar if nan else np.var
     output_form = _func(np.zeros_like(a), axis=axis, dtype=dtype, out=out, keepdims=keepdims)

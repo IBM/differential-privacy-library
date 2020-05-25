@@ -52,6 +52,10 @@ class TestNansum(TestCase):
 
         self.assertAlmostEqual(res, res_dp, delta=0.01 * res)
 
+    def test_array_like(self):
+        self.assertIsNotNone(nansum([1, 2, 3], bounds=(1, 3)))
+        self.assertIsNotNone(nansum((1, 2, 3), bounds=(1, 3)))
+
     def test_axis(self):
         a = np.random.random((1000, 5))
         res_dp = nansum(a, epsilon=1, axis=0, bounds=(0, 1))

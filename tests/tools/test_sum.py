@@ -52,6 +52,10 @@ class TestSum(TestCase):
 
         self.assertAlmostEqual(res, res_dp, delta=0.01 * res)
 
+    def test_array_like(self):
+        self.assertIsNotNone(sum([1, 2, 3], bounds=(1, 3)))
+        self.assertIsNotNone(sum((1, 2, 3), bounds=(1, 3)))
+
     def test_axis(self):
         a = np.random.random((1000, 5))
         res_dp = sum(a, epsilon=1, axis=0, bounds=(0, 1))
