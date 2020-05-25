@@ -590,12 +590,12 @@ def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out
         the same precision as the platform integer is used.
 
     out : ndarray, optional
-        Alternative output array in which to place the result. It must have the same shape as the expected output, but
+        Alternative output array in which to place the result.  It must have the same shape as the expected output, but
         the type of the output values will be cast if necessary.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
@@ -649,12 +649,12 @@ def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, 
         the same precision as the platform integer is used.
 
     out : ndarray, optional
-        Alternative output array in which to place the result. It must have the same shape as the expected output, but
+        Alternative output array in which to place the result.  It must have the same shape as the expected output, but
         the type of the output values will be cast if necessary.
 
     keepdims : bool, optional
-        If this is set to True, the axes which are reduced are left in the result as dimensions with size one. With this
-        option, the result will broadcast correctly against the input array.
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
 
         If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
         `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
