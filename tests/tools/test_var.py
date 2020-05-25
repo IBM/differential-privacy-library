@@ -56,6 +56,12 @@ class TestVar(TestCase):
         self.assertIsNotNone(var([1, 2, 3], bounds=(1, 3)))
         self.assertIsNotNone(var((1, 2, 3), bounds=(1, 3)))
 
+    def test_clipped_output(self):
+        a = np.random.random((10,))
+
+        for i in range(100):
+            self.assertTrue(0 <= var(a, epsilon=1e-5, bounds=(0, 1)) <= 1)
+
     def test_nan(self):
         a = np.random.random((5, 5))
         a[2, 2] = np.nan

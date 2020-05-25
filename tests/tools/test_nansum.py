@@ -61,6 +61,12 @@ class TestNansum(TestCase):
         res_dp = nansum(a, epsilon=1, axis=0, bounds=(0, 1))
         self.assertEqual(res_dp.shape, (5,))
 
+    def test_clipped_output(self):
+        a = np.random.random((10,))
+
+        for i in range(100):
+            self.assertTrue(0 <= nansum(a, epsilon=1e-5, bounds=(0, 1)) <= 10)
+
     def test_int_output(self):
         a = np.random.random(1000) * 10
         res_int = nansum(a, dtype=int, bounds=(0, 10))

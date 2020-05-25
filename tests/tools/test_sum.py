@@ -56,6 +56,12 @@ class TestSum(TestCase):
         self.assertIsNotNone(sum([1, 2, 3], bounds=(1, 3)))
         self.assertIsNotNone(sum((1, 2, 3), bounds=(1, 3)))
 
+    def test_clipped_output(self):
+        a = np.random.random((10,))
+
+        for i in range(100):
+            self.assertTrue(0 <= sum(a, epsilon=1e-5, bounds=(0, 1)) <= 10)
+
     def test_axis(self):
         a = np.random.random((1000, 5))
         res_dp = sum(a, epsilon=1, axis=0, bounds=(0, 1))

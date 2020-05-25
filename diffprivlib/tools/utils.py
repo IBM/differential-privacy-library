@@ -49,7 +49,7 @@ from numpy.core import multiarray as mu
 from numpy.core import umath as um
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.mechanisms import Laplace, LaplaceBoundedDomain, Geometric
+from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.validation import check_bounds
 
@@ -207,11 +207,13 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         iterator = np.nditer(actual_mean, flags=['multi_index'])
 
         while not iterator.finished:
-            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
-                upper[0] - lower[0]
-            dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints)
+            idx = iterator.multi_index
+            _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
+            local_diam = _upper - _lower
+            dp_mech = LaplaceTruncated().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints).\
+                set_bounds(_lower, _upper)
 
-            dp_mean[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
+            dp_mean[iterator.multi_index] = dp_mech.randomise(actual_mean[idx])
             iterator.iternext()
 
         accountant.spend(epsilon, 0)
@@ -219,7 +221,8 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
         return dp_mean
 
     local_diam = upper[0] - lower[0]
-    dp_mech = Laplace().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints)
+    dp_mech = LaplaceTruncated().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints).\
+        set_bounds(lower[0], upper[0])
 
     accountant.spend(epsilon, 0)
 
@@ -368,7 +371,7 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
     _func = np.nanvar if nan else np.var
     output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(a), axis=axis, keepdims=keepdims).flat[0]
+    n_datapoints = np.sum(np.ones_like(a, dtype=int), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -389,12 +392,12 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
         iterator = np.nditer(actual_var, flags=['multi_index'])
 
         while not iterator.finished:
-            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
-                upper[0] - lower[0]
+            idx = iterator.multi_index
+            local_diam = upper[idx] - lower[idx] if vector_out else upper[0] - lower[0]
             dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")) \
                 .set_sensitivity((local_diam / n_datapoints) ** 2 * (n_datapoints - 1))
 
-            dp_var[iterator.multi_index] = dp_mech.randomise(float(iterator[0]))
+            dp_var[iterator.multi_index] = np.minimum(dp_mech.randomise(actual_var[idx]), local_diam ** 2)
             iterator.iternext()
 
         accountant.spend(epsilon, 0)
@@ -403,11 +406,11 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
 
     local_diam = upper[0] - lower[0]
     dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")). \
-        set_sensitivity(local_diam ** 2 / n_datapoints)
+        set_sensitivity((local_diam / n_datapoints) ** 2 * (n_datapoints - 1))
 
     accountant.spend(epsilon, 0)
 
-    return dp_mech.randomise(actual_var)
+    return np.minimum(dp_mech.randomise(actual_var), local_diam ** 2)
 
 
 def std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
@@ -685,6 +688,7 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
     _func = np.nansum if nan else np.sum
     output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
+    n_datapoints = np.sum(np.ones_like(a, dtype=int), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -700,18 +704,19 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
 
     actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
-    dp_mech = Geometric if dtype is not None and issubclass(dtype, Integral) else Laplace
+    dp_mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
 
     if isinstance(actual_sum, np.ndarray):
         dp_sum = np.zeros_like(actual_sum, dtype=dtype)
         iterator = np.nditer(actual_sum, flags=['multi_index'])
 
         while not iterator.finished:
-            local_diam = upper[iterator.multi_index] - lower[iterator.multi_index] if vector_out else \
-                upper[0] - lower[0]
             idx = iterator.multi_index
+            _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
+            local_diam = _upper - _lower
+            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam).\
+                set_bounds(_lower * n_datapoints, _upper * n_datapoints)
 
-            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam)
             dp_sum[idx] = mech.randomise(actual_sum[idx])
             iterator.iternext()
 
@@ -720,7 +725,8 @@ def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, ou
         return dp_sum
 
     local_diam = upper[0] - lower[0]
-    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam)
+    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam).set_bounds(lower[0] * n_datapoints,
+                                                                                 upper[0] * n_datapoints)
 
     accountant.spend(epsilon, 0)
 
