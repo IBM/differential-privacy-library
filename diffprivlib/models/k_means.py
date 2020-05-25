@@ -135,7 +135,7 @@ class KMeans(sk_cluster.KMeans):
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = check_bounds(self.bounds, n_dims)
+        self.bounds = check_bounds(self.bounds, n_dims, min_separation=1e-5)
         X = clip_to_bounds(X, self.bounds)
 
         centers = self._init_centers(n_dims)

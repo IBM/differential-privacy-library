@@ -55,7 +55,7 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
         raise ValueError("Epsilon and Delta cannot both be zero")
 
 
-def check_bounds(bounds, shape=0, min_separation=1e-5, dtype=float):
+def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
     """Input validation for the ``bounds`` parameter.
 
     Checks that ``bounds`` is composed of a list of tuples of the form (lower, upper), where lower <= upper and both
@@ -70,7 +70,7 @@ def check_bounds(bounds, shape=0, min_separation=1e-5, dtype=float):
     shape : int, default: 0
         Number of dimensions to be expected in ``bounds``.
 
-    min_separation : float, default: 1e-5
+    min_separation : float, default: 0.0
         The minimum separation between `lower` and `upper` of each dimension.  This separation is enforced if not
         already satisfied.
 
