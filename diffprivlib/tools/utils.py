@@ -56,7 +56,7 @@ from diffprivlib.validation import check_bounds
 _sum_ = sum
 
 
-def mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -67,7 +67,7 @@ def mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
@@ -112,11 +112,11 @@ def mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=
     std, var, nanmean
 
     """
-    return _mean(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
                  accountant=accountant, nan=False)
 
 
-def nanmean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -129,7 +129,7 @@ def nanmean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdi
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
@@ -174,33 +174,33 @@ def nanmean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdi
     std, var, mean
 
     """
-    return _mean(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
                  accountant=accountant, nan=True)
 
 
-def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
+def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
           nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
     _func = np.nanmean if nan else np.mean
-    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
+    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(a), axis=axis, keepdims=keepdims).flat[0]
+    n_datapoints = np.sum(np.ones_like(array), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         if np.ndim(output_form) <= 1:
-            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
         else:
-            bounds = (np.min(a), np.max(a))
+            bounds = (np.min(array), np.max(array))
 
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    a = np.clip(a, lower, upper)
+    array = np.clip(array, lower, upper)
 
-    actual_mean = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    actual_mean = _func(array, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     if isinstance(actual_mean, np.ndarray):
         dp_mean = np.zeros_like(actual_mean)
@@ -229,7 +229,7 @@ def _mean(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims
     return dp_mech.randomise(actual_mean)
 
 
-def var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -241,7 +241,7 @@ def var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, ke
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
@@ -291,11 +291,11 @@ def var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, ke
     std , mean, nanvar
 
     """
-    return _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=False)
 
 
-def nanvar(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -309,7 +309,7 @@ def nanvar(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0,
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
@@ -359,33 +359,33 @@ def nanvar(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0,
     std , mean, var
 
     """
-    return _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=True)
 
 
-def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
          nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
     _func = np.nanvar if nan else np.var
-    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
+    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(a, dtype=int), axis=axis, keepdims=keepdims).flat[0]
+    n_datapoints = np.sum(np.ones_like(array, dtype=int), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         if np.ndim(output_form) <= 1:
-            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
         else:
-            bounds = (np.min(a), np.max(a))
+            bounds = (np.min(array), np.max(array))
 
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    a = np.clip(a, lower, upper)
+    array = np.clip(array, lower, upper)
 
-    actual_var = _func(a, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
+    actual_var = _func(array, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
 
     if isinstance(actual_var, np.ndarray):
         dp_var = np.zeros_like(actual_var)
@@ -413,7 +413,7 @@ def _var(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
     return np.minimum(dp_mech.randomise(actual_var), local_diam ** 2)
 
 
-def std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -425,7 +425,7 @@ def std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, ke
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Calculate the standard deviation of these values.
 
     epsilon : float, default: 1.0
@@ -475,11 +475,11 @@ def std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, ke
     var, mean, nanstd
 
     """
-    return _std(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=False)
 
 
-def nanstd(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -493,7 +493,7 @@ def nanstd(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0,
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Calculate the standard deviation of these values.
 
     epsilon : float, default: 1.0
@@ -543,13 +543,13 @@ def nanstd(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0,
     var, mean, std
 
     """
-    return _std(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                 accountant=accountant, nan=True)
 
 
-def _std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
+def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
          nan=False):
-    ret = _var(a, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
                accountant=accountant, nan=nan)
 
     if isinstance(ret, mu.ndarray):
@@ -562,12 +562,12 @@ def _std(a, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, k
     return ret
 
 
-def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
     r"""Sum of array elements over a given axis with differential privacy.
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Elements to sum.
 
     epsilon : float, default: 1.0
@@ -617,16 +617,16 @@ def sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out
     mean, nansum
 
     """
-    return _sum(a, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
+    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
                 keepdims=keepdims, nan=False)
 
 
-def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
     Parameters
     ----------
-    a : array_like
+    array : array_like
         Elements to sum.
 
     epsilon : float, default: 1.0
@@ -676,33 +676,33 @@ def nansum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, 
     mean, sum
 
     """
-    return _sum(a, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
+    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
                 keepdims=keepdims, nan=True)
 
 
-def _sum(a, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
+def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
          nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
     _func = np.nansum if nan else np.sum
-    output_form = _func(np.zeros_like(a), axis=axis, keepdims=keepdims)
+    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
     vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(a, dtype=int), axis=axis, keepdims=keepdims).flat[0]
+    n_datapoints = np.sum(np.ones_like(array, dtype=int), axis=axis, keepdims=keepdims).flat[0]
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         if np.ndim(output_form) <= 1:
-            bounds = (np.min(a, axis=axis, keepdims=keepdims), np.max(a, axis=axis, keepdims=keepdims))
+            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
         else:
-            bounds = (np.min(a), np.max(a))
+            bounds = (np.min(array), np.max(array))
 
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    a = np.clip(a, lower, upper)
+    array = np.clip(array, lower, upper)
 
-    actual_sum = _func(a, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    actual_sum = _func(array, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
 
     dp_mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
 

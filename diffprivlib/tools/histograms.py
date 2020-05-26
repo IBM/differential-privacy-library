@@ -262,16 +262,16 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
 
 
 # noinspection PyShadowingBuiltins
-def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
+def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
     r"""
     Compute the differentially private bi-dimensional histogram of two data samples.
 
     Parameters
     ----------
-    x : array_like, shape (N,)
+    array_x : array_like, shape (N,)
         An array containing the x coordinates of the points to be histogrammed.
 
-    y : array_like, shape (N,)
+    array_y : array_like, shape (N,)
         An array containing the y coordinates of the points to be histogrammed.
 
     epsilon : float, default: 1.0
@@ -343,6 +343,6 @@ def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=Non
         xedges = yedges = np.asarray(bins)
         bins = [xedges, yedges]
 
-    hist, edges = histogramdd([x, y], epsilon=epsilon, bins=bins, range=range, normed=normed, weights=weights,
+    hist, edges = histogramdd([array_x, array_y], epsilon=epsilon, bins=bins, range=range, normed=normed, weights=weights,
                               density=density, accountant=accountant)
     return hist, edges[0], edges[1]
