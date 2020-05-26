@@ -28,9 +28,9 @@ Now, let's train a differentially private naive Bayes classifier. Our classifier
 `diffprivlib.models.GaussianNB` can be run __without any parameters__, although this will throw a warning (we need to specify the `bounds` parameter to avoid this). The privacy level is controlled by the parameter `epsilon`, which is passed to the classifier at initialisation (e.g. `GaussianNB(epsilon=0.1)`). The default is `epsilon = 1.0`.
 
 ```python
-import diffprivlib.models as models
+from diffprivlib.models import GaussianNB
 
-clf = models.GaussianNB()
+clf = GaussianNB()
 clf.fit(X_train, y_train)
 ```
 
@@ -57,7 +57,7 @@ bounds = ([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5])
 accuracy = list()
 
 for epsilon in epsilons:
-    clf = models.GaussianNB(bounds=bounds, epsilon=epsilon)
+    clf = GaussianNB(bounds=bounds, epsilon=epsilon)
     clf.fit(X_train, y_train)
     
     accuracy.append(clf.score(X_test, y_test))
