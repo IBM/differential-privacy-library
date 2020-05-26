@@ -106,7 +106,7 @@ class StandardScaler(sk_pp.StandardScaler):
     (differentially private) standard deviation of the training samples or one if `with_std=False`.
 
     Centering and scaling happen independently on each feature by computing the relevant statistics on the samples in
-    the training set.  Mean and standard deviation are then stored to be used on later data using the `transform` 
+    the training set.  Mean and standard deviation are then stored to be used on later data using the `transform`
     method.
 
     For further information, users are referred to :class:`sklearn.preprocessing.StandardScaler`.
@@ -119,8 +119,8 @@ class StandardScaler(sk_pp.StandardScaler):
         when `with_mean=False`, as it is used in the calculation of the variance.
 
     bounds:  tuple, optional
-        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering 
-        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed 
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     copy : boolean, default: True
@@ -166,7 +166,7 @@ class StandardScaler(sk_pp.StandardScaler):
     Notes
     -----
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
-    
+
     """  # noqa
     def __init__(self, epsilon=1.0, bounds=None, copy=True, with_mean=True, with_std=True, accountant=None):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)

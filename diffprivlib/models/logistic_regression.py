@@ -215,23 +215,22 @@ class LogisticRegression(linear_model.LogisticRegression):
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
 
+        solver = _check_solver(self.solver, self.penalty, self.dual)
+        X, y = check_X_y(X, y, accept_sparse='csr', dtype=np.float64, order="C",
+                         accept_large_sparse=solver != 'liblinear')
+        check_classification_targets(y)
+        self.classes_ = np.unique(y)
+        _, n_features = X.shape
+
         if self.data_norm is None:
             warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        solver = _check_solver(self.solver, self.penalty, self.dual)
-
-        _dtype = np.float64
-
-        X, y = check_X_y(X, y, accept_sparse='csr', dtype=_dtype, order="C", accept_large_sparse=solver != 'liblinear')
         X = clip_to_norm(X, self.data_norm)
-        check_classification_targets(y)
-        self.classes_ = np.unique(y)
-        _, n_features = X.shape
 
-        _check_multi_class(self.multi_class, solver, len(self.classes_))
+        self.multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 
         n_classes = len(self.classes_)
         classes_ = self.classes_
