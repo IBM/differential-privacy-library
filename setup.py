@@ -45,7 +45,7 @@ setuptools.setup(name='diffprivlib',
                  },
                  python_requires='>=3',
                  classifiers=[
-                     'Development Status :: 3 - Alpha',
+                     'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',
                      'Intended Audience :: Education',
                      'Intended Audience :: Science/Research',

@@ -81,7 +81,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
     """
 
-    def __init__(self, epsilon=1, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
+    def __init__(self, epsilon=1.0, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
         super().__init__(priors=priors, var_smoothing=var_smoothing)
 
         self.epsilon = epsilon

@@ -54,7 +54,7 @@ from diffprivlib.utils import PrivacyLeakWarning
 
 
 # noinspection PyShadowingBuiltins
-def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
+def histogram(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None, accountant=None):
     r"""
     Compute the differentially private histogram of a set of data.
 

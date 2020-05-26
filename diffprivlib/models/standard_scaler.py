@@ -235,7 +235,6 @@ class StandardScaler(sk_pp.StandardScaler):
             self.var_ = None
             self.n_samples_seen_ += X.shape[0] - np.isnan(X).sum(axis=0)
         else:
-            _range = self.bounds[1] - self.bounds[0]
             self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(
                 X, epsilon_0, self.bounds, self.mean_, self.var_, self.n_samples_seen_
             )
