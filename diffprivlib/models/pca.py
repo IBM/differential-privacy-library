@@ -128,11 +128,6 @@ class PCA(sk_pca.PCA):
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
-    **unused_args : kwargs
-        Placeholder for parameters of :obj:`sklearn.decomposition.PCA` that are not used in `diffprivlib`.
-        Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
-
-
     Attributes
     ----------
     components_ : array, shape (n_components, n_features)

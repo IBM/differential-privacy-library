@@ -52,10 +52,6 @@ class KMeans(sk_cluster.KMeans):
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.(
 
-    **unused_args :
-        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`.  Specifying any
-        of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
-
     Attributes
     ----------
     cluster_centers_ : array, [n_clusters, n_features]

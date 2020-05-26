@@ -136,7 +136,6 @@ class StandardScaler(sk_pp.StandardScaler):
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
-
     Attributes
     ----------
     scale_ : ndarray or None, shape (n_features,)

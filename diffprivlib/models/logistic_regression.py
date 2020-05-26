@@ -120,10 +120,6 @@ class LogisticRegression(linear_model.LogisticRegression):
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
-    **unused_args : kwargs
-        Placeholder for parameters of :obj:`sklearn.linear_model.LogisticRegression` that are not used in
-        `diffprivlib`.  Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
-
     Attributes
     ----------
     classes_ : array, shape (n_classes, )
