@@ -50,13 +50,13 @@ from numpy.core import umath as um
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 from diffprivlib.validation import check_bounds
 
 _sum_ = sum
 
 
-def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -68,7 +68,7 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepd
     Parameters
     ----------
     array : array_like
-        Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose mean is desired.  If `array` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
@@ -86,10 +86,6 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepd
         Type to use in computing the mean.  For integer inputs, the default is `float64`; for floating point inputs, it
         is the same as the input dtype.
 
-    out : ndarray, optional
-        Alternate output array in which to place the result.  The default is ``None``; if provided, it must have the
-        same shape as the expected output, but the type will be cast if necessary.
-
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
@@ -104,19 +100,21 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepd
     Returns
     -------
     m : ndarray, see dtype parameter above
-        If `out=None`, returns a new array containing the mean values, otherwise a reference to the output array is
-        returned.
+        Returns a new array containing the mean values.
 
     See Also
     --------
     std, var, nanmean
 
     """
-    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    warn_unused_args(unused_args)
+
+    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
                  accountant=accountant, nan=False)
 
 
-def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None):
+def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
+            **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -130,7 +128,7 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ke
     Parameters
     ----------
     array : array_like
-        Array containing numbers whose mean is desired.  If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose mean is desired.  If `array` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
@@ -148,10 +146,6 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ke
         Type to use in computing the mean.  For integer inputs, the default is `float64`; for floating point inputs, it
         is the same as the input dtype.
 
-    out : ndarray, optional
-        Alternate output array in which to place the result.  The default is ``None``; if provided, it must have the
-        same shape as the expected output, but the type will be cast if necessary.
-
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
@@ -166,20 +160,20 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ke
     Returns
     -------
     m : ndarray, see dtype parameter above
-        If `out=None`, returns a new array containing the mean values, otherwise a reference to the output array is
-        returned.
+        Returns a new array containing the mean values.
 
     See Also
     --------
     std, var, mean
 
     """
-    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, keepdims=keepdims,
+    warn_unused_args(unused_args)
+
+    return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
                  accountant=accountant, nan=True)
 
 
-def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keepdims=np._NoValue, accountant=None,
-          nan=False):
+def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -200,7 +194,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keep
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
     array = np.clip(array, lower, upper)
 
-    actual_mean = _func(array, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    actual_mean = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
     if isinstance(actual_mean, np.ndarray):
         dp_mean = np.zeros_like(actual_mean)
@@ -229,7 +223,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, keep
     return dp_mech.randomise(actual_mean)
 
 
-def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -242,7 +236,7 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0
     Parameters
     ----------
     array : array_like
-        Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose variance is desired.  If `array` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
@@ -260,14 +254,6 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0
     dtype : data-type, optional
         Type to use in computing the variance.  For arrays of integer type the default is `float32`; for arrays of float
         types it is the same as the array type.
-
-    out : ndarray, optional
-        Alternate output array in which to place the result.  It must have the same shape as the expected output, but
-        the type is cast if necessary.
-
-    ddof : int, optional
-        "Delta Degrees of Freedom": the divisor used in the calculation is ``N - ddof``, where ``N`` represents the
-        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
@@ -283,19 +269,21 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0
     Returns
     -------
     variance : ndarray, see dtype parameter above
-        If ``out=None``, returns a new array containing the variance; otherwise, a reference to the output array is
-        returned.
+        Returns a new array containing the variance.
 
     See Also
     --------
     std , mean, nanvar
 
     """
-    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
-                accountant=accountant, nan=False)
+    warn_unused_args(unused_args)
+
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
+                nan=False)
 
 
-def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
+           **unused_args):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -310,7 +298,7 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddo
     Parameters
     ----------
     array : array_like
-        Array containing numbers whose variance is desired.  If `a` is not an array, a conversion is attempted.
+        Array containing numbers whose variance is desired.  If `array` is not an array, a conversion is attempted.
 
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
@@ -328,14 +316,6 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddo
     dtype : data-type, optional
         Type to use in computing the variance.  For arrays of integer type the default is `float32`; for arrays of float
         types it is the same as the array type.
-
-    out : ndarray, optional
-        Alternate output array in which to place the result.  It must have the same shape as the expected output, but
-        the type is cast if necessary.
-
-    ddof : int, optional
-        "Delta Degrees of Freedom": the divisor used in the calculation is ``N - ddof``, where ``N`` represents the
-        number of elements.  By default `ddof` is zero.
 
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
@@ -359,12 +339,13 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddo
     std , mean, var
 
     """
-    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
-                accountant=accountant, nan=True)
+    warn_unused_args(unused_args)
+
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
+                nan=True)
 
 
-def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
-         nan=False):
+def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -385,7 +366,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
     array = np.clip(array, lower, upper)
 
-    actual_var = _func(array, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims)
+    actual_var = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
     if isinstance(actual_var, np.ndarray):
         dp_var = np.zeros_like(actual_var)
@@ -413,7 +394,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=
     return np.minimum(dp_mech.randomise(actual_var), local_diam ** 2)
 
 
-def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -445,14 +426,6 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0
         Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
-    out : ndarray, optional
-        Alternative output array in which to place the result.  It must have the same shape as the expected output but
-        the type (of the calculated values) will be cast if necessary.
-
-    ddof : int, optional
-        Means Delta Degrees of Freedom.  The divisor used in calculations is ``N - ddof``, where ``N`` represents the
-        number of elements.  By default `ddof` is zero.
-
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
@@ -467,19 +440,21 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0
     Returns
     -------
     standard_deviation : ndarray, see dtype parameter above.
-        If `out` is None, return a new array containing the standard deviation, otherwise return a reference to the
-        output array.
+        Return a new array containing the standard deviation.
 
     See Also
     --------
     var, mean, nanstd
 
     """
-    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
+    warn_unused_args(unused_args)
+
+    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
                 accountant=accountant, nan=False)
 
 
-def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None):
+def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
+           **unused_args):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -513,14 +488,6 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddo
         Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
-    out : ndarray, optional
-        Alternative output array in which to place the result.  It must have the same shape as the expected output but
-        the type (of the calculated values) will be cast if necessary.
-
-    ddof : int, optional
-        Means Delta Degrees of Freedom.  The divisor used in calculations is ``N - ddof``, where ``N`` represents the
-        number of elements.  By default `ddof` is zero.
-
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
@@ -535,25 +502,25 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddo
     Returns
     -------
     standard_deviation : ndarray, see dtype parameter above.
-        If `out` is None, return a new array containing the standard deviation, otherwise return a reference to the
-        output array.
+        Return a new array containing the standard deviation.
 
     See Also
     --------
     var, mean, std
 
     """
-    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
-                accountant=accountant, nan=True)
+    warn_unused_args(unused_args)
+
+    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
+                nan=True)
 
 
-def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=0, keepdims=np._NoValue, accountant=None,
-         nan=False):
-    ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, out=out, ddof=ddof, keepdims=keepdims,
-               accountant=accountant, nan=nan)
+def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
+    ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
+               nan=nan)
 
     if isinstance(ret, mu.ndarray):
-        ret = um.sqrt(ret, out=ret)
+        ret = um.sqrt(ret)
     elif hasattr(ret, 'dtype'):
         ret = ret.dtype.type(um.sqrt(ret))
     else:
@@ -562,7 +529,7 @@ def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, out=None, ddof=
     return ret
 
 
-def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue, **unused_args):
     r"""Sum of array elements over a given axis with differential privacy.
 
     Parameters
@@ -587,14 +554,10 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
         axis or all the axes as before.
 
     dtype : dtype, optional
-        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `a` is
-        used by default unless `a` has an integer dtype of less precision than the default platform integer.  In that
-        case, if `a` is signed then the platform integer is used while if `a` is unsigned then an unsigned integer of
-        the same precision as the platform integer is used.
-
-    out : ndarray, optional
-        Alternative output array in which to place the result.  It must have the same shape as the expected output, but
-        the type of the output values will be cast if necessary.
+        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `array` is
+        used by default unless `array` has an integer dtype of less precision than the default platform integer.  In
+        that case, if `array` is signed then the platform integer is used while if `array` is unsigned then an unsigned
+        integer of the same precision as the platform integer is used.
 
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
@@ -607,8 +570,8 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
     Returns
     -------
     sum_along_axis : ndarray
-        An array with the same shape as `a`, with the specified axis removed.   If `a` is a 0-d array, or if `axis` is
-        None, a scalar is returned.  If an output array is specified, a reference to `out` is returned.
+        An array with the same shape as `array`, with the specified axis removed.   If `array` is a 0-d array, or if
+        `axis` is None, a scalar is returned.
 
     See Also
     --------
@@ -617,11 +580,14 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
     mean, nansum
 
     """
-    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
-                keepdims=keepdims, nan=False)
+    warn_unused_args(unused_args)
+
+    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, keepdims=keepdims,
+                nan=False)
 
 
-def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue):
+def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue,
+           **unused_args):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
     Parameters
@@ -646,14 +612,10 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
         axis or all the axes as before.
 
     dtype : dtype, optional
-        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `a` is
-        used by default unless `a` has an integer dtype of less precision than the default platform integer.  In that
-        case, if `a` is signed then the platform integer is used while if `a` is unsigned then an unsigned integer of
-        the same precision as the platform integer is used.
-
-    out : ndarray, optional
-        Alternative output array in which to place the result.  It must have the same shape as the expected output, but
-        the type of the output values will be cast if necessary.
+        The type of the returned array and of the accumulator in which the elements are summed.  The dtype of `array` is
+        used by default unless `array` has an integer dtype of less precision than the default platform integer.  In
+        that case, if `array` is signed then the platform integer is used while if `array` is unsigned then an unsigned
+        integer of the same precision as the platform integer is used.
 
     keepdims : bool, optional
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
@@ -666,8 +628,8 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
     Returns
     -------
     sum_along_axis : ndarray
-        An array with the same shape as `a`, with the specified axis removed.   If `a` is a 0-d array, or if `axis` is
-        None, a scalar is returned.  If an output array is specified, a reference to `out` is returned.
+        An array with the same shape as `array`, with the specified axis removed.   If `array` is a 0-d array, or if
+        `axis` is None, a scalar is returned.  If an output array is specified, a reference to `out` is returned.
 
     See Also
     --------
@@ -676,12 +638,13 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
     mean, sum
 
     """
-    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, out=out,
+    warn_unused_args(unused_args)
+
+    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype,
                 keepdims=keepdims, nan=True)
 
 
-def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, out=None, keepdims=np._NoValue,
-         nan=False):
+def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -702,7 +665,7 @@ def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None
     lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
     array = np.clip(array, lower, upper)
 
-    actual_sum = _func(array, axis=axis, dtype=dtype, out=out, keepdims=keepdims)
+    actual_sum = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
     dp_mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
 
