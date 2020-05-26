@@ -251,14 +251,15 @@ class Exponential(DPMechanism):
 
         unif_rv = random() * self._normalising_constant[value]
         cum_prob = 0
+        _target_value = None
 
         for _target_value in self._normalising_constant.keys():
             cum_prob += self._get_prob(value, _target_value)
 
             if unif_rv <= cum_prob:
                 return _target_value
-        else:
-            raise ValueError("")
+
+        return _target_value
 
 
 class ExponentialHierarchical(Exponential):
