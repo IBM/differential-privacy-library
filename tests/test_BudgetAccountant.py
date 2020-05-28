@@ -104,6 +104,41 @@ class TestBudgetAccountant(TestCase):
         self.assertIsInstance(spent_budget, list)
         self.assertEqual(2, len(spent_budget))
 
+    def test_change_spent_budget(self):
+        acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
+
+        with self.assertRaises(AttributeError):
+            acc.spent_budget = [(1, 0)]
+
+        with self.assertRaises(AttributeError):
+            del acc.spent_budget
+
+        acc.spent_budget.append((1, 0))
+        self.assertEqual(2, len(acc))
+        self.assertEqual(acc.spent_budget, acc._BudgetAccountant__spent_budget)
+        self.assertIsNot(acc.spent_budget, acc._BudgetAccountant__spent_budget)
+
+    def test_change_budget(self):
+        acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
+
+        with self.assertRaises(AttributeError):
+            acc.epsilon = 2
+
+        with self.assertRaises(AttributeError):
+            del acc.epsilon
+
+        with self.assertRaises(AttributeError):
+            acc.delta = 0.1
+
+        with self.assertRaises(AttributeError):
+            del acc.delta
+
+    def test_get_budget(self):
+        acc = BudgetAccountant(1, 0, spent_budget=[(0.5, 0), (0.5, 0)])
+
+        self.assertEqual(1, acc.epsilon)
+        self.assertEqual(0, acc.delta)
+
     def test_remaining_budget_epsilon(self):
         acc = BudgetAccountant(1, 0)
         eps, delt = acc.remaining()

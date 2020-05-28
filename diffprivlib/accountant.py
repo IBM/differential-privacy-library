@@ -60,6 +60,12 @@ class BudgetAccountant:
 
     Attributes
     ----------
+    epsilon : float
+        Epsilon budget ceiling of the accountant.
+
+    delta : float
+        Delta budget ceiling of the accountant.
+
     slack : float
         The accountant's slack.  Can be modified at runtime, subject to the privacy budget not being exceeded.
 
@@ -131,9 +137,9 @@ class BudgetAccountant:
 
     def __init__(self, epsilon=float("inf"), delta=1.0, slack=0.0, spent_budget=None):
         check_epsilon_delta(epsilon, delta)
-        self.epsilon = epsilon
-        self.min_epsilon = 0 if epsilon == float("inf") else epsilon * 1e-14
-        self.delta = delta
+        self.__epsilon = epsilon
+        self.__min_epsilon = 0 if epsilon == float("inf") else epsilon * 1e-14
+        self.__delta = delta
         self.__spent_budget = []
         self.slack = slack
 
@@ -155,11 +161,11 @@ class BudgetAccountant:
         if self.slack > 0:
             params.append("slack=%g" % self.slack)
 
-        if self.__spent_budget:
-            if len(self.__spent_budget) > n_budget_max:
-                params.append("spent_budget=%s" % str(self.__spent_budget[:n_budget_max] + ["..."]).replace("'", ""))
+        if self.spent_budget:
+            if len(self.spent_budget) > n_budget_max:
+                params.append("spent_budget=%s" % str(self.spent_budget[:n_budget_max] + ["..."]).replace("'", ""))
             else:
-                params.append("spent_budget=%s" % str(self.__spent_budget))
+                params.append("spent_budget=%s" % str(self.spent_budget))
 
         return "BudgetAccountant(" + ", ".join(params) + ")"
 
@@ -176,7 +182,7 @@ class BudgetAccountant:
         del self.old_default
 
     def __len__(self):
-        return len(self.__spent_budget)
+        return len(self.spent_budget)
 
     @property
     def slack(self):
@@ -200,7 +206,19 @@ class BudgetAccountant:
     def spent_budget(self):
         """List of tuples of the form (epsilon, delta) of spent privacy budget.
         """
-        return self.__spent_budget
+        return self.__spent_budget.copy()
+
+    @property
+    def epsilon(self):
+        """Epsilon privacy ceiling of the accountant.
+        """
+        return self.__epsilon
+
+    @property
+    def delta(self):
+        """Delta privacy ceiling of the accountant.
+        """
+        return self.__delta
 
     def total(self, spent_budget=None, slack=None):
         """Returns the total current privacy spend.
@@ -225,7 +243,7 @@ class BudgetAccountant:
 
         """
         if spent_budget is None:
-            spent_budget = self.__spent_budget
+            spent_budget = self.spent_budget
         else:
             for epsilon, delta in spent_budget:
                 check_epsilon_delta(epsilon, delta)
@@ -280,10 +298,10 @@ class BudgetAccountant:
         if self.epsilon == float("inf") and self.delta == 1:
             return True
 
-        if 0 < epsilon < self.min_epsilon:
-            raise ValueError("Epsilon must be at least {} if non-zero, got {}.".format(self.min_epsilon, epsilon))
+        if 0 < epsilon < self.__min_epsilon:
+            raise ValueError("Epsilon must be at least {} if non-zero, got {}.".format(self.__min_epsilon, epsilon))
 
-        spent_budget = self.__spent_budget + [(epsilon, delta)]
+        spent_budget = self.spent_budget + [(epsilon, delta)]
 
         if Budget(self.epsilon, self.delta) >= self.total(spent_budget=spent_budget):
             return True
@@ -329,7 +347,7 @@ class BudgetAccountant:
             old_interval_size = upper - lower
             mid = (upper + lower) / 2
 
-            spent_budget = self.__spent_budget + [(mid, 0)] * k
+            spent_budget = self.spent_budget + [(mid, 0)] * k
             x_0, _ = self.total(spent_budget=spent_budget)
 
             if x_0 >= self.epsilon:
