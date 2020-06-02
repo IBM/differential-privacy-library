@@ -131,4 +131,4 @@ class TestLaplaceBoundedNoise(TestCase):
 
     def test_variance(self):
         self.mech.set_epsilon_delta(1, 0.1).set_sensitivity(1)
-        self.assertIsNone(self.mech.get_variance(0))
+        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)

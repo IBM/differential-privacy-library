@@ -130,7 +130,7 @@ class TestGeometricFolded(TestCase):
         self.assertIn(".GeometricFolded(", repr_)
 
     def test_bias(self):
-        self.assertIsNone(self.mech.get_bias(0))
+        self.assertRaises(NotImplementedError, self.mech.get_bias, 0)
 
     def test_variance(self):
-        self.assertIsNone(self.mech.get_variance(0))
+        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)

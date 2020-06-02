@@ -164,6 +164,7 @@ class DPMechanism(DPMachine, abc.ABC):
             The bias of the mechanism at `value` if defined, `None` otherwise.
 
         """
+        raise NotImplementedError
 
     def get_variance(self, value):
         """Returns the variance of the mechanism at a given `value`.
@@ -179,6 +180,7 @@ class DPMechanism(DPMachine, abc.ABC):
             The variance of the mechanism at `value` if defined, `None` otherwise.
 
         """
+        raise NotImplementedError
 
     def get_mse(self, value):
         """Returns the mean squared error (MSE) of the mechanism at a given `value`.
@@ -194,9 +196,6 @@ class DPMechanism(DPMachine, abc.ABC):
             The MSE of the mechanism at `value` if defined, `None` otherwise.
 
         """
-        if self.get_variance(value) is None or self.get_bias(value) is None:
-            return None
-
         return self.get_variance(value) + (self.get_bias(value)) ** 2
 
     def set_epsilon_delta(self, epsilon, delta):

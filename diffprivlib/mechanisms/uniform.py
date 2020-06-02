@@ -93,6 +93,12 @@ class Uniform(DPMechanism):
     def get_bias(self, value):
         return 0.0
 
+    @copy_docstring(Laplace.get_variance)
+    def get_variance(self, value):
+        self.check_inputs(value)
+
+        return (self._sensitivity / self._delta) ** 2 / 12
+
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
         super().check_inputs(value)

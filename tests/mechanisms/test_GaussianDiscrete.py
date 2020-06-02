@@ -144,7 +144,7 @@ class TestGaussianDiscrete(TestCase):
         self.assertEqual(0, self.mech.get_bias(0))
 
     def test_variance(self):
-        self.assertIsNone(self.mech.get_variance(0))
+        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)
 
     def test_repr(self):
         repr_ = repr(self.mech.set_epsilon_delta(1, 0.5))

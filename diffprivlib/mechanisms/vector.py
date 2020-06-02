@@ -23,6 +23,7 @@ from numbers import Real
 import numpy as np
 
 from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Vector(DPMechanism):
@@ -185,6 +186,14 @@ class Vector(DPMechanism):
             raise ValueError("Dimension d must be set")
 
         return True
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.

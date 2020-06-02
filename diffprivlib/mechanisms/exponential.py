@@ -245,6 +245,14 @@ class Exponential(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
+
     @copy_docstring(Binary.randomise)
     def randomise(self, value):
         self.check_inputs(value)
@@ -358,3 +366,11 @@ class ExponentialHierarchical(Exponential):
         self.set_utility(self._build_utility_list(hierarchy))
 
         return self
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError

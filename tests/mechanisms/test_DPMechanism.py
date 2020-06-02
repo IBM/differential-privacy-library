@@ -56,7 +56,7 @@ class TestDPMechanism(TestCase):
         self.assertIsNotNone(mech2.set_epsilon_delta(1, 0.5))
 
     def test_mse(self):
-        self.assertIsNone(self.mech.get_mse(1))
+        self.assertRaises(NotImplementedError, self.mech.get_mse, 1)
 
         class TestMSE(self.mech.__class__):
             def get_bias(self, value):

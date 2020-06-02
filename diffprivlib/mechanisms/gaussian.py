@@ -302,7 +302,7 @@ class GaussianDiscrete(DPMechanism):
 
     @copy_docstring(Laplace.get_variance)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):

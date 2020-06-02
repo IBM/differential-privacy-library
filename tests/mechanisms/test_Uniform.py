@@ -92,3 +92,7 @@ class TestUniform(TestCase):
 
     def test_bias(self):
         self.assertEqual(0.0, self.mech.get_bias(0))
+
+    def test_variance(self):
+        self.mech.set_epsilon_delta(0, 0.1).set_sensitivity(1)
+        self.assertGreater(self.mech.get_variance(0), 0.0)

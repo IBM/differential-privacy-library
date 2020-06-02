@@ -204,11 +204,11 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_bias)
     def get_bias(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(DPMechanism.get_bias)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
@@ -263,11 +263,11 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_bias)
     def get_bias(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(DPMechanism.get_bias)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):

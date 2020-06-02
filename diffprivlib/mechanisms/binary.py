@@ -23,6 +23,7 @@ import numpy as np
 from numpy.random import random
 
 from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Binary(DPMechanism):
@@ -115,6 +116,14 @@ class Binary(DPMechanism):
                              + "\"}")
 
         return True
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.

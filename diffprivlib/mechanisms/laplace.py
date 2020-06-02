@@ -237,7 +237,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
@@ -432,7 +432,7 @@ class LaplaceBoundedNoise(Laplace):
 
     @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):

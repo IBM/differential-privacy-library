@@ -117,4 +117,4 @@ class TestLaplaceFolded(TestCase):
 
     def test_variance(self):
         self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
-        self.assertIsNone(self.mech.get_variance(0))
+        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)
