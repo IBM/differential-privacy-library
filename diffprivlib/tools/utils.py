@@ -56,6 +56,47 @@ from diffprivlib.validation import check_bounds
 _sum_ = sum
 
 
+def count_nonzero(array, epsilon=1.0, accountant=None, axis=None):
+    r"""Counts the number of non-zero values in the array ``array`` with differential privacy.
+
+    The word "non-zero" is in reference to the Python 2.x built-in method ``__nonzero__()`` (renamed ``__bool__()`` in
+    Python 3.x) of Python objects that tests an object's "truthfulness".  For example, any number is considered truthful
+    if it is nonzero, whereas any string is considered truthful if it is not the empty string.  Thus, this function
+    (recursively) counts how many elements in ``array`` (and in sub-arrays thereof) have their ``__nonzero__()`` or
+    ``__bool__()`` method evaluated to ``True``.
+
+    Parameters
+    ----------
+    array : array_like
+        The array for which to count non-zeros.
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+    axis : int or tuple, optional
+        Axis or tuple of axes along which to count non-zeros.  Default is None, meaning that non-zeros will be counted
+        along a flattened version of ``array``.
+
+    Returns
+    -------
+    count : int or array of int
+        Differentially private number of non-zero values in the array along a given axis.  Otherwise, the total number
+        of non-zero values in the array is returned.
+
+    """
+    array = np.asanyarray(array)
+
+    if np.issubdtype(array.dtype, np.character):
+        array_bool = array != array.dtype.type()
+    else:
+        array_bool = array.astype(np.bool_, copy=False)
+
+    return sum(array_bool, axis=axis, dtype=np.intp, bounds=(0, 1), epsilon=epsilon, accountant=accountant)
+
+
 def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
