@@ -64,7 +64,7 @@ def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
 
     Parameters
     ----------
-    bounds : tuple or None
+    bounds : tuple
         Tuple of bounds of the form (min, max). `min` and `max` can either be scalars or 1-dimensional arrays.
 
     shape : int, default: 0
@@ -82,9 +82,6 @@ def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
     bounds : tuple
 
     """
-    if bounds is None:
-        return None
-
     if not isinstance(bounds, tuple):
         raise TypeError("Bounds must be specified as a tuple of (min, max), got {}.".format(type(bounds)))
     if not isinstance(shape, Integral):

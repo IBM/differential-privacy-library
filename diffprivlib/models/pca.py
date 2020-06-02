@@ -210,7 +210,7 @@ class PCA(sk_pca.PCA):
                     "additional privacy loss, specify `range` for each valued returned by np.mean().",
                     PrivacyLeakWarning)
 
-                self.bounds = (np.min(X, axis=0), np.min(X, axis=0))
+                self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
             self.bounds = check_bounds(self.bounds, n_features)
             self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())

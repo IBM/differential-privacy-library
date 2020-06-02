@@ -133,8 +133,8 @@ class GaussianNB(sk_nb.GaussianNB):
                 self.class_prior_ = np.zeros(len(self.classes_), dtype=np.float64)
         else:
             if X.shape[1] != self.theta_.shape[1]:
-                msg = "Number of features %d does not match previous data %d."
-                raise ValueError(msg % (X.shape[1], self.theta_.shape[1]))
+                raise ValueError("Number of features %d does not match previous data %d." %
+                                 (X.shape[1], self.theta_.shape[1]))
             # Put epsilon back in each time
             self.sigma_[:, :] -= self.epsilon_
 

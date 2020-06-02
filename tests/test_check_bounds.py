@@ -8,7 +8,7 @@ from diffprivlib.validation import check_bounds
 
 class TestCheckBounds(TestCase):
     def test_none(self):
-        self.assertIsNone(check_bounds(None))
+        self.assertRaises(TypeError, check_bounds, None)
 
     def test_non_tuple(self):
         with self.assertRaises(TypeError):
