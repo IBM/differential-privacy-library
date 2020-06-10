@@ -60,11 +60,15 @@ range_ = range
 
 
 def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last_sample_count):
+    # Initialising new accountant, as budget is tracked in main class. Subject to review in line with GH issue #21
+    temp_acc = BudgetAccountant()
+
     # old = stats until now
     # new = the current increment
     # updated = the aggregated stats
     last_sum = last_mean * last_sample_count
-    new_mean = nanmean(X, epsilon=epsilon, axis=0, bounds=bounds, accountant=BudgetAccountant())
+
+    new_mean = nanmean(X, epsilon=epsilon, axis=0, bounds=bounds, accountant=temp_acc)
     new_sample_count = np.sum(~np.isnan(X), axis=0)
     new_sum = new_mean * new_sample_count
     updated_sample_count = last_sample_count + new_sample_count
@@ -75,7 +79,7 @@ def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last
         updated_variance = None
     else:
         new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, bounds=bounds,
-                                           accountant=BudgetAccountant()) * new_sample_count
+                                           accountant=temp_acc) * new_sample_count
         last_unnormalized_variance = last_variance * last_sample_count
 
         with np.errstate(divide='ignore', invalid='ignore'):

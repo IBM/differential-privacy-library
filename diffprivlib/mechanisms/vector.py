@@ -223,7 +223,7 @@ class Vector(DPMechanism):
                      - 0.5 * self._alpha)
             epsilon_p = self._epsilon / 2
 
-        scale = epsilon_p / 2 / self._data_sensitivity if self._data_sensitivity > 0 else float("inf")
+        scale = (epsilon_p / 2 / self._data_sensitivity) if self._data_sensitivity > 0 else float("inf")
 
         normed_noisy_vector = np.random.normal(0, 1, self._vector_dim)
         norm = np.linalg.norm(normed_noisy_vector, 2)
