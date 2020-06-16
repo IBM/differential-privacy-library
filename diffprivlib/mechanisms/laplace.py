@@ -131,7 +131,7 @@ class Laplace(DPMechanism):
         """
         self.check_inputs(0)
 
-        return 2 * (self._sensitivity / self._epsilon) ** 2
+        return 2 * (self._sensitivity / (self._epsilon - np.log(1 - self._delta))) ** 2
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.
