@@ -298,22 +298,22 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
         The class with respect to which we perform a one-vs-all fit.  If None, then it is assumed that the given problem
         is binary.
 
-    Cs : int | array-like, shape (n_cs,)
+    Cs : int | array-like, shape (n_cs,), default: 10
         List of values for the regularization parameter or integer specifying the number of regularization parameters
         that should be used.  In this case, the parameters will be chosen in a logarithmic scale between 1e-4 and 1e4.
 
-    fit_intercept : bool
+    fit_intercept : bool, default: True
         Whether to fit an intercept for the model.  In this case the shape of the returned array is
         (n_cs, n_features + 1).
 
-    max_iter : int
+    max_iter : int, default: 100
         Maximum number of iterations for the solver.
 
-    tol : float
+    tol : float, default: 1e-4
         Stopping criterion.  For the newton-cg and lbfgs solvers, the iteration will stop when ``max{|g_i | i = 1,
         ..., n} <= tol`` where ``g_i`` is the i-th component of the gradient.
 
-    verbose : int
+    verbose : int, default: 0
         For the liblinear and lbfgs solvers set verbose to any positive number for verbosity.
 
     coef : array-like, shape (n_features,), optional
