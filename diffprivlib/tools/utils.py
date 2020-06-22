@@ -56,7 +56,7 @@ from diffprivlib.validation import check_bounds
 _sum_ = sum
 
 
-def count_nonzero(array, epsilon=1.0, accountant=None, axis=None):
+def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
     r"""Counts the number of non-zero values in the array ``array`` with differential privacy.
 
     The word "non-zero" is in reference to the Python 2.x built-in method ``__nonzero__()`` (renamed ``__bool__()`` in
@@ -80,6 +80,10 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None):
         Axis or tuple of axes along which to count non-zeros.  Default is None, meaning that non-zeros will be counted
         along a flattened version of ``array``.
 
+    keepdims : bool, optional
+        If this is set to True, the axes that are counted are left in the result as dimensions with size one. With this
+        option, the result will broadcast correctly against the input array.
+
     Returns
     -------
     count : int or array of int
@@ -94,7 +98,8 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None):
     else:
         array_bool = array.astype(np.bool_, copy=False)
 
-    return sum(array_bool, axis=axis, dtype=np.intp, bounds=(0, 1), epsilon=epsilon, accountant=accountant)
+    return sum(array_bool, axis=axis, dtype=np.intp, bounds=(0, 1), epsilon=epsilon, accountant=accountant,
+               keepdims=keepdims)
 
 
 def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):

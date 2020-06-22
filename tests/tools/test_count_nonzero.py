@@ -57,6 +57,13 @@ class TestCountNonZero(TestCase):
         res = count_nonzero(a)
         self.assertFalse(np.isnan(res))
 
+    def test_keepdims(self):
+        a = np.random.random((5, 5)).round()
+
+        self.assertEqual(count_nonzero(a, axis=0).ndim, 1)
+        self.assertEqual(count_nonzero(a, axis=0, keepdims=True).ndim, 2)
+        self.assertEqual(count_nonzero(a, axis=0, keepdims=True).shape, (1, 5))
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant(1.5, 0)
