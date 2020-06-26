@@ -1,8 +1,9 @@
 import numpy as np
 from unittest import TestCase
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogramdd
-from diffprivlib.utils import global_seed, PrivacyLeakWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, BudgetError
 
 
 class TestHistogramdd(TestCase):
@@ -53,3 +54,26 @@ class TestHistogramdd(TestCase):
         # print(dp_hist.sum())
 
         self.assertAlmostEqual(dp_hist.sum(), 1.0 * (3 / 10) ** 2)
+
+    def test_accountant(self):
+        acc = BudgetAccountant(1.5, 0)
+
+        a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).T
+        histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
+
+        with self.assertRaises(BudgetError):
+            histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
+
+    def test_default_accountant(self):
+        BudgetAccountant.pop_default()
+
+        a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).T
+        histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True)
+        acc = BudgetAccountant.pop_default()
+        self.assertEqual((1, 0), acc.total())
+        self.assertEqual(acc.epsilon, float("inf"))
+        self.assertEqual(acc.delta, 1.0)
+
+        histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)])
+
+        self.assertEqual((1, 0), acc.total())

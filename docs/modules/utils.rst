@@ -6,6 +6,12 @@ Exceptions and warnings
 -----------------------
 .. autoexception:: PrivacyLeakWarning
 .. autoexception:: DiffprivlibCompatibilityWarning
+.. autoexception:: BudgetError
+
+
+General classes
+---------------
+.. autoclass:: Budget
 
 
 General functions

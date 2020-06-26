@@ -48,12 +48,13 @@ from sys import maxsize
 
 import numpy as np
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import GeometricTruncated
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 # noinspection PyShadowingBuiltins
-def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None, density=None):
+def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None, **unused_args):
     r"""
     Compute the differentially private histogram of a set of data.
 
@@ -64,44 +65,43 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
     Parameters
     ----------
     sample : array_like
-        Input data. The histogram is computed over the flattened array.
+        Input data.  The histogram is computed over the flattened array.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon` to be applied.
 
-    bins : int or sequence of scalars or str, optional
-        If `bins` is an int, it defines the number of equal-width bins in the given range (10, by default). If `bins` is
-        a sequence, it defines a monotonically increasing array of bin edges, including the rightmost edge, allowing for
-        non-uniform bin widths.
+    bins : int or sequence of scalars or str, default: 10
+        If `bins` is an int, it defines the number of equal-width bins in the given range (10, by default).  If `bins`
+        is a sequence, it defines a monotonically increasing array of bin edges, including the rightmost edge, allowing
+        for non-uniform bin widths.
 
         If `bins` is a string, it defines the method used to calculate the optimal bin width, as defined by
         `histogram_bin_edges`.
 
     range : (float, float), optional
         The lower and upper range of the bins.  If not provided, range is simply ``(a.min(), a.max())``.  Values outside
-        the range are ignored. The first element of the range must be less than or equal to the second. `range` affects
-        the automatic bin computation as well. While bin width is computed to be optimal based on the actual data within
-        `range`, the bin count will fill the entire range including portions containing no data.
-
-    normed : bool, optional, deprecated
-        This is equivalent to the `density` argument, but produces incorrect results for unequal bin widths. It should
-        not be used.  In diffprivlib, this option is ignored.
+        the range are ignored.  The first element of the range must be less than or equal to the second. `range` affects
+        the automatic bin computation as well.  While bin width is computed to be optimal based on the actual data
+        within `range`, the bin count will fill the entire range including portions containing no data.
 
     weights : array_like, optional
         An array of weights, of the same shape as `a`.  Each value in `a` only contributes its associated weight
-        towards the bin count (instead of 1). If `density` is True, the weights are normalized, so that the integral
+        towards the bin count (instead of 1).  If `density` is True, the weights are normalized, so that the integral
         of the density over the range remains 1.
 
     density : bool, optional
-        If ``False``, the result will contain the number of samples in each bin. If ``True``, the result is the value
+        If ``False``, the result will contain the number of samples in each bin.  If ``True``, the result is the value
         of the probability *density* function at the bin, normalized such that the *integral* over the range is 1.
         Note that the sum of the histogram values will not be equal to 1 unless bins of unity width are chosen; it is
         not a probability *mass* function.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     hist : array
-        The values of the histogram. See `density` and `weights` for a
+        The values of the histogram.  See `density` and `weights` for a
         description of the possible semantics.
     bin_edges : array of dtype float
         Return the bin edges ``(length(hist)+1)``.
@@ -121,12 +121,17 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
     is ``[3, 4]``, which *includes* 4.
 
     """
+    warn_unused_args(unused_args)
+
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
     if range is None:
         warnings.warn("Range parameter has not been specified. Falling back to taking range from the data.\n"
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
                       "specified independently of the data (i.e., using domain knowledge).", PrivacyLeakWarning)
 
-    hist, bin_edges = np.histogram(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
+    hist, bin_edges = np.histogram(sample, bins=bins, range=range, weights=weights, density=None)
 
     dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
 
@@ -137,7 +142,9 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
     # dp_hist = dp_hist.astype(float, casting='safe')
 
-    if normed or density:
+    accountant.spend(epsilon, 0)
+
+    if density:
         bin_sizes = np.array(np.diff(bin_edges), float)
         return dp_hist / bin_sizes / dp_hist.sum(), bin_edges
 
@@ -145,7 +152,7 @@ def histogram(sample, epsilon=1, bins=10, range=None, normed=None, weights=None,
 
 
 # noinspection PyShadowingBuiltins
-def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None):
+def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None, **unused_args):
     r"""
     Compute the differentially private multidimensional histogram of some data.
 
@@ -167,10 +174,10 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
 
         The first form should be preferred.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon` to be applied.
 
-    bins : sequence or int, optional
+    bins : sequence or int, default: 10
         The bin specification:
 
         * A sequence of arrays describing the monotonically increasing bin edges along each dimension.
@@ -185,22 +192,21 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
         The default, None, is equivalent to passing a tuple of D None values.
 
     density : bool, optional
-        If False, the default, returns the number of samples in each bin. If True, returns the probability *density*
+        If False, the default, returns the number of samples in each bin.  If True, returns the probability *density*
         function at the bin, ``bin_count / sample_count / bin_volume``.
 
-    normed : bool, optional
-        An alias for the density argument that behaves identically. To avoid confusion with the broken normed argument
-        to `histogram`, `density` should be preferred.
-
     weights : (N,) array_like, optional
-        An array of values `w_i` weighing each sample `(x_i, y_i, z_i, ...)`. Weights are normalized to 1 if normed is
-        True. If normed is False, the values of the returned histogram are equal to the sum of the weights belonging to
+        An array of values `w_i` weighing each sample `(x_i, y_i, z_i, ...)`.  Weights are normalized to 1 if normed is
+        True.  If normed is False, the values of the returned histogram are equal to the sum of the weights belonging to
         the samples falling into each bin.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     Returns
     -------
     H : ndarray
-        The multidimensional histogram of sample x. See normed and weights for the different possible semantics.
+        The multidimensional histogram of sample x.  See normed and weights for the different possible semantics.
     edges : list
         A list of D arrays describing the bin edges for each dimension.
 
@@ -210,6 +216,11 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
     histogram2d: 2-D differentially private histogram
 
     """
+    warn_unused_args(unused_args)
+
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
     if range is None or (isinstance(range, list) and None in range):
         warnings.warn("Range parameter has not been specified (or has missing elements). Falling back to taking range "
                       "from the data.\n "
@@ -230,7 +241,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
 
     dp_hist = dp_hist.astype(float, casting='safe')
 
-    if density or normed:
+    if density:
         # calculate the probability density function
         dims = len(dp_hist.shape)
         dp_hist_sum = dp_hist.sum()
@@ -241,26 +252,29 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, normed=None, weights=N
             dp_hist = dp_hist / np.diff(bin_edges[i]).reshape(shape)
         dp_hist /= dp_hist_sum
 
+    accountant.spend(epsilon, 0)
+
     return dp_hist, bin_edges
 
 
 # noinspection PyShadowingBuiltins
-def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=None, density=None):
+def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None,
+                **unused_args):
     r"""
     Compute the differentially private bi-dimensional histogram of two data samples.
 
     Parameters
     ----------
-    x : array_like, shape (N,)
+    array_x : array_like, shape (N,)
         An array containing the x coordinates of the points to be histogrammed.
 
-    y : array_like, shape (N,)
+    array_y : array_like, shape (N,)
         An array containing the y coordinates of the points to be histogrammed.
 
-    epsilon : float
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon` to be applied.
 
-    bins : int or array_like or [int, int] or [array, array], optional
+    bins : int or array_like or [int, int] or [array, array], default: 10
         The bin specification:
 
           * If int, the number of bins for the two dimensions (nx=ny=bins).
@@ -271,26 +285,25 @@ def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=Non
 
     range : array_like, shape(2,2), optional
         The leftmost and rightmost edges of the bins along each dimension (if not specified explicitly in the `bins`
-        parameters): ``[[xmin, xmax], [ymin, ymax]]``. All values outside of this range will be considered outliers and
+        parameters): ``[[xmin, xmax], [ymin, ymax]]``.  All values outside of this range will be considered outliers and
         not tallied in the histogram.
 
     density : bool, optional
         If False, the default, returns the number of samples in each bin.  If True, returns the probability *density*
         function at the bin, ``bin_count / sample_count / bin_area``.
 
-    normed : bool, optional
-        An alias for the density argument that behaves identically. To avoid confusion with the broken normed argument
-        to `histogram`, `density` should be preferred.
-
     weights : array_like, shape(N,), optional
         An array of values ``w_i`` weighing each sample ``(x_i, y_i)``.  Weights are normalized to 1 if `normed` is
-        True. If `normed` is False, the values of the returned histogram are equal to the sum of the weights belonging
+        True.  If `normed` is False, the values of the returned histogram are equal to the sum of the weights belonging
         to the samples falling into each bin.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     Returns
     -------
     H : ndarray, shape(nx, ny)
-        The bi-dimensional histogram of samples `x` and `y`. Values in `x` are histogrammed along the first dimension
+        The bi-dimensional histogram of samples `x` and `y`.  Values in `x` are histogrammed along the first dimension
         and values in `y` are histogrammed along the second dimension.
 
     xedges : ndarray, shape(nx+1,)
@@ -314,6 +327,8 @@ def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=Non
     along the second dimension of the array (horizontal).  This ensures compatibility with `histogramdd`.
 
     """
+    warn_unused_args(unused_args)
+
     try:
         num_bins = len(bins)
     except TypeError:
@@ -323,6 +338,6 @@ def histogram2d(x, y, epsilon=1.0, bins=10, range=None, normed=None, weights=Non
         xedges = yedges = np.asarray(bins)
         bins = [xedges, yedges]
 
-    hist, edges = histogramdd([x, y], epsilon=epsilon, bins=bins, range=range, normed=normed, weights=weights,
-                              density=density)
+    hist, edges = histogramdd([array_x, array_y], epsilon=epsilon, bins=bins, range=range, weights=weights,
+                              density=density, accountant=accountant)
     return hist, edges[0], edges[1]

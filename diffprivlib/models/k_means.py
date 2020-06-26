@@ -22,10 +22,12 @@ import warnings
 
 import numpy as np
 import sklearn.cluster as sk_cluster
+from sklearn.utils import check_array
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
-from diffprivlib.models.utils import _check_bounds
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.validation import check_bounds, clip_to_bounds
 
 
 class KMeans(sk_cluster.KMeans):
@@ -36,24 +38,24 @@ class KMeans(sk_cluster.KMeans):
 
     Parameters
     ----------
-    epsilon : float, optional, default: 1.0
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds : list or None, optional, default: None
-        Bounds of the data, provided as a list of tuples, with one tuple per dimension.  If not provided, the bounds
-        are computed on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
-    n_clusters : int, optional, default: 8
+    n_clusters : int, default: 8
         The number of clusters to form as well as the number of centroids to generate.
 
-    **unused_args :
-        Placeholder for arguments used by :obj:`sklearn.cluster.KMeans`, but not used by `diffprivlib`. Specifying any
-        of these parameters will result in a :class:`.DiffprivlibCompatibilityWarning`.
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.(
 
     Attributes
     ----------
     cluster_centers_ : array, [n_clusters, n_features]
-        Coordinates of cluster centers. If the algorithm stops before fully converging, these will not be consistent
+        Coordinates of cluster centers.  If the algorithm stops before fully converging, these will not be consistent
         with ``labels_``.
 
     labels_ :
@@ -73,11 +75,12 @@ class KMeans(sk_cluster.KMeans):
 
     """
 
-    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, **unused_args):
+    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, accountant=None, **unused_args):
         super().__init__(n_clusters=n_clusters)
 
         self.epsilon = epsilon
         self.bounds = bounds
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
@@ -100,24 +103,25 @@ class KMeans(sk_cluster.KMeans):
             not used, present here for API consistency by convention.
 
         sample_weight : ignored
-            Ignored by diffprivlib. Present for consistency with sklearn API.
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         Returns
         -------
         self : class
 
         """
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
         del y
 
-        if X.ndim != 2:
-            raise ValueError(
-                "Expected 2D array, got array with %d dimensions instead. Reshape your data using array.reshape(-1, 1),"
-                "or array.reshape(1, -1) if your data contains only one sample." % X.ndim)
-
+        X = check_array(X, accept_sparse=False, dtype=[np.float64, np.float32])
         n_samples, n_dims = X.shape
+
+        if n_samples < self.n_clusters:
+            raise ValueError("n_samples=%d should be >= n_clusters=%d" % (n_samples, self.n_clusters))
 
         iters = self._calc_iters(n_dims, n_samples)
 
@@ -125,9 +129,10 @@ class KMeans(sk_cluster.KMeans):
             warnings.warn("Bounds have not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
-            self.bounds = list(zip(np.min(X, axis=0), np.max(X, axis=0)))
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = _check_bounds(self.bounds, n_dims)
+        self.bounds = check_bounds(self.bounds, n_dims, min_separation=1e-5)
+        X = clip_to_bounds(X, self.bounds)
 
         centers = self._init_centers(n_dims)
         labels = None
@@ -145,6 +150,8 @@ class KMeans(sk_cluster.KMeans):
         self.inertia_ = distances[np.arange(len(labels)), labels].sum()
         self.n_iter_ = iters
 
+        self.accountant.spend(self.epsilon, 0)
+
         return self
 
     def _init_centers(self, dims):
@@ -152,8 +159,8 @@ class KMeans(sk_cluster.KMeans):
             bounds_processed = np.zeros(shape=(dims, 2))
 
             for dim in range(dims):
-                lower = self.bounds[dim][0]
-                upper = self.bounds[dim][1]
+                lower = self.bounds[0][dim]
+                upper = self.bounds[1][dim]
 
                 bounds_processed[dim, :] = [upper - lower, lower]
 
@@ -226,8 +233,8 @@ class KMeans(sk_cluster.KMeans):
             noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
-                laplace_mech.set_sensitivity(self.bounds[i][1] - self.bounds[i][0]) \
-                    .set_bounds(noisy_count * self.bounds[i][0], noisy_count * self.bounds[i][1])
+                laplace_mech.set_sensitivity(self.bounds[1][i] - self.bounds[0][i]) \
+                    .set_bounds(noisy_count * self.bounds[0][i], noisy_count * self.bounds[1][i])
                 noisy_sum[i] = laplace_mech.randomise(cluster_sum[i])
 
             centers[cluster, :] = noisy_sum / noisy_count

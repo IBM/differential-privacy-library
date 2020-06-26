@@ -22,6 +22,8 @@ import warnings
 
 import numpy as np
 
+from diffprivlib.validation import check_epsilon_delta
+
 
 def global_seed(seed):
     """Sets the seed for all random number generators, to guarantee reproducibility in experiments.
@@ -87,6 +89,66 @@ def warn_unused_args(args):
     for arg in args:
         warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
                       "warning." % arg, DiffprivlibCompatibilityWarning)
+
+
+class Budget(tuple):
+    """Custom tuple subclass for privacy budgets of the form (epsilon, delta).
+
+    The ``Budget`` class allows for correct comparison/ordering of privacy budget, ensuring that both epsilon and delta
+    satisfy the comparison (tuples are compared lexicographically).  Additionally, tuples are represented with added
+    verbosity, labelling epsilon and delta appropriately.
+
+    Examples
+    --------
+
+    >>> from diffprivlib.utils import Budget
+    >>> Budget(1, 0.5)
+    (epsilon=1, delta=0.5)
+    >>> Budget(2, 0) >= Budget(1, 0.5)
+    False
+    >>> (2, 0) >= (1, 0.5) # Tuples are compared with lexicographic ordering
+    True
+
+    """
+    def __new__(cls, epsilon, delta):
+        check_epsilon_delta(epsilon, delta, allow_zero=True)
+        return tuple.__new__(cls, (epsilon, delta))
+
+    def __gt__(self, other):
+        if self.__ge__(other) and not self.__eq__(other):
+            return True
+        return False
+
+    def __ge__(self, other):
+        if self[0] >= other[0] and self[1] >= other[1]:
+            return True
+        return False
+
+    def __lt__(self, other):
+        if self.__le__(other) and not self.__eq__(other):
+            return True
+        return False
+
+    def __le__(self, other):
+        if self[0] <= other[0] and self[1] <= other[1]:
+            return True
+        return False
+
+    def __repr__(self):
+        return "(epsilon=%r, delta=%r)" % self
+
+
+class BudgetError(ValueError):
+    """Custom exception to capture the privacy budget being exceeded, typically controlled by a
+    :class:`.BudgetAccountant`.
+
+    For example, this exception may be raised when the user:
+
+        - Attempts to execute a query which would exceed the privacy budget of the accountant.
+        - Attempts to change the slack of the accountant in such a way that the existing budget spends would exceed the
+          accountant's budget.
+
+    """
 
 
 class PrivacyLeakWarning(RuntimeWarning):

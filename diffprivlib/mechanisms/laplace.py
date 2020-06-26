@@ -64,8 +64,8 @@ class Laplace(DPMechanism):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._sensitivity = float(sensitivity)
         return self
@@ -131,7 +131,7 @@ class Laplace(DPMechanism):
         """
         self.check_inputs(0)
 
-        return 2 * (self._sensitivity / self._epsilon) ** 2
+        return 2 * (self._sensitivity / (self._epsilon - np.log(1 - self._delta))) ** 2
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.
@@ -237,7 +237,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
 
     @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):
@@ -256,7 +256,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
 
 class LaplaceBoundedDomain(LaplaceTruncated):
     """
-    The bounded Laplace mechanism on a bounded domain. The mechanism draws values directly from the domain, without any
+    The bounded Laplace mechanism on a bounded domain.  The mechanism draws values directly from the domain, without any
     post-processing.
     """
     def __init__(self):
@@ -432,7 +432,7 @@ class LaplaceBoundedNoise(Laplace):
 
     @copy_docstring(DPMechanism.get_variance)
     def get_variance(self, value):
-        pass
+        raise NotImplementedError
 
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):

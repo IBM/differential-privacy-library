@@ -83,8 +83,8 @@ class Uniform(DPMechanism):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._sensitivity = float(sensitivity)
         return self
@@ -92,6 +92,12 @@ class Uniform(DPMechanism):
     @copy_docstring(Laplace.get_bias)
     def get_bias(self, value):
         return 0.0
+
+    @copy_docstring(Laplace.get_variance)
+    def get_variance(self, value):
+        self.check_inputs(value)
+
+        return (self._sensitivity / self._delta) ** 2 / 12
 
     @copy_docstring(Laplace.check_inputs)
     def check_inputs(self, value):

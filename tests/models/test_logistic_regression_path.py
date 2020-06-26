@@ -19,7 +19,23 @@ class TestLogisticRegression(TestCase):
     def test_not_none(self):
         self.assertIsNotNone(_logistic_regression_path)
 
+    def test_no_epsilon(self):
+        with self.assertRaises(TypeError):
+            _logistic_regression_path(self.X, self.y, Cs=[1e5])
+
+    def test_no_norm(self):
+        with self.assertRaises(TypeError):
+            _logistic_regression_path(self.X, self.y, Cs=[1e5], epsilon=1)
+
     def test_with_dataset(self):
-        output = _logistic_regression_path(self.X, self.y, Cs=[1e5])
+        output = _logistic_regression_path(self.X, self.y, epsilon=1, data_norm=1, Cs=[1e5])
 
         self.assertIsInstance(output, tuple)
+
+    def test_Cs(self):
+        coefs, Cs, n_iter = _logistic_regression_path(self.X, self.y, epsilon=1, data_norm=1, Cs=3)
+
+        self.assertEqual(len(coefs), 3)
+        self.assertEqual(len(Cs), 3)
+        self.assertEqual(len(n_iter), 3)
+

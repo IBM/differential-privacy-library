@@ -47,12 +47,17 @@ Gaussian mechanisms
    :inherited-members:
    :exclude-members: copy,deepcopy,set_epsilon
 
+.. autoclass:: GaussianDiscrete
+   :members:
+   :inherited-members:
+   :exclude-members: copy,deepcopy,set_epsilon,get_variance,get_mse
+
 Geometric mechanisms
 -----------------------------
 .. autoclass:: Geometric
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,deepcopy,set_epsilon_delta
 
 .. autoclass:: GeometricTruncated
    :members:

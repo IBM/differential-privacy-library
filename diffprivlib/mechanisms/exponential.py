@@ -84,7 +84,7 @@ class Exponential(DPMechanism):
 
         """
         if not isinstance(utility_list, list):
-            raise ValueError("Utility must be given in a list")
+            raise TypeError("Utility must be given in a list")
 
         self._normalising_constant = None
 
@@ -245,12 +245,21 @@ class Exponential(DPMechanism):
 
         return super().set_epsilon_delta(epsilon, delta)
 
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
+
     @copy_docstring(Binary.randomise)
     def randomise(self, value):
         self.check_inputs(value)
 
         unif_rv = random() * self._normalising_constant[value]
         cum_prob = 0
+        _target_value = None
 
         for _target_value in self._normalising_constant.keys():
             cum_prob += self._get_prob(value, _target_value)
@@ -258,7 +267,7 @@ class Exponential(DPMechanism):
             if unif_rv <= cum_prob:
                 return _target_value
 
-        return None
+        return _target_value
 
 
 class ExponentialHierarchical(Exponential):
@@ -357,3 +366,11 @@ class ExponentialHierarchical(Exponential):
         self.set_utility(self._build_utility_list(hierarchy))
 
         return self
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError

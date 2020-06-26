@@ -12,6 +12,8 @@ Histogram functions
 
 General Utilities
 -----------------------------
+.. autofunction:: count_nonzero
+
 .. autofunction:: mean
 
 .. autofunction:: nanmean
@@ -19,6 +21,10 @@ General Utilities
 .. autofunction:: std
 
 .. autofunction:: nanstd
+
+.. autofunction:: sum
+
+.. autofunction:: nansum
 
 .. autofunction:: var
 

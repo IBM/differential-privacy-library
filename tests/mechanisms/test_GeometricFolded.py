@@ -26,15 +26,22 @@ class TestGeometricFolded(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
-    def test_no_sensitivity(self):
+    def test_default_sensitivity(self):
         self.mech.set_epsilon(1).set_bounds(0, 10)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
+
+        self.assertEqual(1, self.mech._sensitivity)
+        self.assertIsNotNone(self.mech.randomise(1))
 
     def test_non_integer_sensitivity(self):
         self.mech.set_epsilon(1).set_bounds(0, 10)
         with self.assertRaises(TypeError):
             self.mech.set_sensitivity(0.5)
+
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon(1).set_sensitivity(0).set_bounds(0, 2)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
 
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1).set_bounds(0, 10)
@@ -117,3 +124,13 @@ class TestGeometricFolded(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 4))
+        self.assertIn(".GeometricFolded(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech.get_bias, 0)
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)

@@ -1,21 +1,17 @@
 language: python
 dist: xenial
 python:
-- '3.4'
 - '3.5'
 - '3.6'
 - '3.7'
 - '3.8'
 matrix:
   include:
-  - python: 3.7
+  - python: 3.8
     script:
-    - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib
-      || exit 0)
+    - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0) && (pytest --cov || exit 0)
 install:
-- if [[ "$TRAVIS_PYTHON_VERSION" == "3.4" ]]; then pip install scikit-learn==0.20.3;
-  fi
-- pip install pylint pycodestyle
+- pip install pylint pycodestyle pytest-cov
 - pip install .
 script: pytest
 deploy:
@@ -26,4 +22,4 @@ deploy:
   on:
     tags: true
     branch: master
-    condition: $TRAVIS_PYTHON_VERSION = 3.6
+    condition: $TRAVIS_PYTHON_VERSION = 3.7

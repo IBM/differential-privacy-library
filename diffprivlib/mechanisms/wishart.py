@@ -23,6 +23,7 @@ from numbers import Real
 import numpy as np
 
 from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Wishart(DPMechanism):
@@ -88,8 +89,8 @@ class Wishart(DPMechanism):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
-        if sensitivity <= 0:
-            raise ValueError("Sensitivity must be strictly positive")
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
 
         self._sensitivity = float(sensitivity)
         return self
@@ -126,6 +127,14 @@ class Wishart(DPMechanism):
             raise ValueError("Sensitivity must be set")
 
         return True
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.

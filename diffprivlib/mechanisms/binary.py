@@ -23,6 +23,7 @@ import numpy as np
 from numpy.random import random
 
 from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.utils import copy_docstring
 
 
 class Binary(DPMechanism):
@@ -35,7 +36,7 @@ class Binary(DPMechanism):
 
     Notes
     -----
-    * The binary attributes, known as `labels`, must be specified as strings. If non-string labels are required (e.g.
+    * The binary attributes, known as `labels`, must be specified as strings.  If non-string labels are required (e.g.
       integer-valued labels), a :class:`.DPTransformer` can be used (e.g. :class:`.IntToString`).
     """
     def __init__(self):
@@ -115,6 +116,14 @@ class Binary(DPMechanism):
                              + "\"}")
 
         return True
+
+    @copy_docstring(DPMechanism.get_bias)
+    def get_bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
 
     def randomise(self, value):
         """Randomise `value` with the mechanism.

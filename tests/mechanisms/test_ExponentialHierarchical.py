@@ -62,9 +62,17 @@ class TestExponentialHierarchical(TestCase):
         with self.assertRaises(TypeError):
             self.mech.set_hierarchy([["A", "B"], ["C", 2]])
 
+    def test_non_list_hierarchy(self):
+        with self.assertRaises(TypeError):
+            self.mech.set_hierarchy(("A", "B", "C"))
+
     def test_uneven_hierarchy(self):
         with self.assertRaises(ValueError):
             self.mech.set_hierarchy(["A", ["B", "C"]])
+
+    def test_build_utility_list(self):
+        with self.assertRaises(TypeError):
+            self.mech._build_utility_list([1, 2, 3])
 
     def test_non_string_input(self):
         self.mech.set_epsilon(1).set_hierarchy([["A", "B"], ["C", "2"]])
@@ -146,3 +154,7 @@ class TestExponentialHierarchical(TestCase):
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.05)
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
         self.assertLessEqual(count[1] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1))
+        self.assertIn(".ExponentialHierarchical(", repr_)

@@ -47,25 +47,28 @@ import warnings
 
 import numpy as np
 import sklearn.preprocessing as sk_pp
-try:
-    from sklearn.preprocessing._data import _handle_zeros_in_scale
-except ImportError:
-    from sklearn.preprocessing.data import _handle_zeros_in_scale
+from sklearn.preprocessing._data import _handle_zeros_in_scale
 from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
+from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
+from diffprivlib.validation import clip_to_bounds, check_bounds
 
 range_ = range
 
 
-def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_sample_count):
+def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last_sample_count):
+    # Initialising new accountant, as budget is tracked in main class. Subject to review in line with GH issue #21
+    temp_acc = BudgetAccountant()
+
     # old = stats until now
     # new = the current increment
     # updated = the aggregated stats
     last_sum = last_mean * last_sample_count
-    new_mean = nanmean(X, epsilon=epsilon, axis=0, range=range)
+
+    new_mean = nanmean(X, epsilon=epsilon, axis=0, bounds=bounds, accountant=temp_acc)
     new_sample_count = np.sum(~np.isnan(X), axis=0)
     new_sum = new_mean * new_sample_count
     updated_sample_count = last_sample_count + new_sample_count
@@ -75,7 +78,8 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
     if last_variance is None:
         updated_variance = None
     else:
-        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, range=range) * new_sample_count
+        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, bounds=bounds,
+                                           accountant=temp_acc) * new_sample_count
         last_unnormalized_variance = last_variance * last_sample_count
 
         with np.errstate(divide='ignore', invalid='ignore'):
@@ -95,7 +99,7 @@ def _incremental_mean_and_var(X, epsilon, range, last_mean, last_variance, last_
 # noinspection PyPep8Naming,PyAttributeOutsideInit
 class StandardScaler(sk_pp.StandardScaler):
     """Standardize features by removing the mean and scaling to unit variance, calculated with differential privacy
-    guarantees. Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
+    guarantees.  Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
     transformed output will certainly not satisfy differential privacy.
 
     The standard score of a sample `x` is calculated as:
@@ -106,23 +110,25 @@ class StandardScaler(sk_pp.StandardScaler):
     (differentially private) standard deviation of the training samples or one if `with_std=False`.
 
     Centering and scaling happen independently on each feature by computing the relevant statistics on the samples in
-    the training set. Mean and standard deviation are then stored to be used on later data using the `transform` method.
+    the training set.  Mean and standard deviation are then stored to be used on later data using the `transform`
+    method.
 
     For further information, users are referred to :class:`sklearn.preprocessing.StandardScaler`.
 
     Parameters
     ----------
-    epsilon: float, optional, default 1.0
+    epsilon: float, default: 1.0
         The privacy budget to be allocated to learning the mean and variance of the training sample.  If
         `with_std=True`,  the privacy budget is split evenly between mean and variance (the mean must be calculated even
         when `with_mean=False`, as it is used in the calculation of the variance.
 
-    range:  array_like or None, default None
-        Range of each feature of the sample. Same shape as np.ptp(X, axis=0). If not specified, `range` will be
-        calculated on the data, triggering a :class:`.PrivacyLeakWarning`.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
-    copy : boolean, optional, default True
-        If False, try to avoid a copy and do inplace scaling instead. This is not guaranteed to always work inplace;
+    copy : boolean, default: True
+        If False, try to avoid a copy and do inplace scaling instead.  This is not guaranteed to always work inplace;
         e.g. if the data is not a NumPy array, a copy may still be returned.
 
     with_mean : boolean, True by default
@@ -131,21 +137,24 @@ class StandardScaler(sk_pp.StandardScaler):
     with_std : boolean, True by default
         If True, scale the data to unit variance (or equivalently, unit standard deviation).
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Attributes
     ----------
     scale_ : ndarray or None, shape (n_features,)
-        Per feature relative scaling of the data. This is calculated using `np.sqrt(var_)`. Equal to ``None`` when
+        Per feature relative scaling of the data.  This is calculated using `np.sqrt(var_)`.  Equal to ``None`` when
         ``with_std=False``.
 
     mean_ : ndarray or None, shape (n_features,)
-        The mean value for each feature in the training set. Equal to ``None`` when ``with_mean=False``.
+        The mean value for each feature in the training set.  Equal to ``None`` when ``with_mean=False``.
 
     var_ : ndarray or None, shape (n_features,)
-        The variance for each feature in the training set. Used to compute `scale_`. Equal to ``None`` when
+        The variance for each feature in the training set.  Used to compute `scale_`.  Equal to ``None`` when
         ``with_std=False``.
 
     n_samples_seen_ : int or array, shape (n_features,)
-        The number of samples processed by the estimator for each feature. If there are not missing samples, the
+        The number of samples processed by the estimator for each feature.  If there are not missing samples, the
         ``n_samples_seen`` will be an integer, otherwise it will be an array.
         Will be reset on new calls to fit, but increments across ``partial_fit`` calls.
 
@@ -160,16 +169,18 @@ class StandardScaler(sk_pp.StandardScaler):
     Notes
     -----
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
+
     """  # noqa
-    def __init__(self, epsilon=1.0, range=None, copy=True, with_mean=True, with_std=True):
+    def __init__(self, epsilon=1.0, bounds=None, copy=True, with_mean=True, with_std=True, accountant=None):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
-        self.range = range
+        self.bounds = bounds
+        self.accountant = BudgetAccountant.load_default(accountant)
 
     def partial_fit(self, X, y=None):
-        """Online computation of mean and std with differential privacy on X for later scaling. All of X is processed as
-        a single batch. This is intended for cases when `fit` is not feasible due to very large number of `n_samples` or
-        because X is read from a continuous stream.
+        """Online computation of mean and std with differential privacy on X for later scaling.  All of X is processed
+        as a single batch.  This is intended for cases when `fit` is not feasible due to very large number of
+        `n_samples` or because X is read from a continuous stream.
 
         The algorithm for incremental mean and std is given in Equation 1.5a,b in Chan, Tony F., Gene H. Golub, and
         Randall J. LeVeque. "Algorithms for computing the sample variance: Analysis and recommendations." The American
@@ -182,7 +193,9 @@ class StandardScaler(sk_pp.StandardScaler):
 
         y
             Ignored
+
         """
+        self.accountant.check(self.epsilon, 0)
 
         epsilon_0 = self.epsilon if self.with_std is None else self.epsilon / 2
 
@@ -191,13 +204,15 @@ class StandardScaler(sk_pp.StandardScaler):
         # Hotfix for sklearn v 0.23
         self.n_features_in_ = X.shape[1]
 
-        if self.range is None:
+        if self.bounds is None:
             warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                          "This will result in additional privacy leakage. To ensure differential privacy with no "
+                          "This will result in additional privacy leakage.  To ensure differential privacy with no "
                           "additional privacy loss, specify `range` for each valued returned by np.mean().",
                           PrivacyLeakWarning)
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-            self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
+        self.bounds = check_bounds(self.bounds, X.shape[1])
+        X = clip_to_bounds(X, self.bounds)
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
         # computation of the var See incr_mean_variance_axis and _incremental_mean_variance_axis
@@ -223,9 +238,9 @@ class StandardScaler(sk_pp.StandardScaler):
             self.var_ = None
             self.n_samples_seen_ += X.shape[0] - np.isnan(X).sum(axis=0)
         else:
-            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(X, epsilon_0, self.range,
-                                                                                    self.mean_, self.var_,
-                                                                                    self.n_samples_seen_)
+            self.mean_, self.var_, self.n_samples_seen_ = _incremental_mean_and_var(
+                X, epsilon_0, self.bounds, self.mean_, self.var_, self.n_samples_seen_
+            )
 
         # for backward-compatibility, reduce n_samples_seen_ to an integer
         # if the number of samples is the same for each feature (i.e. no
@@ -237,5 +252,7 @@ class StandardScaler(sk_pp.StandardScaler):
             self.scale_ = _handle_zeros_in_scale(np.sqrt(self.var_))
         else:
             self.scale_ = None
+
+        self.accountant.spend(self.epsilon, 0)
 
         return self

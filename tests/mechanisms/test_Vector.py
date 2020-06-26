@@ -48,8 +48,59 @@ class TestVector(TestCase):
             self.assertAlmostEqual(noisy_func(np.zeros(3)), 0)
             self.assertAlmostEqual(noisy_func(np.ones(3)), 3)
 
+    def test_nonzero_delta(self):
+        self.mech.set_dimension(3).set_sensitivity(1)
+        with self.assertRaises(ValueError):
+            self.mech.set_epsilon_delta(1, 0.1)
+
+    def test_wrong_sensitivity(self):
+        self.mech.set_dimension(3).set_epsilon(1)
+        with self.assertRaises(TypeError):
+            self.mech.set_sensitivity("1")
+
+        with self.assertRaises(TypeError):
+            self.mech.set_sensitivity(1, "1")
+
+        with self.assertRaises(ValueError):
+            self.mech.set_sensitivity(-1)
+
+        with self.assertRaises(ValueError):
+            self.mech.set_sensitivity(1, -1)
+
     def test_no_sensitivity(self):
         self.mech.set_dimension(3).set_epsilon(1)
+        with self.assertRaises(ValueError):
+            self.mech.randomise(self.func)
+
+    def test_zero_data_sensitivity(self):
+        self.mech.set_dimension(3).set_sensitivity(1, 0).set_epsilon(1)
+
+        for i in range(100):
+            noisy_func = self.mech.randomise(self.func)
+            self.assertAlmostEqual(noisy_func(np.zeros(3)), 0)
+            self.assertAlmostEqual(noisy_func(np.ones(3)), 3)
+
+    def test_wrong_alpha(self):
+        self.mech.set_dimension(3).set_epsilon(1)
+
+        with self.assertRaises(TypeError):
+            self.mech.set_alpha("1")
+
+        with self.assertRaises(ValueError):
+            self.mech.set_alpha(-1)
+
+    def test_wrong_dimension(self):
+        self.mech.set_epsilon(1)
+
+        with self.assertRaises(TypeError):
+            self.mech.set_dimension(1.2)
+
+        with self.assertRaises(ValueError):
+            self.mech.set_dimension(0)
+
+    def test_no_dimension(self):
+        self.mech.set_epsilon(1).set_sensitivity(1)
+
         with self.assertRaises(ValueError):
             self.mech.randomise(self.func)
 
@@ -84,3 +135,7 @@ class TestVector(TestCase):
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), 3)
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), old_noisy_func(np.ones(3)))
             # print(noisy_func(np.ones(3)))
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_dimension(4).set_sensitivity(1))
+        self.assertIn(".Vector(", repr_)

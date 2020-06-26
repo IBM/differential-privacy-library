@@ -16,14 +16,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Rounded integer transformer. Rounds the output of the given mechanism to the nearest integer.
+Rounded integer transformer.  Rounds the output of the given mechanism to the nearest integer.
 """
 from diffprivlib.mechanisms.transforms.base import DPTransformer
 
 
 class RoundedInteger(DPTransformer):
     """
-    Rounded integer transform. Rounds the (float) output of the given mechanism to the nearest integer.
+    Rounded integer transform.  Rounds the (float) output of the given mechanism to the nearest integer.
     """
     def post_transform(self, value):
         """Transforms the (float) output of the mechanism to be a rounded integer.

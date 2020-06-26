@@ -33,6 +33,12 @@ class TestLaplaceBoundedDomain(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_sensitivity(0).set_epsilon(1).set_bounds(0, 2)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1).set_bounds(0, 1)
         with self.assertRaises(ValueError):
@@ -109,3 +115,28 @@ class TestLaplaceBoundedDomain(TestCase):
             self.assertIsNotNone(self.mech.randomise(0))
 
         self.assertFalse(w, "Warning thrown for LaplaceBoundedDomain")
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1))
+        self.assertIn(".LaplaceBoundedDomain(", repr_)
+
+    def test_bias(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
+        self.assertGreater(self.mech.get_bias(0), 0.0)
+        self.assertLess(self.mech.get_bias(1), 0.0)
+
+    def test_variance(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
+        self.assertGreater(self.mech.get_variance(0), 0.0)
+
+    def test_effective_epsilon(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 10)
+        self.assertLessEqual(self.mech.get_effective_epsilon(), 1.0)
+
+    def test_effective_epsilon_same(self):
+        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
+        self.assertEqual(self.mech.get_effective_epsilon(), 1.0)
+
+    def test_effective_epsilon_nonzero_delta(self):
+        self.mech.set_epsilon_delta(1, 0.5).set_sensitivity(1).set_bounds(0, 10)
+        self.assertIsNone(self.mech.get_effective_epsilon())

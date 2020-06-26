@@ -122,6 +122,10 @@ class Staircase(Laplace):
     def get_bias(self, value):
         return 0.0
 
+    @copy_docstring(Laplace.get_variance)
+    def get_variance(self, value):
+        raise NotImplementedError
+
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):
         self.check_inputs(value)

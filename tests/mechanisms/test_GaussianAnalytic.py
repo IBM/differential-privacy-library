@@ -31,6 +31,12 @@ class TestGaussianAnalytic(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(1)
 
+    def test_zero_sensitivity(self):
+        self.mech.set_epsilon_delta(0.5, 0.1).set_sensitivity(0)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
+
     def test_no_epsilon(self):
         self.mech.set_sensitivity(1)
         with self.assertRaises(ValueError):
@@ -44,6 +50,12 @@ class TestGaussianAnalytic(TestCase):
     def test_large_epsilon(self):
         self.mech.set_sensitivity(1).set_epsilon_delta(1.5, 0.1)
         self.assertIsNotNone(self.mech.randomise(0))
+
+    def test_inf_epsilon(self):
+        self.mech.set_epsilon_delta(float("inf"), 0.1).set_sensitivity(1)
+
+        for i in range(1000):
+            self.assertAlmostEqual(self.mech.randomise(1), 1)
 
     def test_complex_epsilon(self):
         with self.assertRaises(TypeError):
@@ -90,3 +102,7 @@ class TestGaussianAnalytic(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_repr(self):
+        repr_ = repr(self.mech.set_epsilon_delta(1, 0.5))
+        self.assertIn(".GaussianAnalytic(", repr_)

@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.logistic_regression import LogisticRegression
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestLogisticRegression(TestCase):
@@ -11,6 +11,37 @@ class TestLogisticRegression(TestCase):
 
     def test_not_none(self):
         self.assertIsNotNone(LogisticRegression)
+
+    def test_bad_params(self):
+        X = [[1]]
+        y = [0]
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, C=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, C=1.2).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, max_iter=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, max_iter="100").fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, tol=-1).fit(X, y)
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1, tol="1").fit(X, y)
+
+    def test_one_class(self):
+        X = [[1]]
+        y = [0]
+
+        clf = LogisticRegression(data_norm=1)
+
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
 
     def test_no_params(self):
         clf = LogisticRegression()
@@ -33,8 +64,7 @@ class TestLogisticRegression(TestCase):
 
         clf = LogisticRegression(data_norm=1.0)
 
-        with self.assertWarns(PrivacyLeakWarning):
-            clf.fit(X, y)
+        self.assertIsNotNone(clf.fit(X, y))
 
     def test_sample_weight_warning(self):
         X = np.array(
@@ -129,3 +159,27 @@ class TestLogisticRegression(TestCase):
         self.assertIsNotNone(clf)
         self.assertFalse(clf.predict(np.array([(0.5 - 3) / 2.5]).reshape(-1, 1)))
         self.assertTrue(clf.predict(np.array([(5.5 - 3) / 2.5]).reshape(-1, 1)))
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        X = np.array(
+            [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
+             5.00, 5.50])
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+        X = X[:, np.newaxis]
+        X -= 3.0
+        X /= 2.5
+
+        clf = LogisticRegression(epsilon=2, data_norm=1.0, accountant=acc)
+        clf.fit(X, y)
+        self.assertEqual((2, 0), acc.total())
+
+        with BudgetAccountant(3, 0) as acc2:
+            clf = LogisticRegression(epsilon=2, data_norm=1.0)
+            clf.fit(X, y)
+            self.assertEqual((2, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                clf.fit(X, y)

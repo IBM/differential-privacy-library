@@ -46,15 +46,14 @@ Principal Component Analysis with differential privacy
 import warnings
 
 import numpy as np
-try:
-    import sklearn.decomposition._pca as sk_pca
-except ImportError:
-    import sklearn.decomposition.pca as sk_pca
+import sklearn.decomposition._pca as sk_pca
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
-from diffprivlib import tools
+from diffprivlib.accountant import BudgetAccountant
+from diffprivlib.tools import mean
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
+from diffprivlib.validation import clip_to_norm, check_bounds
 
 
 # noinspection PyPep8Naming
@@ -86,7 +85,7 @@ class PCA(sk_pca.PCA):
 
             n_components == min(n_samples, n_features) - 1
 
-    centered : bool, default=False
+    centered : bool, default: False
         If False, the data will be centered before calculating the principal components.  This will be calculated with
         differential privacy, consuming privacy budget from epsilon.
 
@@ -97,23 +96,24 @@ class PCA(sk_pca.PCA):
         Privacy parameter :math:`\epsilon`.  If ``centered=False``, half of epsilon is used to calculate the
         differentially private mean to center the data prior to the calculation of principal components.
 
-    data_norm : float, default: None
+    data_norm : float, optional
         The max l2 norm of any row of the data.  This defines the spread of data that will be protected by
         differential privacy.
 
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data. To preserve differential privacy fully,
+        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
-    range : array_like or float, optional
-        Range of each feature of the sample X, but only required when ``centered=False``. Used to calculate the
-        differentially private mean of the sample.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
-    copy : bool, default=True
+    copy : bool, default: True
         If False, data passed to fit are overwritten and running fit(X).transform(X) will not yield the expected
         results, use fit_transform(X) instead.
 
-    whiten : bool, optional (default False)
+    whiten : bool, default: False
         When True (False by default) the `components_` vectors are multiplied by the square root of n_samples and
         then divided by the singular values to ensure uncorrelated outputs with unit component-wise variances.
 
@@ -121,19 +121,17 @@ class PCA(sk_pca.PCA):
         components) but can sometime improve the predictive accuracy of the downstream estimators by making their
         data respect some hard-wired assumptions.
 
-    random_state : int, RandomState instance or None, optional (default None)
+    random_state : int or RandomState instance, optional
         If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
         is the random number generator.
 
-    **unused_args : kwargs
-        Placeholder for parameters of :obj:`sklearn.decomposition.PCA` that are not used in `diffprivlib`.
-        Specifying any of these parameters will raise a :class:`.DiffprivlibCompatibilityWarning`.
-
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     Attributes
     ----------
     components_ : array, shape (n_components, n_features)
-        Principal axes in feature space, representing the directions of maximum variance in the data. The components
+        Principal axes in feature space, representing the directions of maximum variance in the data.  The components
         are sorted by ``explained_variance_``.
 
     explained_variance_ : array, shape (n_components,)
@@ -147,7 +145,7 @@ class PCA(sk_pca.PCA):
         If ``n_components`` is not set then all components are stored and the sum of the ratios is equal to 1.0.
 
     singular_values_ : array, shape (n_components,)
-        The singular values corresponding to each of the selected components. The singular values are equal to the
+        The singular values corresponding to each of the selected components.  The singular values are equal to the
         2-norms of the ``n_components`` variables in the lower-dimensional space.
 
     mean_ : array, shape (n_features,)
@@ -156,8 +154,8 @@ class PCA(sk_pca.PCA):
         Equal to `X.mean(axis=0)`.
 
     n_components_ : int
-        The estimated number of components. When n_components is set to 'mle' or a number between 0 and 1 (with
-        svd_solver == 'full') this number is estimated from input data. Otherwise it equals the parameter
+        The estimated number of components.  When n_components is set to 'mle' or a number between 0 and 1 (with
+        svd_solver == 'full') this number is estimated from input data.  Otherwise it equals the parameter
         n_components, or the lesser value of n_features and n_samples if n_components is None.
 
     n_features_ : int
@@ -167,9 +165,9 @@ class PCA(sk_pca.PCA):
         Number of samples in the training data.
 
     noise_variance_ : float
-        The estimated noise covariance following the Probabilistic PCA model from Tipping and Bishop 1999. See
+        The estimated noise covariance following the Probabilistic PCA model from Tipping and Bishop 1999.  See
         "Pattern Recognition and Machine Learning" by C. Bishop, 12.2.1 p. 574 or
-        http://www.miketipping.com/papers/met-mppca.pdf. It is required to compute the estimated data covariance and
+        http://www.miketipping.com/papers/met-mppca.pdf.  It is required to compute the estimated data covariance and
         score samples.
 
         Equal to the average of (min(n_features, n_samples) - n_components) smallest eigenvalues of the covariance
@@ -185,49 +183,47 @@ class PCA(sk_pca.PCA):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, range=None, copy=True,
-                 whiten=False, random_state=None, **unused_args):
+    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, bounds=None, copy=True,
+                 whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
         self.centered = centered
         self.epsilon = epsilon
         self.data_norm = data_norm
-        self.range = range
+        self.bounds = bounds
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         warn_unused_args(unused_args)
 
     def _fit_full(self, X, n_components):
+        self.accountant.check(self.epsilon, 0)
+
         n_samples, n_features = X.shape
 
         if self.centered:
             self.mean_ = np.zeros_like(np.mean(X, axis=0))
         else:
-            if self.range is None:
+            if self.bounds is None:
                 warnings.warn(
-                    "Range parameter hasn't been specified, so falling back to determining range from the data.\n"
+                    "Bounds parameter hasn't been specified, so falling back to determining range from the data.\n"
                     "This will result in additional privacy leakage. To ensure differential privacy with no "
                     "additional privacy loss, specify `range` for each valued returned by np.mean().",
                     PrivacyLeakWarning)
 
-                self.range = np.maximum(np.ptp(X, axis=0), 1e-5)
+                self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-            self.mean_ = tools.mean(X, epsilon=self.epsilon / 2, range=self.range, axis=0)
+            self.bounds = check_bounds(self.bounds, n_features)
+            self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())
 
         X -= self.mean_
-
-        max_norm = np.linalg.norm(X, axis=1).max()
 
         if self.data_norm is None:
             warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
-            self.data_norm = max_norm
+            self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        if max_norm > self.data_norm:
-            warnings.warn("Differential privacy is only guaranteed for data whose rows have a 2-norm of at most %g. "
-                          "Got %f\n"
-                          "Translate and/or scale the data accordingly to ensure differential privacy is achieved."
-                          % (self.data_norm, max_norm), PrivacyLeakWarning)
+        X = clip_to_norm(X, self.data_norm)
 
         XtX = np.dot(X.T, X)
 
@@ -249,7 +245,10 @@ class PCA(sk_pca.PCA):
 
         # Post-process the number of components required
         if n_components == 'mle':
-            n_components = sk_pca._infer_dimension_(explained_variance_, n_samples, n_features)
+            try:
+                n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
+            except AttributeError:
+                n_components = sk_pca._infer_dimension_(explained_variance_, n_samples, n_features)
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold
@@ -269,6 +268,8 @@ class PCA(sk_pca.PCA):
         self.explained_variance_ = explained_variance_[:n_components]
         self.explained_variance_ratio_ = explained_variance_ratio_[:n_components]
         self.singular_values_ = singular_values_[:n_components]
+
+        self.accountant.spend(self.epsilon, 0)
 
         return u, s, v
 

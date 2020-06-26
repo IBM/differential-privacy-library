@@ -4,10 +4,10 @@ import os
 import setuptools
 
 
-def read(rel_path):
+def read(file_path):
     here = os.path.abspath(os.path.dirname(__file__))
 
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
+    with codecs.open(os.path.join(here, file_path), 'r') as fp:
         return fp.read()
 
 
@@ -22,9 +22,9 @@ def get_version(file_path):
 
 install_requires = ['numpy >= 1.15.0',
                     'setuptools >= 39.0.1',
-                    'scikit-learn >= 0.20.3',
+                    'scikit-learn >= 0.22.0',
                     'scipy >= 1.2.1',
-                    'joblib >= 0.13.2',
+                    'joblib >= 0.11',
                     ]
 
 docs_require = ['sphinx >= 1.4',
@@ -45,15 +45,15 @@ setuptools.setup(name='diffprivlib',
                  },
                  python_requires='>=3',
                  classifiers=[
-                     'Development Status :: 3 - Alpha',
+                     'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',
                      'Intended Audience :: Education',
                      'Intended Audience :: Science/Research',
                      'License :: OSI Approved',
+                     'License :: OSI Approved :: MIT License',
                      'Natural Language :: English',
                      'Programming Language :: Python :: 3',
                      'Programming Language :: Python :: 3 :: Only',
-                     'Programming Language :: Python :: 3.4',
                      'Programming Language :: Python :: 3.5',
                      'Programming Language :: Python :: 3.6',
                      'Programming Language :: Python :: 3.7',
