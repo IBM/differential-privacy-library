@@ -1,6 +1,6 @@
 # Diffprivlib v0.3
 
-[![Python versions](https://img.shields.io/pypi/pyversions/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![PyPi version](https://img.shields.io/pypi/v/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![PyPi status](https://img.shields.io/pypi/status/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![Build Status](https://travis-ci.org/IBM/differential-privacy-library.svg?branch=master)](https://travis-ci.org/IBM/differential-privacy-library) [![Documentation Status](https://readthedocs.org/projects/diffprivlib/badge/?version=latest)](https://diffprivlib.readthedocs.io/en/latest/?badge=latest) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/differential-privacy-library.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/differential-privacy-library/context:python)
+[![Python versions](https://img.shields.io/pypi/pyversions/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![PyPi version](https://img.shields.io/pypi/v/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![PyPi status](https://img.shields.io/pypi/status/diffprivlib.svg)](https://pypi.org/project/diffprivlib/) [![Build Status](https://travis-ci.org/IBM/differential-privacy-library.svg?branch=main)](https://travis-ci.org/IBM/differential-privacy-library) [![Documentation Status](https://readthedocs.org/projects/diffprivlib/badge/?version=latest)](https://diffprivlib.readthedocs.io/en/latest/?badge=latest) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/differential-privacy-library.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/differential-privacy-library/context:python)
 
 Diffprivlib is a general-purpose library for experimenting with, investigating and developing applications in, differential privacy.
 
@@ -12,7 +12,7 @@ Use diffprivlib if you are looking to:
 
 Diffprivlib supports Python versions 3.6 to 3.8.
 
-## Getting started: [ML with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/30seconds.ipynb)
+## Getting started: [Machine learning with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/main/notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
 
 ```python
@@ -69,9 +69,9 @@ plt.ylabel("Accuracy")
 plt.show()
 ```
 
-![Differentially private naive Bayes](https://github.com/IBM/differential-privacy-library/raw/master/notebooks/30seconds.png)
+![Differentially private naive Bayes](https://github.com/IBM/differential-privacy-library/raw/main/notebooks/30seconds.png)
 
-Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/) directory, or [dive straight in](https://github.com/IBM/differential-privacy-library/blob/master/diffprivlib/).
+Congratulations, you've completed your first differentially private machine learning task with the Differential Privacy Library!  Check out more examples in the [notebooks](https://github.com/IBM/differential-privacy-library/blob/main/notebooks/) directory, or [dive straight in](https://github.com/IBM/differential-privacy-library/blob/main/diffprivlib/).
 
 ## Contents
 
