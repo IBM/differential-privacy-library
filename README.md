@@ -10,7 +10,7 @@ Use diffprivlib if you are looking to:
 - Explore the impact of differential privacy on machine learning accuracy using classification and clustering models 
 - Build your own differential privacy applications, using our extensive collection of mechanisms
 
-Diffprivlib supports Python versions 3.5 to 3.8.
+Diffprivlib supports Python versions 3.6 to 3.8.
 
 ## Getting started: [ML with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/master/notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
