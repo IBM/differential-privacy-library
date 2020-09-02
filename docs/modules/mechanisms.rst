@@ -23,6 +23,13 @@ Binary mechanism
    :inherited-members:
    :exclude-members: copy,bias,mse,variance
 
+Bingham mechanism
+-----------------------------
+.. autoclass:: Bingham
+   :members:
+   :inherited-members:
+   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+
 Exponential mechanisms
 -----------------------------
 .. autoclass:: Exponential
