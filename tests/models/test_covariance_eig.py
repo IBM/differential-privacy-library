@@ -64,3 +64,34 @@ class TestCovarianceEig(TestCase):
         self.assertTrue(np.allclose(vals[vals.argsort()], dp_vals[dp_vals.argsort()]))
         self.assertTrue(np.allclose(abs(dp_vecs.T.dot(vecs).sum(axis=1)), 1))
         self.assertTrue(np.allclose(abs(dp_vecs.T.dot(vecs).sum(axis=0)), 1))
+
+    def test_dims(self):
+        d, n = 5, 10
+        data = self.generate_normed_data(d, n)
+
+        vals, vecs = covariance_eig(data, norm=1, dims=3)
+        self.assertEqual(vecs.shape, (5, 3))
+        self.assertEqual(vals.shape, (5,))
+
+        vals, vecs = covariance_eig(data, norm=1, dims=10)
+        self.assertEqual(vecs.shape, (5, 5))
+        self.assertEqual(vals.shape, (5,))
+
+        vals, vecs = covariance_eig(data, norm=1, dims=0)
+        self.assertEqual(vecs.shape, (5, 0))
+        self.assertEqual(vals.shape, (5,))
+
+        with self.assertRaises(ValueError):
+            covariance_eig(data, dims=-5, norm=1)
+
+        with self.assertRaises(TypeError):
+            covariance_eig(data, dims=0.5, norm=1)
+
+    def test_svd(self):
+        data = self.generate_normed_data(5, 10)
+
+        u, s, v = np.linalg.svd(data.T.dot(data))
+        vals, vecs = covariance_eig(data, norm=1, epsilon=float("inf"))
+
+        self.assertTrue(np.allclose(vals, s))
+        self.assertTrue(np.allclose(abs(vecs.T.dot(u)), np.eye(5)))
