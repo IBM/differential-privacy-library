@@ -152,23 +152,23 @@ class Bingham(DPMechanism):
         self.check_inputs(value)
 
         eigvals, eigvecs = np.linalg.eigh(value)
-        d = value.shape[0]
+        dims = value.shape[0]
 
-        if d == 1:
+        if dims == 1:
             return np.ones((1, 1))
         if self._sensitivity / self._epsilon == 0:
             return eigvecs[:, eigvals.argmax()]
 
-        value_translated = self._epsilon * (eigvals.max() * np.eye(d) - value) / 4 / self._sensitivity
+        value_translated = self._epsilon * (eigvals.max() * np.eye(dims) - value) / 4 / self._sensitivity
 
-        left, right, mid = 1, d, (1 + d) / 2
+        left, right, mid = 1, dims, (1 + dims) / 2
         old_interval_size = (right - left) * 2
 
         while right - left < old_interval_size:
             old_interval_size = right - left
 
             mid = (right + left) / 2
-            f_mid = np.array([1 / (mid + 2 * e) for e in eigvals]).sum()
+            f_mid = np.array([1 / (mid + 2 * eig) for eig in eigvals]).sum()
 
             if f_mid <= 1:
                 right = mid
@@ -176,15 +176,16 @@ class Bingham(DPMechanism):
             if f_mid >= 1:
                 left = mid
 
-        b = mid
-        omega = np.eye(d) + 2 * value_translated / b
+        b_const = mid
+        omega = np.eye(dims) + 2 * value_translated / b_const
         omega_inv = np.linalg.inv(omega)
-        norm_const = np.exp(-(d - b) / 2) * ((d / b) ** (d / 2))
+        norm_const = np.exp(-(dims - b_const) / 2) * ((dims / b_const) ** (dims / 2))
 
         while True:
-            z = np.random.multivariate_normal(np.zeros(d), omega_inv)
-            u = z / np.linalg.norm(z)
-            prob = np.exp(-u.dot(value_translated).dot(u)) / norm_const / ((u.dot(omega).dot(u)) ** (d / 2))
+            rnd_vec = np.random.multivariate_normal(np.zeros(dims), omega_inv)
+            unit_vec = rnd_vec / np.linalg.norm(rnd_vec)
+            prob = np.exp(-unit_vec.dot(value_translated).dot(unit_vec)) / norm_const\
+                / ((unit_vec.dot(omega).dot(unit_vec)) ** (dims / 2))
 
-            if np.random.random() >= prob:
-                return u
+            if np.random.random() <= prob:
+                return unit_vec
