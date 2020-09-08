@@ -95,3 +95,4 @@ class TestCovarianceEig(TestCase):
 
         self.assertTrue(np.allclose(vals, s))
         self.assertTrue(np.allclose(abs(vecs.T.dot(u)), np.eye(5)))
+        self.assertTrue(np.allclose(abs(vecs.T.dot(v.T)), np.eye(5)))
