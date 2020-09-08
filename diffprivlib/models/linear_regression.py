@@ -51,7 +51,6 @@ from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.mechanisms import Wishart
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
@@ -237,7 +236,7 @@ class LinearRegression(sk_lr.LinearRegression):
         A = np.hstack((X, y[:, np.newaxis] if y.ndim == 1 else y))
         # TODO: Replace np.max(y) with equiv from bounds_y
         eigvals, eigvecs = covariance_eig(A, epsilon=self.epsilon * (1 - epsilon_intercept_scale),
-                                          norm=np.sqrt(self.data_norm ** 2 + np.max(y) ** 2))
+                                          norm=np.sqrt(self.data_norm ** 2 + np.max(abs(y)) ** 2))
 
         noisy_AtA = np.zeros_like(eigvecs)
         for i, eigval in enumerate(eigvals):

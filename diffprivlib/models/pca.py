@@ -53,7 +53,6 @@ from sklearn.utils.extmath import stable_cumsum, svd_flip
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
-from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
 from diffprivlib.validation import clip_to_norm, check_bounds
 
