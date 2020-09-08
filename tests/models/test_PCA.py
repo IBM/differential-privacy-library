@@ -82,21 +82,21 @@ class TestPCA(TestCase):
             self.assertTrue(np.allclose(np.abs((clf.components_ / sk_clf.components_).sum(axis=1)), clf.n_features_))
 
     def test_big_epsilon(self):
-        X = np.random.randn(25000, 21)
+        X = np.random.randn(5000, 10)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
 
-        for components in range(1, 10):
-            clf = PCA(components, epsilon=5, centered=True, data_norm=1)
+        for components in range(1, 3):
+            clf = PCA(components * 3, epsilon=10, centered=True, data_norm=1)
             clf.fit(X)
 
-            sk_clf = sk_pca.PCA(components, svd_solver='full')
+            sk_clf = sk_pca.PCA(components * 3, svd_solver='full')
             sk_clf.fit(X)
 
-            self.assertAlmostEqual(clf.score(X), sk_clf.score(X), places=4)
+            self.assertAlmostEqual(clf.score(X) / sk_clf.score(X), 1, places=2)
 
     def test_mle_components(self):
-        X = np.random.randn(25000, 21)
+        X = np.random.randn(1000, 5)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
 
@@ -137,7 +137,7 @@ class TestPCA(TestCase):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant()
 
-        X = np.random.randn(25000, 21)
+        X = np.random.randn(5000, 21)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
 

@@ -44,12 +44,14 @@
 Principal Component Analysis with differential privacy
 """
 import warnings
+from numbers import Integral
 
 import numpy as np
 import sklearn.decomposition._pca as sk_pca
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
 from diffprivlib.accountant import BudgetAccountant
+from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
 from diffprivlib.mechanisms import Wishart
 from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
@@ -225,19 +227,15 @@ class PCA(sk_pca.PCA):
 
         X = clip_to_norm(X, self.data_norm)
 
-        XtX = np.dot(X.T, X)
-
-        mech = Wishart(epsilon=self.epsilon if self.centered else self.epsilon / 2, sensitivity=self.data_norm)
-        noisy_input = mech.randomise(XtX)
-
-        u, s, v = np.linalg.svd(noisy_input)
-        u, v = svd_flip(u, v)
+        s, u = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2, norm=self.data_norm,
+                              dims=n_components if isinstance(n_components, Integral) else None)
+        u, _ = svd_flip(u, np.zeros_like(u).T)
         s = np.sqrt(s)
 
-        components_ = v
+        components_ = u.T
 
         # Get variance explained by singular values
-        explained_variance_ = (s ** 2) / (n_samples - 1)
+        explained_variance_ = np.sort((s ** 2) / (n_samples - 1))[::-1]
         total_var = explained_variance_.sum()
         explained_variance_ratio_ = explained_variance_ / total_var
         singular_values_ = s.copy()  # Store the singular values.
@@ -271,7 +269,7 @@ class PCA(sk_pca.PCA):
 
         self.accountant.spend(self.epsilon, 0)
 
-        return u, s, v
+        return u, s[:n_components], u.T
 
     @copy_docstring(sk_pca.PCA.fit_transform)
     def fit_transform(self, X, y=None):
