@@ -52,6 +52,7 @@ from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Wishart
+from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
 from diffprivlib.validation import clip_to_norm, check_bounds, clip_to_bounds
@@ -233,12 +234,14 @@ class LinearRegression(sk_lr.LinearRegression):
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
         X = clip_to_norm(X, self.data_norm)
-
         A = np.hstack((X, y[:, np.newaxis] if y.ndim == 1 else y))
-        AtA = np.dot(A.T, A)
+        # TODO: Replace np.max(y) with equiv from bounds_y
+        eigvals, eigvecs = covariance_eig(A, epsilon=self.epsilon * (1 - epsilon_intercept_scale),
+                                          norm=np.sqrt(self.data_norm ** 2 + np.max(y) ** 2))
 
-        mech = Wishart(epsilon=self.epsilon * (1 - epsilon_intercept_scale), sensitivity=self.data_norm)
-        noisy_AtA = mech.randomise(AtA)
+        noisy_AtA = np.zeros_like(eigvecs)
+        for i, eigval in enumerate(eigvals):
+            noisy_AtA += eigvecs[:, i].reshape(-1, 1).dot(eigvecs[:, i].reshape(1, -1)) * eigval
 
         noisy_AtA = noisy_AtA[:n_features, :]
         XtX = noisy_AtA[:, :n_features]
