@@ -160,6 +160,7 @@ class Bingham(DPMechanism):
             return eigvecs[:, eigvals.argmax()]
 
         value_translated = self._epsilon * (eigvals.max() * np.eye(dims) - value) / 4 / self._sensitivity
+        translated_eigvals = np.linalg.eigvalsh(value_translated)
 
         left, right, mid = 1, dims, (1 + dims) / 2
         old_interval_size = (right - left) * 2
@@ -168,7 +169,7 @@ class Bingham(DPMechanism):
             old_interval_size = right - left
 
             mid = (right + left) / 2
-            f_mid = np.array([1 / (mid + 2 * eig) for eig in eigvals]).sum()
+            f_mid = np.array([1 / (mid + 2 * eig) for eig in translated_eigvals]).sum()
 
             if f_mid <= 1:
                 right = mid

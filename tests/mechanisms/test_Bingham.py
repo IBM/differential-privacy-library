@@ -139,6 +139,15 @@ class TestBingham(TestCase):
         with self.assertRaises(ValueError):
             self.mech.randomise(np.ones((3, 3, 3)))
 
+    def test_large_input(self):
+        X = np.random.randn(10000, 21)
+        X -= np.mean(X, axis=0)
+        X /= np.linalg.norm(X, axis=1).max()
+        XtX = X.T.dot(X)
+
+        self.mech.set_epsilon(1)
+        self.assertIsNotNone(self.mech.randomise(XtX))
+
     def test_different_result(self):
         self.mech.set_epsilon(1).set_sensitivity(1)
         data = self.generate_data()
