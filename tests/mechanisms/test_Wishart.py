@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from unittest import TestCase
 
@@ -11,6 +13,12 @@ class TestWishart(TestCase):
             global_seed(314159)
 
         self.mech = Wishart
+
+        # with warnings.catch_warnings(record=True) as w:
+        #     warnings.filterwarnings('always', '', DeprecationWarning)
+        #     self.mech = Wishart()
+        #     self.assertIs(w[0].category, DeprecationWarning)
+
         self.random_array = np.random.randn(5,5)
 
     def teardown_method(self, method):
