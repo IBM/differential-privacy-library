@@ -33,23 +33,23 @@ class Vector(DPMechanism):
     The vector mechanism is used when perturbing convex objective functions.
     Full paper: http://www.jmlr.org/papers/volume12/chaudhuri11a/chaudhuri11a.pdf
     """
-    def __init__(self):
-        super().__init__()
-        self._function_sensitivity = None
-        self._data_sensitivity = None
-        self._vector_dim = None
-        self._alpha = 0.01
+    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1, dimension, alpha=0.01):
+        super().__init__(epsilon=epsilon, delta=0.0)
+        self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
+                                                                                   data_sensitivity)
+        self.dimension = self._check_dimension(dimension)
+        self.alpha = self._check_alpha(alpha)
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_alpha(" + str(self._alpha) + ")" if self._alpha != 0.01 else ""
-        output += ".set_sensitivity(" + str(self._function_sensitivity) + ", " + str(self._data_sensitivity) + ")" \
-            if self._function_sensitivity is not None or self._data_sensitivity != 1 else ""
-        output += ".set_dimension(" + str(self._vector_dim) + ")" if self._vector_dim is not None else ""
+        output += ".set_alpha(" + str(self.alpha) + ")" if self.alpha != 0.01 else ""
+        output += ".set_sensitivity(" + str(self.function_sensitivity) + ", " + str(self.data_sensitivity) + ")" \
+            if self.function_sensitivity is not None or self.data_sensitivity != 1 else ""
+        output += ".set_dimension(" + str(self.dimension) + ")" if self.dimension is not None else ""
 
         return output
 
-    def set_epsilon_delta(self, epsilon, delta):
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
 
         For the vector mechanism, `delta` must be zero and `epsilon` must be strictly positive.
@@ -76,9 +76,9 @@ class Vector(DPMechanism):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    def set_alpha(self, alpha):
+    def _check_alpha(self, alpha):
         r"""Set the regularisation parameter :math:`\alpha` for the mechanism.
 
         `alpha` must be strictly positive.  Default is 0.01.
@@ -99,10 +99,9 @@ class Vector(DPMechanism):
         if alpha <= 0:
             raise ValueError("Alpha must be strictly positive")
 
-        self._alpha = alpha
-        return self
+        return alpha
 
-    def set_dimension(self, vector_dim):
+    def _check_dimension(self, vector_dim):
         """Sets the dimension `vector_dim` of the domain of the mechanism.
 
         This dimension relates to the size of the input vector of the function being considered by the mechanism.  This
@@ -123,10 +122,9 @@ class Vector(DPMechanism):
         if not vector_dim >= 1:
             raise ValueError("d must be strictly positive")
 
-        self._vector_dim = int(vector_dim)
-        return self
+        return int(vector_dim)
 
-    def set_sensitivity(self, function_sensitivity, data_sensitivity=1):
+    def _check_sensitivity(self, function_sensitivity, data_sensitivity=1):
         """Sets the sensitivity of the function and data being processed by the mechanism.
 
         - The sensitivity of the function relates to the max of its second derivative.  Must be strictly positive.
@@ -151,11 +149,9 @@ class Vector(DPMechanism):
         if function_sensitivity < 0 or data_sensitivity < 0:
             raise ValueError("Sensitivities must be non-negative")
 
-        self._function_sensitivity = function_sensitivity
-        self._data_sensitivity = data_sensitivity
-        return self
+        return function_sensitivity, data_sensitivity
 
-    def check_inputs(self, value):
+    def _check_all(self, value):
         """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
@@ -174,25 +170,22 @@ class Vector(DPMechanism):
             If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
 
         """
-        super().check_inputs(value)
+        super()._check_all(value)
+        self._check_alpha(self.alpha)
+        self._check_sensitivity(self.function_sensitivity, self.data_sensitivity)
+        self._check_dimension(self.dimension)
 
         if not callable(value):
             raise TypeError("Value to be randomised must be a function")
 
-        if self._data_sensitivity is None or self._function_sensitivity is None:
-            raise ValueError("Sensitivities must be set")
-
-        if self._vector_dim is None:
-            raise ValueError("Dimension d must be set")
-
         return True
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
         raise NotImplementedError
 
     def randomise(self, value):
@@ -212,22 +205,22 @@ class Vector(DPMechanism):
             The randomised method.
 
         """
-        self.check_inputs(value)
+        self._check_all(value)
 
-        epsilon_p = self._epsilon - 2 * np.log(1 + self._function_sensitivity * self._data_sensitivity /
-                                               (0.5 * self._alpha))
+        epsilon_p = self.epsilon - 2 * np.log(1 + self.function_sensitivity * self.data_sensitivity /
+                                              (0.5 * self.alpha))
         delta = 0
 
         if epsilon_p <= 0:
-            delta = (self._function_sensitivity * self._data_sensitivity / (np.exp(self._epsilon / 4) - 1)
-                     - 0.5 * self._alpha)
-            epsilon_p = self._epsilon / 2
+            delta = (self.function_sensitivity * self.data_sensitivity / (np.exp(self.epsilon / 4) - 1)
+                     - 0.5 * self.alpha)
+            epsilon_p = self.epsilon / 2
 
-        scale = (epsilon_p / 2 / self._data_sensitivity) if self._data_sensitivity > 0 else float("inf")
+        scale = (epsilon_p / 2 / self.data_sensitivity) if self.data_sensitivity > 0 else float("inf")
 
-        normed_noisy_vector = np.random.normal(0, 1, self._vector_dim)
+        normed_noisy_vector = np.random.normal(0, 1, self.dimension)
         norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = np.random.gamma(self._vector_dim, 1 / scale, 1)
+        noisy_norm = np.random.gamma(self.dimension, 1 / scale, 1)
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 

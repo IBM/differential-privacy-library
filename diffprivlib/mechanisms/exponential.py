@@ -22,7 +22,6 @@ Implementation of the standard exponential mechanism, and its derivative, the hi
 from numbers import Real
 
 import numpy as np
-from numpy.random import random
 
 from diffprivlib.mechanisms.base import DPMechanism
 from diffprivlib.mechanisms.binary import Binary
@@ -40,21 +39,21 @@ class Exponential(DPMechanism):
     Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
 
     """
-    def __init__(self):
-        super().__init__()
-        self._domain_values = None
-        self._utility_values = None
-        self._normalising_constant = None
-        self._sensitivity = None
+    def __init__(self, *, epsilon, utility_list):
+        super().__init__(epsilon=epsilon, delta=0.0)
+
         self._balanced_tree = False
+        self._utility_values, self._sensitivity, self._domain_values = self._build_utility(utility_list)
+        self._check_utility_full(self._domain_values)
+        self._normalising_constant = self._build_normalising_constant()
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_utility(" + str(self.get_utility_list()) + ")" if self._utility_values is not None else ""
+        output += ".set_utility(" + str(self.utility_list()) + ")" if self._utility_values is not None else ""
 
         return output
 
-    def set_utility(self, utility_list):
+    def _build_utility(self, utility_list):
         """Sets the utility function of the mechanism.  The utility function is used to determine the probability of
         selecting an output for a given input.
 
@@ -119,22 +118,25 @@ class Exponential(DPMechanism):
         self._sensitivity = sensitivity
         self._domain_values = domain_values
 
-        self._check_utility_full(domain_values)
-
-        return self
+        return utility_values, sensitivity, domain_values
 
     def _check_utility_full(self, domain_values):
+        missing = []
+
         for val1 in domain_values:
             for val2 in domain_values:
                 if val1 >= val2:
                     continue
 
                 if (val1, val2) not in self._utility_values:
-                    raise ValueError("Utility value for (%s) missing" % (val1 + ", " + val2))
+                    missing.append((val1, val2))
+
+        if missing:
+            raise ValueError("Utility values missing: %s" % (str(missing)))
 
         return True
 
-    def get_utility_list(self):
+    def utility_list(self):
         """Gets the utility list of the mechanism, in the same form as accepted by `.set_utility_list`.
 
         Returns
@@ -194,11 +196,10 @@ class Exponential(DPMechanism):
             return 1.0
 
         balancing_factor = 1 if self._balanced_tree else 2
-        return np.exp(- self._epsilon * self._get_utility(value1, value2) / balancing_factor / self._sensitivity)
+        return np.exp(- self.epsilon * self._get_utility(value1, value2) / balancing_factor / self._sensitivity)
 
-    @copy_docstring(Binary.check_inputs)
-    def check_inputs(self, value):
-        super().check_inputs(value)
+    def _check_all(self, value):
+        super()._check_all(value)
 
         if self._utility_values is None:
             raise ValueError("Utility function must be set")
@@ -214,7 +215,7 @@ class Exponential(DPMechanism):
 
         return True
 
-    def set_epsilon_delta(self, epsilon, delta):
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
 
         For the exponential mechanism, `delta` must be zero and `epsilon` must be strictly positive.
@@ -241,23 +242,21 @@ class Exponential(DPMechanism):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
-        self._normalising_constant = None
+        return super()._check_epsilon_delta(epsilon, delta)
 
-        return super().set_epsilon_delta(epsilon, delta)
-
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
         raise NotImplementedError
 
     @copy_docstring(Binary.randomise)
     def randomise(self, value):
-        self.check_inputs(value)
+        self._check_all(value)
 
-        unif_rv = random() * self._normalising_constant[value]
+        unif_rv = self._rng.random() * self._normalising_constant[value]
         cum_prob = 0
         _target_value = None
 
@@ -276,8 +275,10 @@ class ExponentialHierarchical(Exponential):
     as the values can be inferred from the hierarchy.
 
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *, epsilon, hierarchy):
+        hierarchy = self._build_hierarchy(hierarchy)
+        utility_list = self._build_utility_list(hierarchy)
+        super().__init__(epsilon=epsilon, utility_list=utility_list)
         self._list_hierarchy = None
 
     def __repr__(self):
@@ -287,6 +288,9 @@ class ExponentialHierarchical(Exponential):
         return output
 
     def _build_hierarchy(self, nested_list, parent_node=None):
+        if not isinstance(nested_list, list):
+            raise TypeError("Hierarchy must be a list")
+
         if parent_node is None:
             parent_node = []
 
@@ -363,14 +367,14 @@ class ExponentialHierarchical(Exponential):
 
         self._list_hierarchy = list_hierarchy
         hierarchy = self._build_hierarchy(list_hierarchy)
-        self.set_utility(self._build_utility_list(hierarchy))
+        self._build_utility(self._build_utility_list(hierarchy))
 
         return self
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
         raise NotImplementedError

@@ -10,68 +10,53 @@ class TestLaplaceFolded(TestCase):
         if method.__name__ .endswith("prob"):
             global_seed(314159)
 
-        self.mech = LaplaceFolded()
+        self.mech = LaplaceFolded
 
     def teardown_method(self, method):
         del self.mech
-
-    def test_not_none(self):
-        self.assertIsNotNone(self.mech)
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMechanism
         self.assertTrue(issubclass(LaplaceFolded, DPMechanism))
 
-    def test_no_params(self):
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
-
-    def test_no_sensitivity(self):
-        self.mech.set_epsilon(1).set_bounds(0, 1)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
-
     def test_zero_sensitivity(self):
-        self.mech.set_sensitivity(0).set_epsilon(1).set_bounds(0, 2)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=0, lower=0, upper=2)
 
         for i in range(1000):
-            self.assertAlmostEqual(self.mech.randomise(1), 1)
-
-    def test_no_epsilon(self):
-        self.mech.set_sensitivity(1).set_bounds(0, 1)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(1)
+            self.assertAlmostEqual(mech.randomise(1), 1)
 
     def test_inf_epsilon(self):
-        self.mech.set_sensitivity(1).set_epsilon(float("inf")).set_bounds(0, 1)
+        mech = self.mech(epsilon=float("inf"), delta=0, sensitivity=1, lower=0, upper=1)
 
         for i in range(1000):
-            self.assertEqual(self.mech.randomise(0.5), 0.5)
+            self.assertEqual(mech.randomise(0.5), 0.5)
 
     def test_complex_epsilon(self):
         with self.assertRaises(TypeError):
-            self.mech.set_epsilon(1+2j)
+            self.mech(epsilon=1 + 2j, delta=0, sensitivity=1, lower=0, upper=1)
 
     def test_string_epsilon(self):
         with self.assertRaises(TypeError):
-            self.mech.set_epsilon("Two")
+            self.mech(epsilon="Two", delta=0, sensitivity=1, lower=0, upper=1)
 
-    def test_no_bounds(self):
-        self.mech.set_sensitivity(1).set_epsilon(1)
+    def test_wrong_bounds(self):
         with self.assertRaises(ValueError):
-            self.mech.randomise(1)
+            self.mech(epsilon=1, delta=0, sensitivity=1, lower=3, upper=1)
+
+        with self.assertRaises(TypeError):
+            self.mech(epsilon=1, delta=0, sensitivity=1, lower="0", upper="2")
 
     def test_non_numeric(self):
-        self.mech.set_sensitivity(1).set_epsilon(1).set_bounds(0, 1)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
         with self.assertRaises(TypeError):
-            self.mech.randomise("Hello")
+            mech.randomise("Hello")
 
     def test_zero_median_prob(self):
-        self.mech.set_sensitivity(1).set_epsilon(1).set_bounds(0, 1)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
         vals = []
 
         for i in range(10000):
-            vals.append(self.mech.randomise(0.5))
+            vals.append(mech.randomise(0.5))
 
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.5, delta=0.1)
@@ -79,15 +64,15 @@ class TestLaplaceFolded(TestCase):
     def test_neighbors_prob(self):
         epsilon = 1
         runs = 10000
-        self.mech.set_sensitivity(1).set_epsilon(1).set_bounds(0, 1)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
         count = [0, 0]
 
         for i in range(runs):
-            val0 = self.mech.randomise(0)
+            val0 = mech.randomise(0)
             if val0 <= 0.5:
                 count[0] += 1
 
-            val1 = self.mech.randomise(1)
+            val1 = mech.randomise(1)
             if val1 <= 0.5:
                 count[1] += 1
 
@@ -95,11 +80,11 @@ class TestLaplaceFolded(TestCase):
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
 
     def test_within_bounds(self):
-        self.mech.set_sensitivity(1).set_epsilon(1).set_bounds(0, 1)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
         vals = []
 
         for i in range(1000):
-            vals.append(self.mech.randomise(0.5))
+            vals.append(mech.randomise(0.5))
 
         vals = np.array(vals)
 
@@ -107,14 +92,14 @@ class TestLaplaceFolded(TestCase):
         self.assertTrue(np.all(vals <= 1))
 
     def test_repr(self):
-        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1))
+        repr_ = repr(self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1))
         self.assertIn(".LaplaceFolded(", repr_)
 
     def test_bias(self):
-        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
-        self.assertGreater(self.mech.get_bias(0), 0.0)
-        self.assertLess(self.mech.get_bias(1), 0.0)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
+        self.assertGreater(mech.bias(0), 0.0)
+        self.assertLess(mech.bias(1), 0.0)
 
     def test_variance(self):
-        self.mech.set_epsilon(1).set_sensitivity(1).set_bounds(0, 1)
-        self.assertRaises(NotImplementedError, self.mech.get_variance, 0)
+        mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
+        self.assertRaises(NotImplementedError, mech.variance, 0)

@@ -227,8 +227,7 @@ class PCA(sk_pca.PCA):
 
         XtX = np.dot(X.T, X)
 
-        mech = Wishart().set_epsilon(self.epsilon if self.centered else self.epsilon / 2).\
-            set_sensitivity(self.data_norm)
+        mech = Wishart(epsilon=self.epsilon if self.centered else self.epsilon / 2, sensitivity=self.data_norm)
         noisy_input = mech.randomise(XtX)
 
         u, s, v = np.linalg.svd(noisy_input)

@@ -22,7 +22,6 @@ from math import erf
 from numbers import Real, Integral
 
 import numpy as np
-from numpy.random import random
 
 from diffprivlib.mechanisms.base import DPMechanism
 from diffprivlib.mechanisms.geometric import Geometric
@@ -38,19 +37,19 @@ class Gaussian(DPMechanism):
     Paper link: https://www.nowpublishers.com/article/DownloadSummary/TCS-042
 
     """
-    def __init__(self):
-        super().__init__()
-        self._sensitivity = None
-        self._scale = None
+    def __init__(self, *, epsilon, delta, sensitivity):
+        super().__init__(epsilon=epsilon, delta=delta)
+        self.sensitivity = self._check_sensitivity(sensitivity)
+        self._scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
         self._stored_gaussian = None
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
+        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
 
         return output
 
-    def set_epsilon_delta(self, epsilon, delta):
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
         For the Gaussian mechanism, `epsilon` cannot be greater than 1, and `delta` must be non-zero.
@@ -74,56 +73,45 @@ class Gaussian(DPMechanism):
         if isinstance(epsilon, Real) and epsilon > 1.0:
             raise ValueError("Epsilon cannot be greater than 1")
 
-        self._scale = None
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    @copy_docstring(Laplace.set_sensitivity)
-    def set_sensitivity(self, sensitivity):
+    @staticmethod
+    def _check_sensitivity(sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity < 0:
             raise ValueError("Sensitivity must be non-negative")
 
-        self._scale = None
-        self._sensitivity = sensitivity
-        return self
+        return float(sensitivity)
 
-    @copy_docstring(Laplace.check_inputs)
-    def check_inputs(self, value):
-        super().check_inputs(value)
-
-        if self._delta is None:
-            raise ValueError("Delta must be set")
-
-        if self._sensitivity is None:
-            raise ValueError("Sensitivity must be set")
-
-        if self._scale is None:
-            self._scale = np.sqrt(2 * np.log(1.25 / self._delta)) * self._sensitivity / self._epsilon
+    @copy_docstring(Laplace._check_all)
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, Real):
             raise TypeError("Value to be randomised must be a number")
 
         return True
 
-    @copy_docstring(Laplace.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(Laplace.bias)
+    def bias(self, value):
         return 0.0
 
-    @copy_docstring(Laplace.get_variance)
-    def get_variance(self, value):
-        self.check_inputs(0)
+    @copy_docstring(Laplace.variance)
+    def variance(self, value):
+        self._check_all(0)
 
         return self._scale ** 2
 
     @copy_docstring(Laplace.randomise)
     def randomise(self, value):
-        self.check_inputs(value)
+        self._check_all(value)
 
         if self._stored_gaussian is None:
-            unif_rv1 = random()
-            unif_rv2 = random()
+            unif_rv1 = self._rng.random()
+            unif_rv2 = self._rng.random()
 
             self._stored_gaussian = np.sqrt(- 2 * np.log(unif_rv1)) * np.sin(2 * np.pi * unif_rv2)
             standard_normal = np.sqrt(- 2 * np.log(unif_rv1)) * np.cos(2 * np.pi * unif_rv2)
@@ -143,7 +131,11 @@ class GaussianAnalytic(Gaussian):
     Paper link: https://arxiv.org/pdf/1805.06530.pdf
 
     """
-    def set_epsilon_delta(self, epsilon, delta):
+    def __init__(self, *, epsilon, delta, sensitivity):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+        self._scale = self._find_scale()
+
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
         For the analytic Gaussian mechanism, `epsilon` and `delta` must be non-zero.
@@ -164,28 +156,24 @@ class GaussianAnalytic(Gaussian):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        self._scale = None
-        return DPMechanism.set_epsilon_delta(self, epsilon, delta)
+        return DPMechanism._check_epsilon_delta(self, epsilon, delta)
 
-    @copy_docstring(Laplace.check_inputs)
-    def check_inputs(self, value):
-        if self._scale is None:
-            self._scale = self._find_scale()
-
-        super().check_inputs(value)
+    @copy_docstring(Laplace._check_all)
+    def _check_all(self, value):
+        super()._check_all(value)
 
         return True
 
     def _find_scale(self):
-        if self._epsilon is None or self._delta is None:
+        if self.epsilon is None or self.delta is None:
             raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
-        if self._sensitivity is None:
+        if self.sensitivity is None:
             raise ValueError("Sensitivity must be set before calling _find_scale().")
-        if self._sensitivity / self._epsilon == 0:
+        if self.sensitivity / self.epsilon == 0:
             return 0.0
 
-        epsilon = self._epsilon
-        delta = self._delta
+        epsilon = self.epsilon
+        delta = self.delta
 
         def phi(val):
             return (1 + erf(val / np.sqrt(2))) / 2
@@ -229,7 +217,7 @@ class GaussianAnalytic(Gaussian):
 
             alpha = np.sqrt(1 + (left + right) / 4) + (-1 if delta_0 < 0 else 1) * np.sqrt((left + right) / 4)
 
-        return alpha * self._sensitivity / np.sqrt(2 * self._epsilon)
+        return alpha * self.sensitivity / np.sqrt(2 * self.epsilon)
 
 
 class GaussianDiscrete(DPMechanism):
@@ -240,12 +228,12 @@ class GaussianDiscrete(DPMechanism):
     Paper link: https://arxiv.org/pdf/2004.00010.pdf
 
     """
-    def __init__(self):
-        super().__init__()
-        self._scale = None
-        self._sensitivity = 1
+    def __init__(self, *, epsilon, delta, sensitivity=1):
+        super().__init__(epsilon=epsilon, delta=delta)
+        self.sensitivity = self._check_sensitivity(sensitivity)
+        self._scale = self._find_scale()
 
-    def set_epsilon_delta(self, epsilon, delta):
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 
         For the discrete Gaussian mechanism, `epsilon` and `delta` must be non-zero.
@@ -266,47 +254,39 @@ class GaussianDiscrete(DPMechanism):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        self._scale = None
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    @copy_docstring(Geometric.set_sensitivity)
-    def set_sensitivity(self, sensitivity):
+    @staticmethod
+    def _check_sensitivity(sensitivity):
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
         if sensitivity < 0:
             raise ValueError("Sensitivity must be non-negative")
 
-        self._scale = None
-        self._sensitivity = sensitivity
-        return self
+        return sensitivity
 
-    @copy_docstring(Geometric.check_inputs)
-    def check_inputs(self, value):
-        super().check_inputs(value)
-
-        if self._delta is None:
-            raise ValueError("Delta must be set")
-
-        if self._scale is None:
-            self._scale = self._find_scale()
+    @copy_docstring(Geometric._check_all)
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
         return True
 
-    @copy_docstring(Laplace.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(Laplace.bias)
+    def bias(self, value):
         return 0.0
 
-    @copy_docstring(Laplace.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(Laplace.variance)
+    def variance(self, value):
         raise NotImplementedError
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        self.check_inputs(value)
+        self._check_all(value)
 
         if self._scale == 0:
             return value
@@ -331,9 +311,9 @@ class GaussianDiscrete(DPMechanism):
     def _find_scale(self):
         """Determine the scale of the mechanism's distribution given epsilon and delta.
         """
-        if self._epsilon is None or self._delta is None:
+        if self.epsilon is None or self.delta is None:
             raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
-        if self._sensitivity / self._epsilon == 0:
+        if self.sensitivity / self.epsilon == 0:
             return 0
 
         def objective(sigma, epsilon_, delta_, sensitivity_):
@@ -366,9 +346,9 @@ class GaussianDiscrete(DPMechanism):
 
             return (lhs - np.exp(epsilon_) * rhs) / denom - delta_
 
-        epsilon = self._epsilon
-        delta = self._delta
-        sensitivity = self._sensitivity
+        epsilon = self.epsilon
+        delta = self.delta
+        sensitivity = self.sensitivity
 
         # Begin by locating the root within an interval [2**i, 2**(i+1)]
         guess_0 = 1

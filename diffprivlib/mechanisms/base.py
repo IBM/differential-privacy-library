@@ -21,6 +21,7 @@ Base classes for differential privacy mechanisms.
 import abc
 from copy import copy, deepcopy
 from numbers import Real
+import numpy as np
 
 
 class DPMachine(abc.ABC):
@@ -65,72 +66,30 @@ class DPMachine(abc.ABC):
         """
         return deepcopy(self)
 
-    def set_epsilon(self, epsilon):
-        r"""Sets the value of epsilon to be used by the mechanism.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`\epsilon`-differential privacy with the mechanism.  Must have
-            `epsilon > 0`.
-
-        Returns
-        -------
-        self : class
-
-        """
-        return self.set_epsilon_delta(epsilon, 0.0)
-
-    @abc.abstractmethod
-    def set_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of epsilon and delta to be used by the mechanism.
-
-        `epsilon` and `delta` cannot both be zero.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon >= 0`.
-
-        delta : float
-            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
-            Must have `0 <= delta <= 1`.
-
-            `delta=0` gives strict (pure) differential privacy (:math:`\epsilon`-differential privacy).  `delta > 0`
-            gives relaxed (approximate) differential privacy.
-
-        Returns
-        -------
-        self : class
-
-        """
-
 
 class DPMechanism(DPMachine, abc.ABC):
-    r"""
-    Base class for all mechanisms.  Instantiated from :class:`.DPMachine`.
+    r"""Abstract base class for all mechanisms.  Instantiated from :class:`.DPMachine`.
 
-    Notes
-    -----
-    * Each `DPMechanism` must define a `randomise` method, to handle the application of differential privacy
-    * Mechanisms that only operate in a limited window of :math:`\epsilon` or :math:`\delta` must define a
-      `set_epsilon_delta` method.  Error-checking, for example for non-zero :math:`\delta` should be done in
-      `set_epsilon_delta`; `set_epsilon` should be left unchanged.
-    * When new methods are added, `__repr__` should be updated accordingly in the mechanism.
-    * Each mechanism's
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.
+
+    delta : float
+        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+
     """
-    def __init__(self):
-        self._epsilon = None
-        self._delta = None
+    def __init__(self, *, epsilon, delta):
+        self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
+        self._rng = np.random.default_rng()
 
     def __repr__(self):
         output = str(self.__module__) + "." + str(self.__class__.__name__) + "()"
 
-        if self._epsilon is not None and self._delta is not None and self._delta > 0.0:
-            output += ".set_epsilon_delta(" + str(self._epsilon) + "," + str(self._delta) + ")"
-        elif self._epsilon is not None:
-            output += ".set_epsilon(" + str(self._epsilon) + ")"
+        if self.epsilon is not None and self.delta is not None and self.delta > 0.0:
+            output += ".set_epsilon_delta(" + str(self.epsilon) + "," + str(self.delta) + ")"
+        elif self.epsilon is not None:
+            output += ".set_epsilon(" + str(self.epsilon) + ")"
 
         return output
 
@@ -150,7 +109,7 @@ class DPMechanism(DPMachine, abc.ABC):
 
         """
 
-    def get_bias(self, value):
+    def bias(self, value):
         """Returns the bias of the mechanism at a given `value`.
 
         Parameters
@@ -166,7 +125,7 @@ class DPMechanism(DPMachine, abc.ABC):
         """
         raise NotImplementedError
 
-    def get_variance(self, value):
+    def variance(self, value):
         """Returns the variance of the mechanism at a given `value`.
 
         Parameters
@@ -182,7 +141,7 @@ class DPMechanism(DPMachine, abc.ABC):
         """
         raise NotImplementedError
 
-    def get_mse(self, value):
+    def mse(self, value):
         """Returns the mean squared error (MSE) of the mechanism at a given `value`.
 
         Parameters
@@ -196,36 +155,9 @@ class DPMechanism(DPMachine, abc.ABC):
             The MSE of the mechanism at `value` if defined, `None` otherwise.
 
         """
-        return self.get_variance(value) + (self.get_bias(value)) ** 2
+        return self.variance(value) + (self.bias(value)) ** 2
 
-    def set_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of epsilon and delta to be used by the mechanism.
-
-        `epsilon` and `delta` cannot both be zero.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon >= 0`.
-
-        delta : float
-            The value of delta for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.
-            Must have `0 <= delta <= 1`.
-
-            `delta=0` gives strict (pure) differential privacy (:math:`\epsilon`-differential privacy).  `delta > 0`
-            gives relaxed (approximate) differential privacy.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is negative, or if `delta` falls outside [0,1], or if `epsilon` and `delta` are both zero.
-
-        """
+    def _check_epsilon_delta(self, epsilon, delta):
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise TypeError("Epsilon and delta must be numeric")
 
@@ -238,83 +170,49 @@ class DPMechanism(DPMachine, abc.ABC):
         if epsilon + delta == 0:
             raise ValueError("Epsilon and Delta cannot both be zero")
 
-        self._epsilon = float(epsilon)
-        self._delta = float(delta)
+        return float(epsilon), float(delta)
 
-        return self
-
-    def check_inputs(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : int or float or str or method
-            The value to be checked.
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        Raises
-        ------
-        Exception
-            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
-
-        """
+    def _check_all(self, value):
         del value
-        if self._epsilon is None:
-            raise ValueError("Epsilon must be set")
+        self._check_epsilon_delta(self.epsilon, self.delta)
+
         return True
 
 
 class TruncationAndFoldingMixin:
+    """Mixin for truncating or folding the outputs of a mechanism.  Must be instantiated with a :class:`.DPMechanism`.
+
+    Parameters
+    ----------
+    lower : float
+        The lower bound of the mechanism.
+
+    upper : float
+        The upper bound of the mechanism.
+
     """
-    Mixin for truncating or folding the outputs of a mechanism.  Must be instantiated with a :class:`.DPMechanism`.
-    """
-    def __init__(self):
+    def __init__(self, *, lower, upper):
         if not isinstance(self, DPMechanism):
             raise TypeError("TruncationAndFoldingMachine must be implemented alongside a :class:`.DPMechanism`")
 
-        self._lower_bound = None
-        self._upper_bound = None
+        self.lower, self.upper = self._check_bounds(lower, upper)
 
     def __repr__(self):
-        output = ".set_bounds(" + str(self._lower_bound) + ", " + str(self._upper_bound) + ")" \
-            if self._lower_bound is not None else ""
+        output = ".set_bounds(" + str(self.lower) + ", " + str(self.upper) + ")" \
+            if self.lower is not None else ""
 
         return output
 
-    def set_bounds(self, lower, upper):
-        """Sets the lower and upper bounds of the mechanism.
-
-        Must have lower <= upper.
-
-        Parameters
-        ----------
-        lower : float
-            The lower bound of the mechanism.
-
-        upper : float
-            The upper bound of the mechanism.
-
-        Returns
-        -------
-        self : class
-
-        """
+    def _check_bounds(self, lower, upper):
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")
 
         if lower > upper:
             raise ValueError("Lower bound must not be greater than upper bound")
 
-        self._lower_bound = float(lower)
-        self._upper_bound = float(upper)
+        return lower, upper
 
-        return self
-
-    def check_inputs(self, value):
+    def _check_all(self, value):
         """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
@@ -328,22 +226,22 @@ class TruncationAndFoldingMixin:
 
         """
         del value
-        if (self._lower_bound is None) or (self._upper_bound is None):
-            raise ValueError("Upper and lower bounds must be set")
+        self._check_bounds(self.lower, self.upper)
+
         return True
 
     def _truncate(self, value):
-        if value > self._upper_bound:
-            return self._upper_bound
-        if value < self._lower_bound:
-            return self._lower_bound
+        if value > self.upper:
+            return self.upper
+        if value < self.lower:
+            return self.lower
 
         return value
 
     def _fold(self, value):
-        if value < self._lower_bound:
-            return self._fold(2 * self._lower_bound - value)
-        if value > self._upper_bound:
-            return self._fold(2 * self._upper_bound - value)
+        if value < self.lower:
+            return self._fold(2 * self.lower - value)
+        if value > self.upper:
+            return self._fold(2 * self.upper - value)
 
         return value

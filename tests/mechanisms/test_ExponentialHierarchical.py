@@ -10,89 +10,68 @@ class TestExponentialHierarchical(TestCase):
         if method.__name__ .endswith("prob"):
             global_seed(314159)
 
-        self.mech = ExponentialHierarchical()
+        self.mech = ExponentialHierarchical
 
     def teardown_method(self, method):
         del self.mech
-
-    def test_not_none(self):
-        self.assertIsNotNone(self.mech)
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMechanism
         self.assertTrue(issubclass(ExponentialHierarchical, DPMechanism))
 
-    def test_no_params(self):
-        with self.assertRaises(ValueError):
-            self.mech.randomise("A")
-
-    def test_no_epsilon(self):
-        self.mech.set_hierarchy([["A", "B"], ["C"]])
-        with self.assertRaises(ValueError):
-            self.mech.randomise("A")
-
     def test_neg_epsilon(self):
         with self.assertRaises(ValueError):
-            self.mech.set_epsilon(-1)
+            self.mech(epsilon=-1, hierarchy=[])
 
     def test_complex_epsilon(self):
         with self.assertRaises(TypeError):
-            self.mech.set_epsilon(1+2j)
+            self.mech(epsilon=1 + 2j, hierarchy=[])
 
     def test_string_epsilon(self):
         with self.assertRaises(TypeError):
-            self.mech.set_epsilon("Two")
+            self.mech(epsilon="Two", hierarchy=[])
 
     def test_inf_epsilon(self):
-        self.mech.set_hierarchy([["A", "B"], ["C"]]).set_epsilon(float("inf"))
+        mech = self.mech(epsilon=float("inf"), hierarchy=[["A", "B"], ["C"]])
 
         for i in range(1000):
-            self.assertEqual(self.mech.randomise("A"), "A")
-
-    def test_non_zero_delta(self):
-        with self.assertRaises(ValueError):
-            self.mech.set_epsilon_delta(1, 0.5)
-
-    def test_hierarchy_first(self):
-        self.mech.set_hierarchy([["A", "B"], ["C"]])
-        self.assertIsNotNone(self.mech)
+            self.assertEqual(mech.randomise("A"), "A")
 
     def test_non_string_hierarchy(self):
-        self.mech.set_epsilon(1)
         with self.assertRaises(TypeError):
-            self.mech.set_hierarchy([["A", "B"], ["C", 2]])
+            self.mech(epsilon=1, hierarchy=[["A", "B"], ["C", 2]])
 
     def test_non_list_hierarchy(self):
         with self.assertRaises(TypeError):
-            self.mech.set_hierarchy(("A", "B", "C"))
+            self.mech(epsilon=1, hierarchy=("A", "B", "C"))
 
     def test_uneven_hierarchy(self):
         with self.assertRaises(ValueError):
-            self.mech.set_hierarchy(["A", ["B", "C"]])
+            self.mech(epsilon=1, hierarchy=["A", ["B", "C"]])
 
     def test_build_utility_list(self):
         with self.assertRaises(TypeError):
             self.mech._build_utility_list([1, 2, 3])
 
     def test_non_string_input(self):
-        self.mech.set_epsilon(1).set_hierarchy([["A", "B"], ["C", "2"]])
+        mech = self.mech(epsilon=1, hierarchy=[["A", "B"], ["C", "2"]])
         with self.assertRaises(TypeError):
-            self.mech.randomise(2)
+            mech.randomise(2)
 
     def test_outside_domain(self):
-        self.mech.set_epsilon(1).set_hierarchy([["A", "B"], ["C"]])
+        mech = self.mech(epsilon=1, hierarchy=[["A", "B"], ["C"]])
         with self.assertRaises(ValueError):
-            self.mech.randomise("D")
+            mech.randomise("D")
 
     def test_distrib_prob(self):
         epsilon = np.log(2)
         runs = 20000
         balanced_tree = False
-        self.mech.set_epsilon(epsilon).set_hierarchy([["A", "B"], ["C"]])
+        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]])
         count = [0, 0, 0]
 
         for i in range(runs):
-            val = self.mech.randomise("A")
+            val = mech.randomise("A")
             if val == "A":
                 count[0] += 1
             elif val == "B":
@@ -110,19 +89,19 @@ class TestExponentialHierarchical(TestCase):
     def test_neighbours_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        self.mech.set_epsilon(epsilon).set_hierarchy([["A", "B"], ["C"]])
+        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]])
         count = [0, 0, 0]
 
         for i in range(runs):
-            val = self.mech.randomise("A")
+            val = mech.randomise("A")
             if val == "A":
                 count[0] += 1
 
-            val = self.mech.randomise("B")
+            val = mech.randomise("B")
             if val == "A":
                 count[1] += 1
 
-            val = self.mech.randomise("C")
+            val = mech.randomise("C")
             if val == "A":
                 count[2] += 1
 
@@ -134,19 +113,19 @@ class TestExponentialHierarchical(TestCase):
     def test_neighbours_flat_hierarchy_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        self.mech.set_epsilon(epsilon).set_hierarchy(["A", "B", "C"])
+        mech = self.mech(epsilon=epsilon, hierarchy=["A", "B", "C"])
         count = [0, 0, 0]
 
         for i in range(runs):
-            val = self.mech.randomise("A")
+            val = mech.randomise("A")
             if val == "A":
                 count[0] += 1
 
-            val = self.mech.randomise("B")
+            val = mech.randomise("B")
             if val == "A":
                 count[1] += 1
 
-            val = self.mech.randomise("C")
+            val = mech.randomise("C")
             if val == "A":
                 count[2] += 1
 
@@ -156,5 +135,5 @@ class TestExponentialHierarchical(TestCase):
         self.assertLessEqual(count[1] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
 
     def test_repr(self):
-        repr_ = repr(self.mech.set_epsilon(1))
+        repr_ = repr(self.mech(epsilon=1, hierarchy=[]))
         self.assertIn(".ExponentialHierarchical(", repr_)

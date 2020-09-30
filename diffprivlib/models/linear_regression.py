@@ -171,6 +171,7 @@ class LinearRegression(sk_lr.LinearRegression):
         self.bounds_X = bounds_X
         self.bounds_y = bounds_y
         self.accountant = BudgetAccountant.load_default(accountant)
+        self.__repr__()
 
         warn_unused_args(unused_args)
 
@@ -236,7 +237,7 @@ class LinearRegression(sk_lr.LinearRegression):
         A = np.hstack((X, y[:, np.newaxis] if y.ndim == 1 else y))
         AtA = np.dot(A.T, A)
 
-        mech = Wishart().set_epsilon(self.epsilon * (1 - epsilon_intercept_scale)).set_sensitivity(self.data_norm)
+        mech = Wishart(epsilon=self.epsilon * (1 - epsilon_intercept_scale), sensitivity=self.data_norm)
         noisy_AtA = mech.randomise(AtA)
 
         noisy_AtA = noisy_AtA[:n_features, :]

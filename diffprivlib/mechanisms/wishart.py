@@ -34,17 +34,17 @@ class Wishart(DPMechanism):
 
     Paper link: https://ieeexplore.ieee.org/abstract/document/7472095/
     """
-    def __init__(self):
-        super().__init__()
-        self._sensitivity = None
+    def __init__(self, epsilon, sensitivity):
+        super().__init__(epsilon=epsilon, delta=0.0)
+        self.sensitivity = self._check_sensitivity(sensitivity)
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
+        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
 
         return output
 
-    def set_epsilon_delta(self, epsilon, delta):
+    def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
 
         For the Wishart mechanism, `delta` must be zero and `epsilon` must be strictly positive.
@@ -71,9 +71,9 @@ class Wishart(DPMechanism):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    def set_sensitivity(self, sensitivity):
+    def _check_sensitivity(self, sensitivity):
         """Sets the l2-norm sensitivity of the data being processed by the mechanism.
 
         Parameters
@@ -92,10 +92,9 @@ class Wishart(DPMechanism):
         if sensitivity < 0:
             raise ValueError("Sensitivity must be non-negative")
 
-        self._sensitivity = float(sensitivity)
-        return self
+        return float(sensitivity)
 
-    def check_inputs(self, value):
+    def _check_all(self, value):
         """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
         to be used.
 
@@ -114,7 +113,8 @@ class Wishart(DPMechanism):
             If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
 
         """
-        super().check_inputs(value)
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, np.ndarray):
             raise TypeError("Value to be randomised must be a numpy array, got %s" % type(value))
@@ -123,17 +123,14 @@ class Wishart(DPMechanism):
         if value.shape[0] != value.shape[1]:
             raise ValueError("Array must be square, got %d x %d" % (value.shape[0], value.shape[1]))
 
-        if self._sensitivity is None:
-            raise ValueError("Sensitivity must be set")
-
         return True
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
         raise NotImplementedError
 
     def randomise(self, value):
@@ -150,12 +147,12 @@ class Wishart(DPMechanism):
             The randomised array.
 
         """
-        self.check_inputs(value)
+        self._check_all(value)
 
-        scale = 1 / 2 / self._epsilon
+        scale = 1 / 2 / self.epsilon
         n_features = value.shape[0]
 
-        noise_array = np.random.randn(n_features, n_features + 1) * scale * self._sensitivity
+        noise_array = np.random.randn(n_features, n_features + 1) * scale * self.sensitivity
         noise_array = np.dot(noise_array, noise_array.T)
 
         return value + noise_array

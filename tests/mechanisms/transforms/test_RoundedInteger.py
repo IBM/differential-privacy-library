@@ -7,7 +7,7 @@ from diffprivlib.mechanisms.transforms import RoundedInteger
 
 class TestRoundedInteger(TestCase):
     def test_not_none(self):
-        mech = RoundedInteger(Laplace())
+        mech = RoundedInteger(Laplace(epsilon=1, sensitivity=1))
         self.assertIsNotNone(mech)
         _mech = mech.copy()
         self.assertIsNotNone(_mech)
@@ -24,13 +24,13 @@ class TestRoundedInteger(TestCase):
             RoundedInteger()
 
     def test_randomise(self):
-        mech = RoundedInteger(Laplace().set_sensitivity(1).set_epsilon(1))
+        mech = RoundedInteger(Laplace(epsilon=1, sensitivity=1))
         self.assertIsInstance(mech.randomise(1), int)
 
     def test_distrib(self):
         epsilon = np.log(2)
         runs = 10000
-        mech = RoundedInteger(Laplace().set_sensitivity(1).set_epsilon(1))
+        mech = RoundedInteger(Laplace(epsilon=epsilon, sensitivity=1))
         count = [0, 0]
 
         for _ in range(runs):

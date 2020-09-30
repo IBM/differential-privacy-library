@@ -16,5 +16,5 @@ class TestTruncationAndFoldingMixin(TestCase):
             def randomise(self, value):
                 return 0
 
-        mech = TestClass()
+        mech = TestClass(epsilon=1, delta=0)
         self.assertEqual(mech.randomise(0), 0)

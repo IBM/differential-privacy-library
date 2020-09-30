@@ -19,10 +19,10 @@ class TestDPMachine(TestCase):
 
     def test_base(self):
         class BaseDPMachine(DPMachine):
-            def set_epsilon(self, epsilon):
+            def _check_epsilon(self, epsilon):
                 return self
 
-            def set_epsilon_delta(self, epsilon, delta):
+            def _check_epsilon_delta(self, epsilon, delta):
                 return self
 
             def randomise(self, value):
