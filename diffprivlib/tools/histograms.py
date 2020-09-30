@@ -133,7 +133,7 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, weights=weights, density=None)
 
-    dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
+    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize)
 
     dp_hist = np.zeros_like(hist)
 
@@ -230,7 +230,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
-    dp_mech = GeometricTruncated().set_epsilon(epsilon).set_sensitivity(1).set_bounds(0, maxsize)
+    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize)
 
     dp_hist = np.zeros_like(hist)
     iterator = np.nditer(hist, flags=['multi_index'])

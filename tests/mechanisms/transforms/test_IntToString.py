@@ -7,7 +7,7 @@ from diffprivlib.mechanisms.transforms import IntToString
 
 class TestIntToString(TestCase):
     def test_not_none(self):
-        mech = IntToString(ExponentialHierarchical())
+        mech = IntToString(ExponentialHierarchical(epsilon=1, hierarchy=["0", "1", "2", "3"]))
         self.assertIsNotNone(mech)
         _mech = mech.copy()
         self.assertIsNotNone(_mech)
@@ -23,13 +23,13 @@ class TestIntToString(TestCase):
             IntToString()
 
     def test_randomise(self):
-        mech = IntToString(ExponentialHierarchical().set_hierarchy(["0", "1", "2", "3"]).set_epsilon(1))
+        mech = IntToString(ExponentialHierarchical(epsilon=1, hierarchy=["0", "1", "2", "3"]))
         self.assertIsInstance(mech.randomise(1), int)
 
     def test_distrib(self):
         epsilon = np.log(2)
         runs = 10000
-        mech = IntToString(ExponentialHierarchical().set_hierarchy(["0", "1", "2", "3"]).set_epsilon(epsilon))
+        mech = IntToString(ExponentialHierarchical(epsilon=epsilon, hierarchy=["0", "1", "2", "3"]))
         count = [0, 0]
 
         for _ in range(runs):

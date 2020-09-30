@@ -21,117 +21,69 @@ The classic geometric mechanism for differential privacy, and its derivatives.
 from numbers import Integral
 
 import numpy as np
-from numpy.random import random
 
 from diffprivlib.mechanisms.base import DPMechanism, TruncationAndFoldingMixin
 from diffprivlib.utils import copy_docstring
 
 
 class Geometric(DPMechanism):
-    """
+    r"""
     The classic geometric mechanism for differential privacy, as first proposed by Ghosh, Roughgarden and Sundararajan.
     Extended to allow for non-unity sensitivity.
 
     Paper link: https://arxiv.org/pdf/0811.2841.pdf
 
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+
+    sensitivity : float, default: 1
+        The sensitivity of the mechanism.  Must be >= 0.
+
     """
-    def __init__(self):
-        super().__init__()
-        self._sensitivity = 1
-        self._scale = None
+    def __init__(self, *, epsilon, sensitivity=1):
+        super().__init__(epsilon=epsilon, delta=0.0)
+        self.sensitivity = self._check_sensitivity(sensitivity)
+        self._scale = - self.epsilon / self.sensitivity if self.sensitivity > 0 else - float("inf")
 
     def __repr__(self):
         output = super().__repr__()
-        output += ".set_sensitivity(" + str(self._sensitivity) + ")" if self._sensitivity is not None else ""
+        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
 
         return output
 
-    def set_sensitivity(self, sensitivity):
-        """Sets the sensitivity of the mechanism.
+    def _check_sensitivity(self, sensitivity=None):
+        sensitivity = sensitivity if sensitivity is not None else self.sensitivity
 
-        Parameters
-        ----------
-        sensitivity : int
-            The sensitivity of the mechanism.  Must satisfy `sensitivity` > 0.
-
-        Returns
-        -------
-        self : class
-
-        """
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
         if sensitivity < 0:
             raise ValueError("Sensitivity must be non-negative")
 
-        self._sensitivity = sensitivity
-        self._scale = None
-        return self
+        return sensitivity
 
-    def check_inputs(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : int
-            The value to be checked.
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        Raises
-        ------
-        Exception
-            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
-
-        """
-        super().check_inputs(value)
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity()
 
         if not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
-        if self._scale is None:
-            self._scale = - self._epsilon / self._sensitivity if self._sensitivity > 0 else - float("inf")
-
-    def set_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
-
-        For the geometric mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For the geometric mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is negative or zero, or if `delta` is non-zero.
-
-        """
+    def _check_epsilon_delta(self, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         return 0.0
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
-        self.check_inputs(value)
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
+        self._check_all(value)
 
         leading_factor = (1 - np.exp(self._scale)) / (1 + np.exp(self._scale))
         geom_series = np.exp(self._scale) / (1 - np.exp(self._scale))
@@ -152,10 +104,10 @@ class Geometric(DPMechanism):
             The randomised value.
 
         """
-        self.check_inputs(value)
+        self._check_all(value)
 
         # Need to account for overlap of 0-value between distributions of different sign
-        unif_rv = random() - 0.5
+        unif_rv = self._rng.random() - 0.5
         unif_rv *= 1 + np.exp(self._scale)
         sgn = -1 if unif_rv < 0 else 1
 
@@ -164,13 +116,28 @@ class Geometric(DPMechanism):
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
-    """
+    r"""
     The truncated geometric mechanism, where values that fall outside a pre-described range are mapped back to the
     closest point within the range.
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+
+    sensitivity : float, default: 1
+        The sensitivity of the mechanism.  Must be >= 0.
+
+    lower : int
+        The lower bound of the mechanism.
+
+    upper : int
+        The upper bound of the mechanism.
+
     """
-    def __init__(self):
-        super().__init__()
-        TruncationAndFoldingMixin.__init__(self)
+    def __init__(self, *, epsilon, sensitivity=1, lower, upper):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity)
+        TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     def __repr__(self):
         output = super().__repr__()
@@ -178,55 +145,60 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
 
         return output
 
-    def set_bounds(self, lower, upper):
-        """Sets the lower and upper bounds of the mechanism.
+    def _check_bounds(self, lower=None, upper=None):
+        if not isinstance(lower, Integral) and abs(lower) != float("inf"):
+            raise TypeError("Lower bound must be integer-valued, got {}".format(lower))
+        if not isinstance(upper, Integral) and abs(upper) != float("inf"):
+            raise TypeError("Upper bound must be integer-valued, got {}".format(upper))
 
-        For the truncated geometric mechanism, `lower` and `upper` must be integer-valued.  Must have
-        `lower` <= `upper`.
+        return super()._check_bounds(lower, upper)
 
-        Parameters
-        ----------
-        lower : int
-            The lower bound of the mechanism.
-
-        upper : int
-            The upper bound of the mechanism.
-
-        Returns
-        -------
-        self : class
-
-        """
-        if not isinstance(lower, Integral) or not isinstance(upper, Integral):
-            raise TypeError("Bounds must be integers")
-
-        return super().set_bounds(lower, upper)
-
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def variance(self, value):
         raise NotImplementedError
+
+    def _check_all(self, value):
+        super()._check_all(value)
+        TruncationAndFoldingMixin._check_all(self, value)
+
+        return True
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMixin.check_inputs(self, value)
+        self._check_all(value)
 
         noisy_value = super().randomise(value)
         return int(np.round(self._truncate(noisy_value)))
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMixin):
-    """
+    r"""
     The folded geometric mechanism, where values outside a pre-described range are folded back toward the domain around
     the closest point within the domain.
     Half-integer bounds are permitted.
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+
+    sensitivity : float, default: 1
+        The sensitivity of the mechanism.  Must be >= 0.
+
+    lower : int or float
+        The lower bound of the mechanism.  Must be integer or half-integer -valued.
+
+    upper : int or float
+        The upper bound of the mechanism.  Must be integer or half-integer -valued.
+
     """
-    def __init__(self):
-        super().__init__()
-        TruncationAndFoldingMixin.__init__(self)
+    def __init__(self, *, epsilon, sensitivity=1, lower, upper):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity)
+        TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     def __repr__(self):
         output = super().__repr__()
@@ -234,44 +206,35 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
 
         return output
 
-    def set_bounds(self, lower, upper):
-        """Sets the lower and upper bounds of the mechanism.
+    def _check_bounds(self, lower=None, upper=None):
+        lower = lower if lower is not None else self.lower
+        upper = upper if upper is not None else self.upper
 
-        For the folded geometric mechanism, `lower` and `upper` must be integer or half-integer -valued.  Must have
-        `lower` <= `upper`.
-
-        Parameters
-        ----------
-        lower : int or float
-            The lower bound of the mechanism.
-
-        upper : int or float
-            The upper bound of the mechanism.
-
-        Returns
-        -------
-        self : class
-
-        """
         if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):
             raise ValueError("Bounds must be integer or half-integer floats")
 
-        return super().set_bounds(lower, upper)
+        return super()._check_bounds(lower, upper)
 
     def _fold(self, value):
         return super()._fold(int(np.round(value)))
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def variance(self, value):
         raise NotImplementedError
+
+    def _check_all(self, value):
+        super()._check_all(value)
+        TruncationAndFoldingMixin._check_all(self, value)
+
+        return True
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        TruncationAndFoldingMixin.check_inputs(self, value)
+        self._check_all(value)
 
         noisy_value = super().randomise(value)
         return int(np.round(self._fold(noisy_value)))

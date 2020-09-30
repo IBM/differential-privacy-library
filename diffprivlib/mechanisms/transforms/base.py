@@ -68,43 +68,6 @@ class DPTransformer(DPMachine):
         """
         return value
 
-    def set_epsilon(self, epsilon):
-        """Sets the value of epsilon to be used by the mechanism.  For further details see `set_epsilon` of the
-        mechanism.
-
-        Parameters
-        ----------
-        epsilon : float
-            Epsilon value for differential privacy.
-
-        Returns
-        -------
-        self : class
-
-        """
-        self.parent.set_epsilon(epsilon)
-        return self
-
-    def set_epsilon_delta(self, epsilon, delta):
-        """Sets the value of epsilon and delta to be used by the mechanism.  For further details see `set_epsilon_delta`
-        of the mechanism.
-
-        Parameters
-        ----------
-        epsilon : float
-            Epsilon value for differential privacy.
-
-        delta : float
-            Delta value for differential privacy.
-
-        Returns
-        -------
-        self : class
-
-        """
-        self.parent.set_epsilon_delta(epsilon, delta)
-        return self
-
     def randomise(self, value):
         """
         Randomise the given value using the :class:`.DPMachine`.

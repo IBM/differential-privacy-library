@@ -10,7 +10,7 @@ class TestWishart(TestCase):
         if method.__name__ .endswith("prob"):
             global_seed(314159)
 
-        self.mech = Wishart()
+        self.mech = Wishart
         self.random_array = np.random.randn(5,5)
 
     def teardown_method(self, method):
@@ -20,126 +20,101 @@ class TestWishart(TestCase):
     def generate_data(d=5):
         return np.random.randn(d, d)
 
-    def test_not_none(self):
-        self.assertIsNotNone(self.mech)
-
     def test_class(self):
         from diffprivlib.mechanisms import DPMechanism
         self.assertTrue(issubclass(Wishart, DPMechanism))
 
-    def test_no_params(self):
-        with self.assertRaises(ValueError):
-            self.mech.randomise(self.generate_data())
-
-    def test_no_epsilon(self):
-        self.mech.set_sensitivity(1)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(self.generate_data())
-
     def test_neg_epsilon(self):
-        self.mech.set_sensitivity(1)
         with self.assertRaises(ValueError):
-            self.mech.set_epsilon(-1)
+            self.mech(epsilon=-1, sensitivity=1)
 
     def test_inf_epsilon(self):
-        self.mech.set_sensitivity(1).set_epsilon(float("inf"))
+        mech = self.mech(epsilon=float("inf"), sensitivity=1)
 
         for i in range(100):
             data = self.generate_data()
-            noisy_data = self.mech.randomise(data)
+            noisy_data = mech.randomise(data)
             self.assertTrue(np.allclose(data, noisy_data))
 
-    def test_non_zero_delta(self):
-        self.mech.set_sensitivity(1)
-        with self.assertRaises(ValueError):
-            self.mech.set_epsilon_delta(1, 0.5)
-
     def test_wrong_sensitivity(self):
-        self.mech.set_epsilon(1)
-
         with self.assertRaises(TypeError):
-            self.mech.set_sensitivity("1")
+            self.mech(epsilon=1, sensitivity="1")
 
         with self.assertRaises(ValueError):
-            self.mech.set_sensitivity(-1)
-
-    def test_no_sensitivity(self):
-        self.mech.set_epsilon(1)
-        with self.assertRaises(ValueError):
-            self.mech.randomise(self.generate_data())
+            self.mech(epsilon=1, sensitivity=-1)
 
     def test_zero_sensitivity(self):
-        self.mech.set_epsilon(1).set_sensitivity(0)
+        mech = self.mech(epsilon=1, sensitivity=0)
 
         for i in range(100):
             data = self.generate_data()
-            noisy_data = self.mech.randomise(data)
+            noisy_data = mech.randomise(data)
             self.assertTrue(np.allclose(data, noisy_data))
 
     def test_numeric_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(TypeError):
-            self.mech.randomise(1)
+            mech.randomise(1)
 
     def test_string_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(TypeError):
-            self.mech.randomise("1")
+            mech.randomise("1")
 
     def test_list_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(TypeError):
-            self.mech.randomise([1, 2, 3])
+            mech.randomise([1, 2, 3])
 
     def test_string_array_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(TypeError):
-            self.mech.randomise(np.array([["1", "2"], ["3", "4"]]))
+            mech.randomise(np.array([["1", "2"], ["3", "4"]]))
 
     def test_scalar_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(ValueError):
-            self.mech.randomise(np.array([1]))
+            mech.randomise(np.array([1]))
 
     def test_scalar_array_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
-        self.assertIsNotNone(self.mech.randomise(np.array([[1]])))
+        self.assertIsNotNone(mech.randomise(np.array([[1]])))
 
     def test_vector_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(ValueError):
-            self.mech.randomise(np.array([1, 2, 3]))
+            mech.randomise(np.array([1, 2, 3]))
 
     def test_non_square_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(ValueError):
-            self.mech.randomise(np.ones((3, 4)))
+            mech.randomise(np.ones((3, 4)))
 
     def test_3D_input(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
 
         with self.assertRaises(ValueError):
-            self.mech.randomise(np.ones((3, 3, 3)))
+            mech.randomise(np.ones((3, 3, 3)))
 
     def test_different_result(self):
-        self.mech.set_epsilon(1).set_sensitivity(1)
+        mech = self.mech(epsilon=1, sensitivity=1)
         data = self.generate_data()
-        noisy_data = self.mech.randomise(data)
+        noisy_data = mech.randomise(data)
 
         for i in range(10):
             old_noisy_data = noisy_data
-            noisy_data = self.mech.randomise(self.generate_data())
+            noisy_data = mech.randomise(self.generate_data())
 
             self.assertFalse(np.allclose(noisy_data, old_noisy_data))
 
     def test_repr(self):
-        repr_ = repr(self.mech.set_epsilon(1).set_sensitivity(1))
+        repr_ = repr(self.mech(epsilon=1, sensitivity=1))
         self.assertIn(".Wishart(", repr_)

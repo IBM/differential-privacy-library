@@ -250,8 +250,8 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._N
             idx = iterator.multi_index
             _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
             local_diam = _upper - _lower
-            dp_mech = LaplaceTruncated().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints).\
-                set_bounds(_lower, _upper)
+            dp_mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=local_diam / n_datapoints, lower=_lower,
+                                       upper=_upper)
 
             dp_mean[iterator.multi_index] = dp_mech.randomise(actual_mean[idx])
             iterator.iternext()
@@ -261,8 +261,8 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._N
         return dp_mean
 
     local_diam = upper[0] - lower[0]
-    dp_mech = LaplaceTruncated().set_epsilon(epsilon).set_sensitivity(local_diam / n_datapoints).\
-        set_bounds(lower[0], upper[0])
+    dp_mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=local_diam / n_datapoints, lower=lower[0],
+                               upper=upper[0])
 
     accountant.spend(epsilon, 0)
 
@@ -421,8 +421,9 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._No
         while not iterator.finished:
             idx = iterator.multi_index
             local_diam = upper[idx] - lower[idx] if vector_out else upper[0] - lower[0]
-            dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")) \
-                .set_sensitivity((local_diam / n_datapoints) ** 2 * (n_datapoints - 1))
+            dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
+                                           sensitivity=(local_diam / n_datapoints) ** 2 * (n_datapoints - 1),
+                                           lower=0, upper=float("inf"))
 
             dp_var[iterator.multi_index] = np.minimum(dp_mech.randomise(actual_var[idx]), local_diam ** 2)
             iterator.iternext()
@@ -432,8 +433,9 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._No
         return dp_var
 
     local_diam = upper[0] - lower[0]
-    dp_mech = LaplaceBoundedDomain().set_epsilon(epsilon).set_bounds(0, float("inf")). \
-        set_sensitivity((local_diam / n_datapoints) ** 2 * (n_datapoints - 1))
+    dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
+                                   sensitivity=(local_diam / n_datapoints) ** 2 * (n_datapoints - 1), lower=0,
+                                   upper=float("inf"))
 
     accountant.spend(epsilon, 0)
 
@@ -723,8 +725,8 @@ def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None
             idx = iterator.multi_index
             _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
             local_diam = _upper - _lower
-            mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam).\
-                set_bounds(_lower * n_datapoints, _upper * n_datapoints)
+            mech = dp_mech(epsilon=epsilon, sensitivity=local_diam, lower=_lower * n_datapoints,
+                           upper=_upper * n_datapoints)
 
             dp_sum[idx] = mech.randomise(actual_sum[idx])
             iterator.iternext()
@@ -734,8 +736,8 @@ def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None
         return dp_sum
 
     local_diam = upper[0] - lower[0]
-    mech = dp_mech().set_epsilon(epsilon).set_sensitivity(local_diam).set_bounds(lower[0] * n_datapoints,
-                                                                                 upper[0] * n_datapoints)
+    mech = dp_mech(epsilon=epsilon, sensitivity=local_diam, lower=lower[0] * n_datapoints,
+                   upper=upper[0] * n_datapoints)
 
     accountant.spend(epsilon, 0)
 

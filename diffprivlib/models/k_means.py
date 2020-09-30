@@ -219,8 +219,7 @@ class KMeans(sk_cluster.KMeans):
 
         """
         epsilon_0, epsilon_i = self._split_epsilon(dims, total_iters)
-        geometric_mech = GeometricFolded().set_sensitivity(1).set_bounds(0.5, float("inf")).set_epsilon(epsilon_0)
-        laplace_mech = LaplaceBoundedDomain().set_epsilon(epsilon_i)
+        geometric_mech = GeometricFolded(epsilon=epsilon_0, sensitivity=1, lower=0.5, upper=float("inf"))
 
         for cluster in range(self.n_clusters):
             if cluster not in labels:
@@ -233,8 +232,10 @@ class KMeans(sk_cluster.KMeans):
             noisy_sum = np.zeros_like(cluster_sum)
 
             for i in range(dims):
-                laplace_mech.set_sensitivity(self.bounds[1][i] - self.bounds[0][i]) \
-                    .set_bounds(noisy_count * self.bounds[0][i], noisy_count * self.bounds[1][i])
+                laplace_mech = LaplaceBoundedDomain(epsilon=epsilon_i,
+                                                    sensitivity=self.bounds[1][i] - self.bounds[0][i],
+                                                    lower=noisy_count * self.bounds[0][i],
+                                                    upper=noisy_count * self.bounds[1][i])
                 noisy_sum[i] = laplace_mech.randomise(cluster_sum[i])
 
             centers[cluster, :] = noisy_sum / noisy_count

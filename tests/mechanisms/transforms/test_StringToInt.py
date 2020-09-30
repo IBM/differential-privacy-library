@@ -10,7 +10,7 @@ global_seed(3141592653)
 
 class TestStringToInt(TestCase):
     def test_not_none(self):
-        mech = StringToInt(Geometric())
+        mech = StringToInt(Geometric(epsilon=1))
         self.assertIsNotNone(mech)
         _mech = mech.copy()
         self.assertIsNotNone(_mech)
@@ -27,13 +27,13 @@ class TestStringToInt(TestCase):
             StringToInt()
 
     def test_randomise(self):
-        mech = StringToInt(Geometric().set_sensitivity(1).set_epsilon(1))
+        mech = StringToInt(Geometric(epsilon=1))
         self.assertIsInstance(mech.randomise("1"), str)
 
     def test_distrib(self):
         epsilon = 1.0
         runs = 10000
-        mech = StringToInt(Geometric().set_sensitivity(1).set_epsilon(epsilon))
+        mech = StringToInt(Geometric(epsilon=epsilon))
         count = [0, 0]
 
         for _ in range(runs):

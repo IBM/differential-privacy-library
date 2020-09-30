@@ -235,13 +235,13 @@ class GaussianNB(sk_nb.GaussianNB):
             lower, upper = self.bounds[0][feature], self.bounds[1][feature]
             local_diameter = upper - lower
 
-            mech_mu = LaplaceTruncated().set_bounds(lower * n_noisy, upper * n_noisy).set_epsilon(local_epsilon).\
-                set_sensitivity(local_diameter)
+            mech_mu = LaplaceTruncated(epsilon=local_epsilon, delta=0, sensitivity=local_diameter,
+                                       lower=lower * n_noisy, upper=upper * n_noisy)
             _mu = mech_mu.randomise(_X.sum()) / n_noisy
 
             local_sq_sens = max(_mu - lower, upper - _mu) ** 2
-            mech_var = LaplaceBoundedDomain().set_epsilon(local_epsilon).set_sensitivity(local_sq_sens).\
-                set_bounds(0, local_sq_sens * n_noisy)
+            mech_var = LaplaceBoundedDomain(epsilon=local_epsilon, delta=0, sensitivity=local_sq_sens, lower=0,
+                                            upper=local_sq_sens * n_noisy)
             _var = mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy
 
             new_mu[feature] = _mu
@@ -271,7 +271,7 @@ class GaussianNB(sk_nb.GaussianNB):
         n_total = y.shape[0]
 
         # Use 1/3 of total epsilon budget for getting noisy class counts
-        mech = GeometricTruncated().set_epsilon(self.epsilon / 3).set_sensitivity(1).set_bounds(1, n_total)
+        mech = GeometricTruncated(epsilon=self.epsilon / 3, sensitivity=1, lower=1, upper=n_total)
         noisy_counts = np.array([mech.randomise((y == y_i).sum()) for y_i in unique_y])
 
         argsort = np.argsort(noisy_counts)
