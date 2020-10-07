@@ -26,7 +26,6 @@ class TestDPMechanism(TestCase):
 
     def test_copy(self):
         self.assertIsInstance(self.mech(epsilon=1, delta=0).copy(), DPMechanism)
-        self.assertIsInstance(self.mech(epsilon=1, delta=0).deepcopy(), DPMechanism)
 
     def test_set_epsilon_delta(self):
         with self.assertRaises(ValueError):
@@ -38,7 +37,7 @@ class TestDPMechanism(TestCase):
         with self.assertRaises(ValueError):
             self.mech(epsilon=0, delta=0)
 
-        mech1 = self.mech(epsilon=1, delta=0).deepcopy()
+        mech1 = self.mech(epsilon=1, delta=0).copy()
         self.assertIsNotNone(mech1)
 
     def test_mse(self):

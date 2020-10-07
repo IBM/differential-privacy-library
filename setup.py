@@ -20,7 +20,7 @@ def get_version(file_path):
     raise RuntimeError("Unable to find version string.")
 
 
-install_requires = ['numpy >= 1.15.0',
+install_requires = ['numpy >= 1.17.0',
                     'setuptools >= 39.0.1',
                     'scikit-learn >= 0.22.0',
                     'scipy >= 1.2.1',
@@ -43,7 +43,7 @@ setuptools.setup(name='diffprivlib',
                  extras_require={
                      'docs': docs_require
                  },
-                 python_requires='>=3',
+                 python_requires='>=3.6',
                  classifiers=[
                      'Development Status :: 4 - Beta',
                      'Intended Audience :: Developers',

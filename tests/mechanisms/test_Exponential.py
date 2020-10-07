@@ -103,7 +103,7 @@ class TestExponential(TestCase):
         ]
         mech = self.mech(epsilon=1, utility_list=utility_list)
 
-        _utility_list = mech.utility_list()
+        _utility_list = mech.utility_list
         self.assertEqual(len(_utility_list), len(utility_list))
 
     def test_self_in_utility(self):
@@ -115,7 +115,7 @@ class TestExponential(TestCase):
         ]
         mech = self.mech(epsilon=1, utility_list=utility_list)
 
-        _utility_list = mech.utility_list()
+        _utility_list = mech.utility_list
         self.assertEqual(len(_utility_list) + 1, len(utility_list))
 
         self.assertEqual(mech._get_utility("A", "A"), 0)

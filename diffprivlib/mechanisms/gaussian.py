@@ -43,12 +43,6 @@ class Gaussian(DPMechanism):
         self._scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
         self._stored_gaussian = None
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
-
-        return output
-
     def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
 

@@ -38,11 +38,7 @@ class Wishart(DPMechanism):
         super().__init__(epsilon=epsilon, delta=0.0)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
-
-        return output
+        self._rng = np.random.default_rng()
 
     def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
@@ -152,7 +148,7 @@ class Wishart(DPMechanism):
         scale = 1 / 2 / self.epsilon
         n_features = value.shape[0]
 
-        noise_array = np.random.randn(n_features, n_features + 1) * scale * self.sensitivity
+        noise_array = self._rng.standard_normal((n_features, n_features + 1)) * scale * self.sensitivity
         noise_array = np.dot(noise_array, noise_array.T)
 
         return value + noise_array

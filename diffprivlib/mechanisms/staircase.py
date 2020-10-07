@@ -21,7 +21,6 @@ The staircase mechanism in differential privacy.
 from numbers import Real
 
 import numpy as np
-from numpy.random import geometric, random
 
 from diffprivlib.mechanisms.laplace import Laplace
 from diffprivlib.utils import copy_docstring
@@ -39,11 +38,7 @@ class Staircase(Laplace):
         super().__init__(epsilon=epsilon, delta=0, sensitivity=sensitivity)
         self.gamma = self._check_gamma(gamma, init=True)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_gamma(" + str(self.gamma) + ")" if self.gamma is not None else ""
-
-        return output
+        self._rng = np.random.default_rng()
 
     def _check_gamma(self, gamma, init=False):
         r"""Sets the tuning parameter :math:`\gamma` for the mechanism.
@@ -128,10 +123,11 @@ class Staircase(Laplace):
     def randomise(self, value):
         self._check_all(value)
 
-        sign = -1 if random() < 0.5 else 1
-        geometric_rv = geometric(1 - np.exp(- self.epsilon)) - 1
-        unif_rv = random()
-        binary_rv = 0 if random() < self.gamma / (self.gamma + (1 - self.gamma) * np.exp(- self.epsilon)) else 1
+        sign = -1 if self._rng.random() < 0.5 else 1
+        geometric_rv = self._rng.geometric(1 - np.exp(- self.epsilon)) - 1
+        unif_rv = self._rng.random()
+        binary_rv = 0 if self._rng.random() < self.gamma / (self.gamma +
+                                                            (1 - self.gamma) * np.exp(- self.epsilon)) else 1
 
         return value + sign * ((1 - binary_rv) * ((geometric_rv + self.gamma * unif_rv) * self.sensitivity) +
                                binary_rv * ((geometric_rv + self.gamma + (1 - self.gamma) * unif_rv) *

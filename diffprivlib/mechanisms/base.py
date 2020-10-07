@@ -19,14 +19,16 @@
 Base classes for differential privacy mechanisms.
 """
 import abc
-from copy import copy, deepcopy
+from copy import copy
+import inspect
 from numbers import Real
-import numpy as np
+import secrets
 
 
 class DPMachine(abc.ABC):
     """
     Parent class for :class:`.DPMechanism` and :class:`.DPTransformer`, providing and specifying basic functionality.
+
     """
     @abc.abstractmethod
     def randomise(self, value):
@@ -55,17 +57,6 @@ class DPMachine(abc.ABC):
         """
         return copy(self)
 
-    def deepcopy(self):
-        """Produces a deep copy of the class.
-
-        Returns
-        -------
-        self : class
-            Returns the deep copy.
-
-        """
-        return deepcopy(self)
-
 
 class DPMechanism(DPMachine, abc.ABC):
     r"""Abstract base class for all mechanisms.  Instantiated from :class:`.DPMachine`.
@@ -81,17 +72,17 @@ class DPMechanism(DPMachine, abc.ABC):
     """
     def __init__(self, *, epsilon, delta):
         self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
-        self._rng = np.random.default_rng()
+
+        self._rng = secrets.SystemRandom()
 
     def __repr__(self):
-        output = str(self.__module__) + "." + str(self.__class__.__name__) + "()"
+        attrs = inspect.getfullargspec(self.__class__)[0][1:]
+        attr_output = []
 
-        if self.epsilon is not None and self.delta is not None and self.delta > 0.0:
-            output += ".set_epsilon_delta(" + str(self.epsilon) + "," + str(self.delta) + ")"
-        elif self.epsilon is not None:
-            output += ".set_epsilon(" + str(self.epsilon) + ")"
+        for attr in attrs:
+            attr_output.append(attr + "=" + repr(self.__getattribute__(attr)))
 
-        return output
+        return str(self.__module__) + "." + str(self.__class__.__name__) + "(" + ", ".join(attr_output) + ")"
 
     @abc.abstractmethod
     def randomise(self, value):
@@ -204,6 +195,7 @@ class TruncationAndFoldingMixin:
         return output
 
     def _check_bounds(self, lower, upper):
+        """Performs a check on the bounds provided for the mechanism."""
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")
 
@@ -213,18 +205,7 @@ class TruncationAndFoldingMixin:
         return lower, upper
 
     def _check_all(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : float
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        """
+        """Checks that all parameters of the mechanism have been initialised correctly"""
         del value
         self._check_bounds(self.lower, self.upper)
 

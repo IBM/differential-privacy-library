@@ -54,13 +54,6 @@ class Binary(DPMechanism):
         super().__init__(epsilon=epsilon, delta=0.0)
         self.value0, self.value1 = self._check_labels(value0, value1)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_labels(" + str(self.value0) + ", " + str(self.value1) + ")" \
-            if self.value0 is not None else ""
-
-        return output
-
     def _check_labels(self, value0=None, value1=None):
         value0 = value0 if value0 is not None else self.value0
         value1 = value1 if value1 is not None else self.value1

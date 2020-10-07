@@ -21,9 +21,9 @@ class TestKMeans(TestCase):
         clf.fit(X)
         centers = clf.cluster_centers_
 
-        self.assertTrue(np.isclose(centers, 0.1, atol=0.05).any())
-        self.assertTrue(np.isclose(centers, 0.5, atol=0.05).any())
-        self.assertTrue(np.isclose(centers, 0.9, atol=0.05).any())
+        self.assertTrue(np.isclose(centers, 0.1, atol=0.1).any())
+        self.assertTrue(np.isclose(centers, 0.5, atol=0.1).any())
+        self.assertTrue(np.isclose(centers, 0.9, atol=0.1).any())
 
     def test_unused_args(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
