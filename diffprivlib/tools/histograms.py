@@ -146,7 +146,7 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
 
     if density:
         bin_sizes = np.array(np.diff(bin_edges), float)
-        return dp_hist / bin_sizes / dp_hist.sum(), bin_edges
+        return dp_hist / bin_sizes / (dp_hist.sum() if dp_hist.sum() else 1), bin_edges
 
     return dp_hist, bin_edges
 
@@ -250,7 +250,9 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
             shape[i] = dp_hist.shape[i]
             # noinspection PyUnresolvedReferences
             dp_hist = dp_hist / np.diff(bin_edges[i]).reshape(shape)
-        dp_hist /= dp_hist_sum
+
+        if dp_hist_sum > 0:
+            dp_hist /= dp_hist_sum
 
     accountant.spend(epsilon, 0)
 
