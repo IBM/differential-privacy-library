@@ -47,12 +47,6 @@ class Geometric(DPMechanism):
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = - self.epsilon / self.sensitivity if self.sensitivity > 0 else - float("inf")
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
-
-        return output
-
     def _check_sensitivity(self, sensitivity=None):
         sensitivity = sensitivity if sensitivity is not None else self.sensitivity
 
@@ -139,12 +133,6 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += TruncationAndFoldingMixin.__repr__(self)
-
-        return output
-
     def _check_bounds(self, lower=None, upper=None):
         if not isinstance(lower, Integral) and abs(lower) != float("inf"):
             raise TypeError("Lower bound must be integer-valued, got {}".format(lower))
@@ -200,16 +188,7 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += TruncationAndFoldingMixin.__repr__(self)
-
-        return output
-
-    def _check_bounds(self, lower=None, upper=None):
-        lower = lower if lower is not None else self.lower
-        upper = upper if upper is not None else self.upper
-
+    def _check_bounds(self, lower, upper):
         if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):
             raise ValueError("Bounds must be integer or half-integer floats")
 

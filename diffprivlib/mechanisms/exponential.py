@@ -47,12 +47,6 @@ class Exponential(DPMechanism):
         self._check_utility_full(self._domain_values)
         self._normalising_constant = self._build_normalising_constant()
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_utility(" + str(self.utility_list()) + ")" if self._utility_values is not None else ""
-
-        return output
-
     def _build_utility(self, utility_list):
         """Sets the utility function of the mechanism.  The utility function is used to determine the probability of
         selecting an output for a given input.
@@ -136,6 +130,7 @@ class Exponential(DPMechanism):
 
         return True
 
+    @property
     def utility_list(self):
         """Gets the utility list of the mechanism, in the same form as accepted by `.set_utility_list`.
 
@@ -280,12 +275,6 @@ class ExponentialHierarchical(Exponential):
         utility_list = self._build_utility_list(hierarchy)
         super().__init__(epsilon=epsilon, utility_list=utility_list)
         self._list_hierarchy = None
-
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_hierarchy(" + str(self._list_hierarchy) + ")" if self._list_hierarchy is not None else ""
-
-        return output
 
     def _build_hierarchy(self, nested_list, parent_node=None):
         if not isinstance(nested_list, list):

@@ -40,14 +40,7 @@ class Vector(DPMechanism):
         self.dimension = self._check_dimension(dimension)
         self.alpha = self._check_alpha(alpha)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_alpha(" + str(self.alpha) + ")" if self.alpha != 0.01 else ""
-        output += ".set_sensitivity(" + str(self.function_sensitivity) + ", " + str(self.data_sensitivity) + ")" \
-            if self.function_sensitivity is not None or self.data_sensitivity != 1 else ""
-        output += ".set_dimension(" + str(self.dimension) + ")" if self.dimension is not None else ""
-
-        return output
+        self._rng = np.random.default_rng()
 
     def _check_epsilon_delta(self, epsilon, delta):
         r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
@@ -218,9 +211,9 @@ class Vector(DPMechanism):
 
         scale = (epsilon_p / 2 / self.data_sensitivity) if self.data_sensitivity > 0 else float("inf")
 
-        normed_noisy_vector = np.random.normal(0, 1, self.dimension)
+        normed_noisy_vector = self._rng.normal(0, 1, self.dimension)
         norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = np.random.gamma(self.dimension, 1 / scale, 1)
+        noisy_norm = self._rng.gamma(self.dimension, 1 / scale, 1)
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 

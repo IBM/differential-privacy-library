@@ -52,12 +52,6 @@ class Laplace(DPMechanism):
         super().__init__(epsilon=epsilon, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_sensitivity(" + str(self.sensitivity) + ")" if self.sensitivity is not None else ""
-
-        return output
-
     @staticmethod
     def _check_sensitivity(sensitivity):
         if not isinstance(sensitivity, Real):
@@ -161,12 +155,6 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += TruncationAndFoldingMixin.__repr__(self)
-
-        return output
-
     @copy_docstring(Laplace.bias)
     def bias(self, value):
         self._check_all(value)
@@ -231,12 +219,6 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += TruncationAndFoldingMixin.__repr__(self)
-
-        return output
-
     @copy_docstring(Laplace.bias)
     def bias(self, value):
         self._check_all(value)
@@ -294,9 +276,6 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         self._scale = None
 
     def _find_scale(self):
-        if self.epsilon is None or self.delta is None:
-            raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
-
         eps = self.epsilon
         delta = self.delta
         diam = self.upper - self.lower
