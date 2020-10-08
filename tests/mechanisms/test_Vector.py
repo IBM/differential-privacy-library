@@ -27,6 +27,13 @@ class TestVector(TestCase):
         with self.assertRaises(ValueError):
             self.mech(epsilon=-1, dimension=3, function_sensitivity=1)
 
+    def test_nonzero_delta(self):
+        mech = self.mech(epsilon=1, dimension=3, function_sensitivity=1)
+        mech.delta = 0.1
+
+        with self.assertRaises(ValueError):
+            mech.randomise(1)
+
     def test_inf_epsilon(self):
         mech = self.mech(epsilon=float("inf"), dimension=3, function_sensitivity=1)
 
@@ -105,3 +112,9 @@ class TestVector(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, dimension=4, function_sensitivity=1))
         self.assertIn(".Vector(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, dimension=4, function_sensitivity=1).variance, 0)
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, dimension=4, function_sensitivity=1).variance, 0)

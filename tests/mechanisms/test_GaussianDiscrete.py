@@ -37,8 +37,12 @@ class TestGaussianDiscrete(TestCase):
         for i in range(1000):
             self.assertAlmostEqual(mech.randomise(1), 1)
 
+    def test_zero_epsilon_delta(self):
+        with self.assertRaises(ValueError):
+            self.mech(epsilon=0, delta=0)
+
     def test_large_epsilon(self):
-        mech = self.mech(epsilon=1.5, delta=0.1)
+        mech = self.mech(epsilon=5, delta=0.1)
         self.assertIsNotNone(mech.randomise(0))
 
     def test_inf_epsilon(self):
@@ -92,7 +96,7 @@ class TestGaussianDiscrete(TestCase):
 
     def test_neighbors_prob(self):
         epsilon = 1
-        runs = 10000
+        runs = 1000
         mech = self.mech(epsilon=epsilon, delta=0.1)
         count = [0, 0]
 
@@ -131,15 +135,15 @@ class TestGaussianDiscrete(TestCase):
 
     def test_bernoulli_exp_prob(self):
         vals = []
-        runs = 10000
+        runs = 200
 
         for i in range(runs):
             vals.append(self.mech(epsilon=1, delta=0.5)._bernoulli_exp(-np.log(0.5)))
 
-        self.assertAlmostEqual(sum(vals) / runs / 0.5, 1, delta=0.05)
+        self.assertAlmostEqual(sum(vals) / runs, 0.5, delta=0.1)
 
         vals = []
         for i in range(runs):
             vals.append(self.mech(epsilon=1, delta=0.5)._bernoulli_exp(-np.log(0.1)))
 
-        self.assertAlmostEqual(sum(vals) / runs / 0.1, 1, delta=0.05)
+        self.assertAlmostEqual(sum(vals) / runs, 0.1, delta=0.1)

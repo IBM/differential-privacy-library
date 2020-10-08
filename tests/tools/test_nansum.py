@@ -48,7 +48,7 @@ class TestNansum(TestCase):
     def test_large_epsilon(self):
         a = np.random.random(1000)
         res = float(np.nansum(a))
-        res_dp = nansum(a, epsilon=1, bounds=(0, 1))
+        res_dp = nansum(a, epsilon=5, bounds=(0, 1))
 
         self.assertAlmostEqual(res, res_dp, delta=0.01 * res)
 

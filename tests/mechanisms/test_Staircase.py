@@ -99,3 +99,7 @@ class TestStaircase(TestCase):
 
     def test_bias(self):
         self.assertEqual(0.0, self.mech(epsilon=1, sensitivity=1, gamma=0.5).bias(0))
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, sensitivity=1).variance, 0)
+

@@ -27,6 +27,12 @@ class TestUniform(TestCase):
         with self.assertRaises(ValueError):
             self.mech(delta=0, sensitivity=1)
 
+    def test_nonzero_epsilon(self):
+        mech = self.mech(delta=0.1, sensitivity=1)
+        mech.epsilon = 1
+        with self.assertRaises(ValueError):
+            mech.randomise(1)
+
     def test_complex_delta(self):
         with self.assertRaises(TypeError):
             self.mech(delta=0.1 + 0.1j, sensitivity=1)

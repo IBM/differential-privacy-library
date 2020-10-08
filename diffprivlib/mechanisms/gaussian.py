@@ -146,10 +146,6 @@ class GaussianAnalytic(Gaussian):
         return True
 
     def _find_scale(self):
-        if self.epsilon is None or self.delta is None:
-            raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
-        if self.sensitivity is None:
-            raise ValueError("Sensitivity must be set before calling _find_scale().")
         if self.sensitivity / self.epsilon == 0:
             return 0.0
 
@@ -285,8 +281,6 @@ class GaussianDiscrete(DPMechanism):
     def _find_scale(self):
         """Determine the scale of the mechanism's distribution given epsilon and delta.
         """
-        if self.epsilon is None or self.delta is None:
-            raise ValueError("Epsilon and Delta must be set before calling _find_scale().")
         if self.sensitivity / self.epsilon == 0:
             return 0
 

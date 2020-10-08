@@ -83,9 +83,6 @@ def warn_unused_args(args):
     if isinstance(args, str):
         args = [args]
 
-    if not isinstance(args, (dict, list)):
-        raise ValueError("args must be a string, a list of strings or a dictionary, got type '%s'." % type(args))
-
     for arg in args:
         warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
                       "warning." % arg, DiffprivlibCompatibilityWarning)

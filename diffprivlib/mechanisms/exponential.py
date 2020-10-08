@@ -123,9 +123,6 @@ class Exponential(DPMechanism):
             been set.
 
         """
-        if self._utility_values is None:
-            return None
-
         utility_list = []
 
         for _key, _utility in self._utility_values.items():
@@ -177,12 +174,6 @@ class Exponential(DPMechanism):
 
     def _check_all(self, value):
         super()._check_all(value)
-
-        if self._utility_values is None:
-            raise ValueError("Utility function must be set")
-
-        if self._normalising_constant is None:
-            self._normalising_constant = self._build_normalising_constant()
 
         if not isinstance(value, str):
             raise TypeError("Value to be randomised must be a string")

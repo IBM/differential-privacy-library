@@ -41,14 +41,14 @@ class TestMean(TestCase):
     def test_large_epsilon(self):
         a = np.random.random(1000)
         res = float(np.mean(a))
-        res_dp = mean(a, epsilon=1, bounds=(0, 1))
+        res_dp = mean(a, epsilon=5, bounds=(0, 1))
 
         self.assertAlmostEqual(res, res_dp, delta=0.01)
 
     def test_large_epsilon_axis(self):
         a = np.random.random((1000, 5))
         res = np.mean(a, axis=0)
-        res_dp = mean(a, epsilon=1, bounds=(0, 1), axis=0)
+        res_dp = mean(a, epsilon=5, bounds=(0, 1), axis=0)
 
         for i in range(res.shape[0]):
             self.assertAlmostEqual(res[i], res_dp[i], delta=0.01)

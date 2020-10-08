@@ -64,6 +64,9 @@ class TestGeometricTruncated(TestCase):
         with self.assertRaises(TypeError):
             self.mech(epsilon=1, sensitivity=1, lower=0, upper=2.2)
 
+        with self.assertRaises(TypeError):
+            self.mech(epsilon=1, sensitivity=1, lower=0.1, upper=2)
+
     def test_inf_bounds(self):
         self.assertIsNotNone(self.mech(epsilon=1, lower=0, upper=float("inf")))
         self.assertIsNotNone(self.mech(epsilon=1, lower=-float("inf"), upper=0))
