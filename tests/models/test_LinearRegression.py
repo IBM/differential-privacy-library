@@ -120,7 +120,7 @@ class TestLinearRegression(TestCase):
         clf.fit(X, y)
 
         self.assertIsNotNone(clf)
-        self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, places=3)
+        self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, delta=.01)
 
     def test_check_solver(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
