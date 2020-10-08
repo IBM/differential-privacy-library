@@ -21,105 +21,105 @@ Binary mechanism
 .. autoclass:: Binary
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance
+   :exclude-members: copy,bias,mse,variance
 
 Exponential mechanisms
 -----------------------------
 .. autoclass:: Exponential
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance,utility_list
 
 .. autoclass:: ExponentialHierarchical
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta,set_utility
+   :exclude-members: copy,bias,mse,variance,utility_list
 
 Gaussian mechanisms
 -----------------------------
 .. autoclass:: Gaussian
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,set_epsilon
+   :exclude-members: copy
 
 .. autoclass:: GaussianAnalytic
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,set_epsilon
+   :exclude-members: copy
 
 .. autoclass:: GaussianDiscrete
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,set_epsilon,get_variance,get_mse
+   :exclude-members: copy,variance,mse
 
 Geometric mechanisms
 -----------------------------
 .. autoclass:: Geometric
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,set_epsilon_delta
+   :exclude-members: copy
 
 .. autoclass:: GeometricTruncated
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance
 
 .. autoclass:: GeometricFolded
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance
 
 Laplace mechanisms
 -----------------------------
 .. autoclass:: Laplace
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy
+   :exclude-members: copy
 
 .. autoclass:: LaplaceTruncated
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy
+   :exclude-members: copy
 
 .. autoclass:: LaplaceBoundedDomain
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy
+   :exclude-members: copy
 
 .. autoclass:: LaplaceBoundedNoise
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance,set_epsilon
+   :exclude-members: copy,mse,variance
 
 .. autoclass:: LaplaceFolded
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance
+   :exclude-members: copy,mse,variance
 
 Staircase mechanism
 -----------------------------
 .. autoclass:: Staircase
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,mse,variance
 
 Uniform mechanism
 -----------------------------
 .. autoclass:: Uniform
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_mse,get_variance,set_epsilon
+   :exclude-members: copy,mse,variance
 
 Vector mechanism
 -----------------------------
 .. autoclass:: Vector
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance
 
 Wishart mechanism
 -----------------------------
 .. autoclass:: Wishart
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance

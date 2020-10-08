@@ -27,13 +27,33 @@ from diffprivlib.utils import copy_docstring
 
 
 class Vector(DPMechanism):
-    """
+    r"""
     The vector mechanism in differential privacy.
 
     The vector mechanism is used when perturbing convex objective functions.
     Full paper: http://www.jmlr.org/papers/volume12/chaudhuri11a/chaudhuri11a.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
+        have `epsilon > 0`.
+
+    function_sensitivity : float
+        The function sensitivity.  Must be >= 0.
+
+    data_sensitivity : float, default: 1.0
+        The data sensitivity.  Must be >= 0.
+
+    dimension : int
+        Function input dimension.  This dimension relates to the size of the input vector of the function being
+        considered by the mechanism.  This corresponds to the size of the random vector produced by the mechanism.
+
+    alpha : float, default: 0.01
+        Regularisation parameter.  Must be > 0.
+
     """
-    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1, dimension, alpha=0.01):
+    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01):
         super().__init__(epsilon=epsilon, delta=0.0)
         self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
                                                                                    data_sensitivity)
@@ -43,49 +63,13 @@ class Vector(DPMechanism):
         self._rng = np.random.default_rng()
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
-
-        For the vector mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For the vector mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is zero or negative, or if `delta` is non-zero.
-
-        """
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    def _check_alpha(self, alpha):
-        r"""Set the regularisation parameter :math:`\alpha` for the mechanism.
-
-        `alpha` must be strictly positive.  Default is 0.01.
-
-        Parameters
-        ----------
-        alpha : float
-            Regularisation parameter.
-
-        Returns
-        -------
-        self : class
-
-        """
+    @staticmethod
+    def _check_alpha(alpha):
         if not isinstance(alpha, Real):
             raise TypeError("Alpha must be numeric")
 
@@ -94,22 +78,8 @@ class Vector(DPMechanism):
 
         return alpha
 
-    def _check_dimension(self, vector_dim):
-        """Sets the dimension `vector_dim` of the domain of the mechanism.
-
-        This dimension relates to the size of the input vector of the function being considered by the mechanism.  This
-        corresponds to the size of the random vector produced by the mechanism.
-
-        Parameters
-        ----------
-        vector_dim : int
-            Function input dimension.
-
-        Returns
-        -------
-        self : class
-
-        """
+    @staticmethod
+    def _check_dimension(vector_dim):
         if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
             raise TypeError("d must be integer-valued")
         if not vector_dim >= 1:
@@ -117,25 +87,8 @@ class Vector(DPMechanism):
 
         return int(vector_dim)
 
-    def _check_sensitivity(self, function_sensitivity, data_sensitivity=1):
-        """Sets the sensitivity of the function and data being processed by the mechanism.
-
-        - The sensitivity of the function relates to the max of its second derivative.  Must be strictly positive.
-        - The sensitivity of the data relates to the max 2-norm of each row.  Must be strictly positive.
-
-        Parameters
-        ----------
-        function_sensitivity : float
-            The function sensitivity of the mechanism.
-
-        data_sensitivity : float, default: 1.0
-            The data sensitivity of the mechanism.
-
-        Returns
-        -------
-        self : class
-
-        """
+    @staticmethod
+    def _check_sensitivity(function_sensitivity, data_sensitivity):
         if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
             raise TypeError("Sensitivities must be numeric")
 
@@ -145,24 +98,6 @@ class Vector(DPMechanism):
         return function_sensitivity, data_sensitivity
 
     def _check_all(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : method
-            The value to be checked.
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        Raises
-        ------
-        Exception
-            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
-
-        """
         super()._check_all(value)
         self._check_alpha(self.alpha)
         self._check_sensitivity(self.function_sensitivity, self.data_sensitivity)
