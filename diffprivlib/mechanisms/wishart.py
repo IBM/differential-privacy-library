@@ -27,12 +27,22 @@ from diffprivlib.utils import copy_docstring
 
 
 class Wishart(DPMechanism):
-    """
+    r"""
     The Wishart mechanism in differential privacy.
 
     Used to achieve differential privacy on 2nd moment matrices.
 
     Paper link: https://ieeexplore.ieee.org/abstract/document/7472095/
+
+    Parameters
+    ----------
+    epsilon : float
+        The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must be
+        > 0.
+
+    sensitivity : float
+        The maximum l2-norm of the data.  Must be >= 0.
+
     """
     def __init__(self, epsilon, sensitivity):
         super().__init__(epsilon=epsilon, delta=0.0)
@@ -41,47 +51,13 @@ class Wishart(DPMechanism):
         self._rng = np.random.default_rng()
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
-
-        For the Wishart mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For the vector mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is zero or negative, or if `delta` is non-zero.
-
-        """
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    def _check_sensitivity(self, sensitivity):
-        """Sets the l2-norm sensitivity of the data being processed by the mechanism.
-
-        Parameters
-        ----------
-        sensitivity : float
-            The maximum l2-norm of the data.
-
-        Returns
-        -------
-        self : class
-
-        """
+    @staticmethod
+    def _check_sensitivity(sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -91,24 +67,6 @@ class Wishart(DPMechanism):
         return float(sensitivity)
 
     def _check_all(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : method
-            The value to be checked.
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        Raises
-        ------
-        Exception
-            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
-
-        """
         super()._check_all(value)
         self._check_sensitivity(self.sensitivity)
 

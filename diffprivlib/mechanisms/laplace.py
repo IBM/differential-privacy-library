@@ -41,7 +41,7 @@ class Laplace(DPMechanism):
     epsilon : float
         Privacy parameter :math:`\epsilon` for the mechanism.
 
-    delta : float
+    delta : float, default: 0.0
         Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
 
     sensitivity : float
@@ -138,7 +138,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     epsilon : float
         Privacy parameter :math:`\epsilon` for the mechanism.
 
-    delta : float
+    delta : float, default: 0.0
         Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
 
     sensitivity : float
@@ -202,7 +202,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     epsilon : float
         Privacy parameter :math:`\epsilon` for the mechanism.
 
-    delta : float
+    delta : float, default: 0.0
         Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
 
     sensitivity : float
@@ -258,7 +258,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     epsilon : float
         Privacy parameter :math:`\epsilon` for the mechanism.
 
-    delta : float
+    delta : float, default: 0.0
         Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
 
     sensitivity : float

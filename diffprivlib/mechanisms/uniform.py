@@ -31,37 +31,21 @@ class Uniform(DPMechanism):
 
     This emerges as a special case of the :class:`.LaplaceBoundedNoise` mechanism when epsilon = 0.
     Paper link: https://arxiv.org/pdf/1810.00877.pdf
+
+    Parameters
+    ----------
+    delta : float
+        The delta value for the mechanism.  Must satisfy 0 < `delta` <= 0.5.
+
+    sensitivity : float
+        The sensitivity of the mechanism.  Must be >= 0.
+
     """
     def __init__(self, *, delta, sensitivity):
         super().__init__(epsilon=0.0, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Set privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
-
-        For the uniform mechanism, `epsilon` must be strictly zero and `delta` must satisfy 0 < `delta` <= 0.5.
-
-        Parameters
-        ----------
-        epsilon : float
-            For the uniform mechanism, `epsilon` must be strictly zero.
-
-        delta : float
-            For the uniform mechanism, `delta` must satisfy 0 < `delta` <= 0.5.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is non-zero or if `delta` does not satisfy 0 < `delta` <= 0.5.
-
-        TypeError
-            If `epsilon` or `delta` cannot be cast as floats.
-
-        """
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
 

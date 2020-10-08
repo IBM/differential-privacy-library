@@ -36,6 +36,18 @@ class Gaussian(DPMechanism):
 
     Paper link: https://www.nowpublishers.com/article/DownloadSummary/TCS-042
 
+    Parameters
+    ----------
+    epsilon : float
+        Epsilon value of the mechanism.  Must satisfy 0 < `epsilon` <= 1.  For epsilon > 1, use
+        :class:`.GaussianAnalytic`.
+
+    delta : float
+        Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
+
+    sensitivity : float
+        The sensitivity of the mechanism.  Must be >= 0.
+
     """
     def __init__(self, *, epsilon, delta, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta)
@@ -44,28 +56,11 @@ class Gaussian(DPMechanism):
         self._stored_gaussian = None
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
-
-        For the Gaussian mechanism, `epsilon` cannot be greater than 1, and `delta` must be non-zero.
-
-        Parameters
-        ----------
-        epsilon : float
-            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon` <= 1.
-
-        delta : float
-            Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
-
-        Returns
-        -------
-        self : class
-
-        """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
         if isinstance(epsilon, Real) and epsilon > 1.0:
-            raise ValueError("Epsilon cannot be greater than 1")
+            raise ValueError("Epsilon cannot be greater than 1. If required, use GaussianAnalytic instead.")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
@@ -79,7 +74,6 @@ class Gaussian(DPMechanism):
 
         return float(sensitivity)
 
-    @copy_docstring(Laplace._check_all)
     def _check_all(self, value):
         super()._check_all(value)
         self._check_sensitivity(self.sensitivity)
@@ -124,35 +118,28 @@ class GaussianAnalytic(Gaussian):
 
     Paper link: https://arxiv.org/pdf/1805.06530.pdf
 
+    Parameters
+    ----------
+    epsilon : float
+        Epsilon value of the mechanism.  Must satisfy `epsilon` > 0`.
+
+    delta : float
+        Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
+
+    sensitivity : float
+        The sensitivity of the mechanism.  Must be >= 0.
+
     """
     def __init__(self, *, epsilon, delta, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
         self._scale = self._find_scale()
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
-
-        For the analytic Gaussian mechanism, `epsilon` and `delta` must be non-zero.
-
-        Parameters
-        ----------
-        epsilon : float
-            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon`.
-
-        delta : float
-            Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
-
-        Returns
-        -------
-        self : class
-
-        """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
         return DPMechanism._check_epsilon_delta(self, epsilon, delta)
 
-    @copy_docstring(Laplace._check_all)
     def _check_all(self, value):
         super()._check_all(value)
 
@@ -221,6 +208,17 @@ class GaussianDiscrete(DPMechanism):
 
     Paper link: https://arxiv.org/pdf/2004.00010.pdf
 
+    Parameters
+    ----------
+    epsilon : float
+        Epsilon value of the mechanism.  Must be > 0.
+
+    delta : float
+        Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
+
+    sensitivity : int, default: 1
+        The sensitivity of the mechanism.  Must be >= 0.
+
     """
     def __init__(self, *, epsilon, delta, sensitivity=1):
         super().__init__(epsilon=epsilon, delta=delta)
@@ -228,23 +226,6 @@ class GaussianDiscrete(DPMechanism):
         self._scale = self._find_scale()
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the privacy parameters :math:`\epsilon` and :math:`\delta` for the mechanism.
-
-        For the discrete Gaussian mechanism, `epsilon` and `delta` must be non-zero.
-
-        Parameters
-        ----------
-        epsilon : float
-            Epsilon value of the mechanism.  Must satisfy 0 < `epsilon`.
-
-        delta : float
-            Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
-
-        Returns
-        -------
-        self : class
-
-        """
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
@@ -260,7 +241,6 @@ class GaussianDiscrete(DPMechanism):
 
         return sensitivity
 
-    @copy_docstring(Geometric._check_all)
     def _check_all(self, value):
         super()._check_all(value)
         self._check_sensitivity(self.sensitivity)

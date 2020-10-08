@@ -29,7 +29,7 @@ from diffprivlib.utils import copy_docstring
 
 
 class Exponential(DPMechanism):
-    """
+    r"""
     The exponential mechanism for achieving differential privacy on categorical inputs, as first proposed by McSherry
     and Talwar.
 
@@ -37,6 +37,16 @@ class Exponential(DPMechanism):
     value, with greater probability given to values 'closer' to the input, as measured by a given utility function.
 
     Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.
+
+    utility_list : list of tuples
+        The utility list of the mechanism.  Must be specified as a list of tuples, of the form ("value1", "value2",
+        utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
+        specified for every pair of values given in the `utility_list`.
 
     """
     def __init__(self, *, epsilon, utility_list):
@@ -48,34 +58,6 @@ class Exponential(DPMechanism):
         self._normalising_constant = self._build_normalising_constant()
 
     def _build_utility(self, utility_list):
-        """Sets the utility function of the mechanism.  The utility function is used to determine the probability of
-        selecting an output for a given input.
-
-        The utility function is set by `utility_list`, which is a list of pairwise 'distances' between values in the
-        mechanism's domain.  As the mechanisms's domain is set by the values in `utility_list`, all possible pairs in
-        `utility_list` must be accounted for.  The utility function is symmetric, meaning the distance from `a` to
-        `b` is the same as the distance from `b` to `a`.  Setting the second distance will overwrite the first.
-
-        Parameters
-        ----------
-        utility_list : list of tuples
-            The utility list of the mechanism.  Must be specified as a list of tuples, of the form ("value1", "value2",
-            utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
-            specified for every pair of values given in the `utility_list`.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        TypeError
-            If the `value` components of each tuple are not strings of if the `utility` component is not a float.
-
-        ValueError
-            If the `utility` component is zero or negative.
-
-        """
         if not isinstance(utility_list, list):
             raise TypeError("Utility must be given in a list")
 
@@ -211,29 +193,6 @@ class Exponential(DPMechanism):
         return True
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
-
-        For the exponential mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For the exponential mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is zero or negative, or if `delta` is non-zero.
-
-        """
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
@@ -265,14 +224,30 @@ class Exponential(DPMechanism):
 
 
 class ExponentialHierarchical(Exponential):
-    """
+    r"""
     Adaptation of the exponential mechanism to hierarchical data.  Simplifies the process of specifying utility values,
     as the values can be inferred from the hierarchy.
 
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.
+
+    hierarchy : nested list of str
+        The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node
+        must lie at the same depth in the hierarchy.
+
+    Examples
+    --------
+    Example hierarchies:
+
+    >>> flat_hierarchy = ["A", "B", "C", "D", "E"]
+    >>> nested_hierarchy = [["A"], ["B"], ["C"], ["D", "E"]]
+
     """
     def __init__(self, *, epsilon, hierarchy):
-        hierarchy = self._build_hierarchy(hierarchy)
-        utility_list = self._build_utility_list(hierarchy)
+        self.hierarchy = hierarchy
+        utility_list = self._build_utility_list(self._build_hierarchy(hierarchy))
         super().__init__(epsilon=epsilon, utility_list=utility_list)
         self._list_hierarchy = None
 
@@ -333,32 +308,6 @@ class ExponentialHierarchical(Exponential):
                 utility_list.append([_root_value, _target_value, hierarchy_height - i])
 
         return utility_list
-
-    def set_hierarchy(self, list_hierarchy):
-        """Sets the hierarchy of the hierarchical exponential mechanism.
-
-        The hierarchy is specified as a list of lists, where each leaf node is a string, and lies at the same depth as
-        each other leaf node.  The utility between each leaf node is then calculated as
-
-        Parameters
-        ----------
-        list_hierarchy : nested list of str
-            The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node
-            must lie at the same depth in the hierarchy.
-
-        Returns
-        -------
-        self : class
-
-        """
-        if not isinstance(list_hierarchy, list):
-            raise TypeError("Hierarchy must be a list")
-
-        self._list_hierarchy = list_hierarchy
-        hierarchy = self._build_hierarchy(list_hierarchy)
-        self._build_utility(self._build_utility_list(hierarchy))
-
-        return self
 
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):

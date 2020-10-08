@@ -27,12 +27,25 @@ from diffprivlib.utils import copy_docstring
 
 
 class Staircase(Laplace):
-    """
+    r"""
     The staircase mechanism in differential privacy.
 
     The staircase mechanism is an optimisation of the classical Laplace Mechanism (:class:`.Laplace`), described as a
     "geometric mixture of uniform random variables".
     Paper link: https://arxiv.org/pdf/1212.1186.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
+        have `epsilon > 0`.
+
+    sensitivity : float
+        The sensitivity of the mechanism.  Must satisfy be >= 0.
+
+    gamma : float, default: 1 / (1 + exp(epsilon/2))
+        Value of the tuning parameter gamma for the mechanism.  Must satisfy 0 <= `gamma` <= 1.
+
     """
     def __init__(self, *, epsilon, sensitivity, gamma=None):
         super().__init__(epsilon=epsilon, delta=0, sensitivity=sensitivity)
@@ -41,30 +54,6 @@ class Staircase(Laplace):
         self._rng = np.random.default_rng()
 
     def _check_gamma(self, gamma, init=False):
-        r"""Sets the tuning parameter :math:`\gamma` for the mechanism.
-
-        Must satisfy 0 <= `gamma` <= 1.  If not set, gamma defaults to minimise the expectation of the amplitude of
-        noise,
-        .. math:: \gamma = \frac{1}{1 + e^{\epsilon / 2}}
-
-        Parameters
-        ----------
-        gamma : float
-            Value of the tuning parameter gamma for the mechanism.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        TypeError
-            If `gamma` is not a float.
-
-        ValueError
-            If `gamma` is does not satisfy 0 <= `gamma` <= 1.
-
-        """
         if init and gamma is None:
             gamma = 1 / (1 + np.exp(self.epsilon / 2))
 
@@ -83,29 +72,6 @@ class Staircase(Laplace):
         return True
 
     def _check_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta` to be used by the mechanism.
-
-        For the staircase mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For the staircase mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is zero or negative, or if `delta` is non-zero.
-
-        """
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
