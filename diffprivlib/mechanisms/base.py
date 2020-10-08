@@ -76,7 +76,7 @@ class DPMechanism(DPMachine, abc.ABC):
         self._rng = secrets.SystemRandom()
 
     def __repr__(self):
-        attrs = inspect.getfullargspec(self.__class__)[0][1:]
+        attrs = inspect.getfullargspec(self.__class__).kwonlyargs
         attr_output = []
 
         for attr in attrs:
