@@ -32,6 +32,18 @@ class TestExponential(TestCase):
         for i in range(1000):
             self.assertEqual(mech.randomise("A"), "A")
 
+    def test_nonzero_delta(self):
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2]
+        ]
+        mech = self.mech(epsilon=1, utility_list=utility_list)
+        mech.delta = 0.1
+
+        with self.assertRaises(ValueError):
+            mech.randomise("A")
+
     def test_non_string_hierarchy(self):
         utility_list = [
             ["A", "B", 1],
@@ -99,7 +111,7 @@ class TestExponential(TestCase):
         utility_list = [
             ["A", "B", 1],
             ["A", "C", 2],
-            ["B", "C", 2]
+            ["C", "B", 2]
         ]
         mech = self.mech(epsilon=1, utility_list=utility_list)
 
@@ -142,8 +154,14 @@ class TestExponential(TestCase):
 
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
-        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
+        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.15)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility_list=[]))
         self.assertIn(".Exponential(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, utility_list=[]).bias, 0)
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, utility_list=[]).variance, 0)

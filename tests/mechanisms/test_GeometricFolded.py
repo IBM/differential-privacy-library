@@ -95,9 +95,9 @@ class TestGeometricFolded(TestCase):
         self.assertAlmostEqual(np.abs(median), 2.0, delta=0.1)
 
     def test_neighbors_prob(self):
-        epsilon = 1
-        runs = 10000
-        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=4)
+        epsilon = np.log(2)
+        runs = 1000
+        mech = self.mech(epsilon=epsilon, sensitivity=1, lower=0, upper=4)
         count = [0, 0]
 
         for i in range(runs):
@@ -110,7 +110,7 @@ class TestGeometricFolded(TestCase):
                 count[1] += 1
 
         self.assertGreater(count[0], count[1])
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+        self.assertLessEqual(count[0], np.exp(epsilon) * count[1] + 0.15 * runs)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, sensitivity=1, lower=0, upper=4))

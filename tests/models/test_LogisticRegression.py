@@ -145,16 +145,14 @@ class TestLogisticRegression(TestCase):
     def test_simple(self):
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
-             5.00, 5.50])
-        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
+             5.00, 5.50] * 5)
+        y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1] * 5)
         X = X[:, np.newaxis]
         X -= 3.0
         X /= 2.5
 
         clf = LogisticRegression(epsilon=2, data_norm=1.0)
         clf.fit(X, y)
-
-        # print(clf.predict(np.array([0.5, 2, 5.5])))
 
         self.assertIsNotNone(clf)
         self.assertFalse(clf.predict(np.array([(0.5 - 3) / 2.5]).reshape(-1, 1)))

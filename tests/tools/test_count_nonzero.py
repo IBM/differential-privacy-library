@@ -30,7 +30,7 @@ class TestCountNonZero(TestCase):
     def test_large_epsilon(self):
         a = np.random.random(1000).round()
         res = float(np.count_nonzero(a))
-        res_dp = count_nonzero(a, epsilon=1)
+        res_dp = count_nonzero(a, epsilon=5)
 
         self.assertAlmostEqual(res, res_dp, delta=0.01 * res)
 

@@ -34,7 +34,7 @@ class TestGaussian(TestCase):
 
     def test_large_epsilon(self):
         with self.assertRaises(ValueError):
-            self.mech(epsilon=1.5, delta=0.1, sensitivity=1)
+            self.mech(epsilon=5, delta=0.1, sensitivity=1)
 
     def test_complex_epsilon(self):
         with self.assertRaises(TypeError):

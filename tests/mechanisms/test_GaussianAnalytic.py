@@ -25,8 +25,12 @@ class TestGaussianAnalytic(TestCase):
         for i in range(1000):
             self.assertAlmostEqual(mech.randomise(1), 1)
 
+    def test_zero_epsilon_delta(self):
+        with self.assertRaises(ValueError):
+            self.mech(epsilon=0, delta=0, sensitivity=1)
+
     def test_large_epsilon(self):
-        mech = self.mech(epsilon=1.5, delta=0.1, sensitivity=1)
+        mech = self.mech(epsilon=5, delta=0.1, sensitivity=1)
         self.assertIsNotNone(mech.randomise(0))
 
     def test_inf_epsilon(self):

@@ -137,3 +137,9 @@ class TestExponentialHierarchical(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, hierarchy=[]))
         self.assertIn(".ExponentialHierarchical(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, hierarchy=[]).bias, 0)
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, hierarchy=[]).variance, 0)
