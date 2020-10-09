@@ -50,7 +50,7 @@ class KMeans(sk_cluster.KMeans):
         The number of clusters to form as well as the number of centroids to generate.
 
     accountant : BudgetAccountant, optional
-        Accountant to keep track of privacy budget.(
+        Accountant to keep track of privacy budget.
 
     Attributes
     ----------
