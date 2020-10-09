@@ -40,7 +40,7 @@ class TestHistogramdd(TestCase):
     def test_density_1d(self):
         global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
-        dp_hist, _ = histogramdd(a, epsilon=1, bins=3, range=[(0, 10)], density=True)
+        dp_hist, _ = histogramdd(a, epsilon=10, bins=3, range=[(0, 10)], density=True)
 
         # print(dp_hist.sum())
 
@@ -49,7 +49,7 @@ class TestHistogramdd(TestCase):
     def test_density_2d(self):
         global_seed(3141592653)
         a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).T
-        dp_hist, _ = histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True)
+        dp_hist, _ = histogramdd(a, epsilon=10, bins=3, range=[(0, 10), (0, 10)], density=True)
 
         # print(dp_hist.sum())
 

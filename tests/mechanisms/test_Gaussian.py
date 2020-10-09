@@ -50,7 +50,7 @@ class TestGaussian(TestCase):
             mech.randomise("Hello")
 
     def test_zero_median_prob(self):
-        mech = self.mech(epsilon=0.5, delta=0.1, sensitivity=1)
+        mech = self.mech(epsilon=0.75, delta=0.1, sensitivity=1)
         vals = []
 
         for i in range(20000):
