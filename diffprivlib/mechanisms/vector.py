@@ -144,11 +144,11 @@ class Vector(DPMechanism):
                      - 0.5 * self.alpha)
             epsilon_p = self.epsilon / 2
 
-        scale = (epsilon_p / 2 / self.data_sensitivity) if self.data_sensitivity > 0 else float("inf")
+        scale = self.data_sensitivity * 2 / epsilon_p
 
         normed_noisy_vector = self._rng.normal(0, 1, self.dimension)
         norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = self._rng.gamma(self.dimension, 1 / scale, 1)
+        noisy_norm = self._rng.gamma(self.dimension, scale, 1)
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 
