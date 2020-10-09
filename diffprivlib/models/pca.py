@@ -244,6 +244,7 @@ class PCA(sk_pca.PCA):
 
         # Post-process the number of components required
         if n_components == 'mle':
+            # TODO: Update when sklearn requirement changes to >= 0.23, removing try...except
             try:
                 n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
             except AttributeError:
