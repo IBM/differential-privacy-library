@@ -38,11 +38,9 @@ class TestHistogram(TestCase):
     def test_density(self):
         global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
-        dp_hist, _ = histogram(a, epsilon=0.1, bins=3, range=(0, 10), density=True)
+        dp_hist, _ = histogram(a, epsilon=10, bins=3, range=(0, 10), density=True)
 
-        # print(dp_hist.sum())
-
-        self.assertAlmostEqual(dp_hist.sum(), 1.0 * 3 / 10)
+        self.assertAlmostEqual(dp_hist.sum(), 3 / 10)
 
     def test_accountant(self):
         acc = BudgetAccountant(1.5, 0)

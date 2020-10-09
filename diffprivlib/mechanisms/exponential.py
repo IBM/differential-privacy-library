@@ -17,7 +17,6 @@
 # SOFTWARE.
 """
 Implementation of the standard exponential mechanism, and its derivative, the hierarchical mechanism.
-
 """
 from numbers import Real
 
