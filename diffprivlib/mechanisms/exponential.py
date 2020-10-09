@@ -41,7 +41,7 @@ class Exponential(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     utility_list : list of tuples
         The utility list of the mechanism.  Must be specified as a list of tuples, of the form ("value1", "value2",
@@ -222,7 +222,7 @@ class ExponentialHierarchical(Exponential):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     hierarchy : nested list of str
         The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node

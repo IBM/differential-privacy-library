@@ -39,13 +39,14 @@ class Laplace(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     delta : float, default: 0.0
-        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
+        ``epsilon``.
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must satisfy be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, delta=0.0, sensitivity):
@@ -136,13 +137,14 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     delta : float, default: 0.0
-        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
+        ``epsilon``.
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must satisfy be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     lower : float
         The lower bound of the mechanism.
@@ -200,13 +202,14 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     delta : float, default: 0.0
-        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
+        ``epsilon``.
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must satisfy be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     lower : float
         The lower bound of the mechanism.
@@ -256,13 +259,14 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     delta : float, default: 0.0
-        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
+        ``epsilon``.
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must satisfy be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     lower : float
         The lower bound of the mechanism.
@@ -400,13 +404,13 @@ class LaplaceBoundedNoise(Laplace):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     delta : float
-        Privacy parameter :math:`\delta` for the mechanism.  Must have `0 < delta < 0.5`.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in (0, 0.5).
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, delta, sensitivity):
@@ -419,7 +423,7 @@ class LaplaceBoundedNoise(Laplace):
             raise ValueError("Epsilon must be strictly positive. For zero epsilon, use :class:`.Uniform`.")
 
         if isinstance(delta, Real) and not 0 < delta < 0.5:
-            raise ValueError("Delta must be strictly in (0,0.5). For zero delta, use :class:`.Laplace`.")
+            raise ValueError("Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`.")
 
         return DPMechanism._check_epsilon_delta(self, epsilon, delta)
 

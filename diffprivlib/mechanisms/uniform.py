@@ -26,7 +26,7 @@ from diffprivlib.utils import copy_docstring
 
 
 class Uniform(DPMechanism):
-    """
+    r"""
     The Uniform mechanism in differential privacy.
 
     This emerges as a special case of the :class:`.LaplaceBoundedNoise` mechanism when epsilon = 0.
@@ -35,10 +35,10 @@ class Uniform(DPMechanism):
     Parameters
     ----------
     delta : float
-        The delta value for the mechanism.  Must satisfy 0 < `delta` <= 0.5.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in (0, 0.5].
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, delta, sensitivity):
@@ -50,7 +50,7 @@ class Uniform(DPMechanism):
             raise ValueError("Epsilon must be strictly zero.")
 
         if not 0 < delta <= 0.5:
-            raise ValueError("Delta must satisfy 0 < delta <= 0.5")
+            raise ValueError("Delta must be in the half-open interval (0, 0.5]")
 
         return super()._check_epsilon_delta(epsilon, delta)
 

@@ -36,10 +36,10 @@ class Geometric(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     sensitivity : float, default: 1
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, sensitivity=1):
@@ -117,10 +117,10 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     sensitivity : float, default: 1
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     lower : int
         The lower bound of the mechanism.
@@ -172,10 +172,10 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.  Must be > 0.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     sensitivity : float, default: 1
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     lower : int or float
         The lower bound of the mechanism.  Must be integer or half-integer -valued.

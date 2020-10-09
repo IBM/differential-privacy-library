@@ -64,10 +64,11 @@ class DPMechanism(DPMachine, abc.ABC):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     delta : float
-        Privacy parameter :math:`\delta` for the mechanism.  Cannot be simultaneously zero with epsilon.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
+        ``epsilon``.
 
     """
     def __init__(self, *, epsilon, delta):
