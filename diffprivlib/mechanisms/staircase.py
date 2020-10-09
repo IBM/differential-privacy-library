@@ -37,14 +37,13 @@ class Staircase(Laplace):
     Parameters
     ----------
     epsilon : float
-        The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-        have `epsilon > 0`.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must satisfy be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     gamma : float, default: 1 / (1 + exp(epsilon/2))
-        Value of the tuning parameter gamma for the mechanism.  Must satisfy 0 <= `gamma` <= 1.
+        Value of the tuning parameter gamma for the mechanism.  Must be in [0, 1].
 
     """
     def __init__(self, *, epsilon, sensitivity, gamma=None):

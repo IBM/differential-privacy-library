@@ -36,21 +36,21 @@ class Vector(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-        have `epsilon > 0`.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     function_sensitivity : float
-        The function sensitivity.  Must be >= 0.
+        The function sensitivity of the mechanism.  Must be in [0, ∞).
 
     data_sensitivity : float, default: 1.0
-        The data sensitivity.  Must be >= 0.
+        The data sensitivityof the mechanism.  Must be in [0, ∞).
 
     dimension : int
         Function input dimension.  This dimension relates to the size of the input vector of the function being
-        considered by the mechanism.  This corresponds to the size of the random vector produced by the mechanism.
+        considered by the mechanism.  This corresponds to the size of the random vector produced by the mechanism. Must
+        be in [1, ∞).
 
     alpha : float, default: 0.01
-        Regularisation parameter.  Must be > 0.
+        Regularisation parameter.  Must be in (0, ∞).
 
     """
     def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01):

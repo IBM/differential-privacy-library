@@ -36,13 +36,13 @@ class Binary(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        Privacy parameter :math:`\epsilon` for the mechanism.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in [0, ∞].
 
     value0 : str
         0th binary label.
 
     value1 : str
-        1st binary label.
+        1st binary label.  Cannot be the same as ``value0``.
 
     Notes
     -----

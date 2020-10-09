@@ -30,7 +30,7 @@ from diffprivlib.utils import copy_docstring
 
 
 class Gaussian(DPMechanism):
-    """The Gaussian mechanism in differential privacy.
+    r"""The Gaussian mechanism in differential privacy.
 
     As first proposed by Dwork and Roth in "The algorithmic foundations of differential privacy".
 
@@ -39,14 +39,14 @@ class Gaussian(DPMechanism):
     Parameters
     ----------
     epsilon : float
-        Epsilon value of the mechanism.  Must satisfy 0 < `epsilon` <= 1.  For epsilon > 1, use
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, 1].  For ``epsilon > 1``, use
         :class:`.GaussianAnalytic`.
 
     delta : float
-        Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in (0, 1].
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, delta, sensitivity):
@@ -111,7 +111,7 @@ class Gaussian(DPMechanism):
 
 
 class GaussianAnalytic(Gaussian):
-    """The analytic Gaussian mechanism in differential privacy.
+    r"""The analytic Gaussian mechanism in differential privacy.
 
     As first proposed by Balle and Wang in "Improving the Gaussian Mechanism for Differential Privacy: Analytical
     Calibration and Optimal Denoising".
@@ -121,13 +121,13 @@ class GaussianAnalytic(Gaussian):
     Parameters
     ----------
     epsilon : float
-        Epsilon value of the mechanism.  Must satisfy `epsilon` > 0`.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     delta : float
-        Delta value of the mechanism.  Must satisfy 0 < `delta` <= 1.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in (0, 1].
 
     sensitivity : float
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, delta, sensitivity):
@@ -198,22 +198,23 @@ class GaussianAnalytic(Gaussian):
 
 
 class GaussianDiscrete(DPMechanism):
-    """The Discrete Gaussian mechanism in differential privacy.
+    r"""The Discrete Gaussian mechanism in differential privacy.
 
-    As proposed by Canonne, Kamath and Steinke, re-purposed for approximate differential privacy.
+    As proposed by Canonne, Kamath and Steinke, re-purposed for approximate :math:`(\epsilon,\delta)`-differential
+    privacy.
 
     Paper link: https://arxiv.org/pdf/2004.00010.pdf
 
     Parameters
     ----------
     epsilon : float
-        Epsilon value of the mechanism.  Must be > 0.
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
 
     delta : float
-        Delta value of the mechanism.  Must satisfy 0 < `delta` < 1.
+        Privacy parameter :math:`\delta` for the mechanism.  Must be in (0, 1].
 
     sensitivity : int, default: 1
-        The sensitivity of the mechanism.  Must be >= 0.
+        The sensitivity of the mechanism.  Must be in [0, ∞).
 
     """
     def __init__(self, *, epsilon, delta, sensitivity=1):
