@@ -55,7 +55,7 @@ class TestLogisticRegression(TestCase):
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
 
-    def test_large_norm(self):
+    def test_smaller_norm_than_data(self):
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
              5.00, 5.50])

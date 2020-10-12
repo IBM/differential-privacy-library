@@ -384,7 +384,7 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
         vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1. / C,
-                             function_sensitivity=0.25)
+                             function_sensitivity=0.25, data_sensitivity=data_norm)
         noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
