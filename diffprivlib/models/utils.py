@@ -87,7 +87,7 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     eigvals = np.sort(np.linalg.eigvalsh(cov))[::-1]
     epsilon_0 = epsilon if eigvals_only else epsilon / (dims + (dims != n_features))
 
-    mech_eigvals = LaplaceBoundedDomain().set_epsilon(epsilon_0).set_bounds(0, float("inf")).set_sensitivity(2)
+    mech_eigvals = LaplaceBoundedDomain(epsilon=epsilon_0, lower=0, upper=float("inf"), sensitivity=2)
     noisy_eigvals = np.array([mech_eigvals.randomise(eigval) for eigval in eigvals]) * (norm ** 2)
 
     if eigvals_only:
@@ -99,7 +99,7 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     proj_i = np.eye(n_features)
 
     theta = np.zeros((0, n_features))
-    mech_cov = Bingham().set_epsilon(epsilon_i)
+    mech_cov = Bingham(epsilon=epsilon_i)
 
     for _ in range(dims):
         if cov_i.size > 1:

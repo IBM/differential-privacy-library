@@ -27,94 +27,46 @@ from diffprivlib.utils import copy_docstring
 
 
 class Bingham(DPMechanism):
-    """
+    r"""
     The Bingham mechanism in differential privacy.
 
     Used to estimate the first eigenvector (associated with the largest eigenvalue) of a covariance matrix.
 
     Paper link: http://eprints.whiterose.ac.uk/123206/7/simbingham8.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
+
+    sensitivity : float, default: 1
+        The sensitivity of the mechanism.  Must be in [0, ∞).
+
     """
-    def __init__(self):
-        super().__init__()
-        self._sensitivity = 1
+    def __init__(self, *, epsilon, sensitivity=1.0):
+        super().__init__(epsilon=epsilon, delta=0)
+        self.sensitivity = self._check_sensitivity(sensitivity)
 
-    def __repr__(self):
-        output = super().__repr__()
-        output += ".set_sensitivity(" + str(self._sensitivity) + ")"
-
-        return output
-
-    def set_epsilon_delta(self, epsilon, delta):
-        r"""Sets the value of :math:`\epsilon` and :math:`\delta `to be used by the mechanism.
-
-        For the Bingham mechanism, `delta` must be zero and `epsilon` must be strictly positive.
-
-        Parameters
-        ----------
-        epsilon : float
-            The value of epsilon for achieving :math:`(\epsilon,\delta)`-differential privacy with the mechanism.  Must
-            have `epsilon > 0`.
-
-        delta : float
-            For this mechanism, `delta` must be zero.
-
-        Returns
-        -------
-        self : class
-
-        Raises
-        ------
-        ValueError
-            If `epsilon` is zero or negative, or if `delta` is non-zero.
-
-        """
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
-        return super().set_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
-    def set_sensitivity(self, sensitivity):
-        """Sets the l2-norm sensitivity of the data which defines the input covariance matrix.
-
-        Parameters
-        ----------
-        sensitivity : float
-            The maximum l2-norm of the data which defines the input covariance matrix.
-
-        Returns
-        -------
-        self : class
-
-        """
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
         if sensitivity < 0:
             raise ValueError("Sensitivity must be non-negative")
 
-        self._sensitivity = float(sensitivity)
-        return self
+        return float(sensitivity)
 
-    def check_inputs(self, value):
-        """Checks that all parameters of the mechanism have been initialised correctly, and that the mechanism is ready
-        to be used.
-
-        Parameters
-        ----------
-        value : method
-            The value to be checked.
-
-        Returns
-        -------
-        True if the mechanism is ready to be used.
-
-        Raises
-        ------
-        Exception
-            If parameters have not been set correctly, or if `value` falls outside the domain of the mechanism.
-
-        """
-        super().check_inputs(value)
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, np.ndarray):
             raise TypeError("Value to be randomised must be a numpy array, got %s" % type(value))
@@ -127,12 +79,12 @@ class Bingham(DPMechanism):
 
         return True
 
-    @copy_docstring(DPMechanism.get_bias)
-    def get_bias(self, value):
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
         raise NotImplementedError
 
-    @copy_docstring(DPMechanism.get_variance)
-    def get_variance(self, value):
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
         raise NotImplementedError
 
     def randomise(self, value):
@@ -149,17 +101,17 @@ class Bingham(DPMechanism):
             The randomised eigenvector.
 
         """
-        self.check_inputs(value)
+        self._check_all(value)
 
         eigvals, eigvecs = np.linalg.eigh(value)
         dims = value.shape[0]
 
         if dims == 1:
             return np.ones((1, 1))
-        if self._sensitivity / self._epsilon == 0:
+        if self.sensitivity / self.epsilon == 0:
             return eigvecs[:, eigvals.argmax()]
 
-        value_translated = self._epsilon * (eigvals.max() * np.eye(dims) - value) / 4 / self._sensitivity
+        value_translated = self.epsilon * (eigvals.max() * np.eye(dims) - value) / 4 / self.sensitivity
         translated_eigvals = np.linalg.eigvalsh(value_translated)
 
         left, right, mid = 1, dims, (1 + dims) / 2
