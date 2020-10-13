@@ -72,7 +72,7 @@ class DPMechanism(DPMachine, abc.ABC):
 
     """
     def __init__(self, *, epsilon, delta):
-        self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)  # lgtm [py/init-calls-subclass]
+        self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
 
         self._rng = secrets.SystemRandom()
 
@@ -188,7 +188,7 @@ class TruncationAndFoldingMixin:
         if not isinstance(self, DPMechanism):
             raise TypeError("TruncationAndFoldingMachine must be implemented alongside a :class:`.DPMechanism`")
 
-        self.lower, self.upper = self._check_bounds(lower, upper)  # lgtm [py/init-calls-subclass]
+        self.lower, self.upper = self._check_bounds(lower, upper)
 
     def __repr__(self):
         output = ".set_bounds(" + str(self.lower) + ", " + str(self.upper) + ")" \
