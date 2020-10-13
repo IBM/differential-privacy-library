@@ -11,19 +11,19 @@ class TestKMeans(TestCase):
 
     def test_simple(self):
         global_seed(3141592653)
-        clf = KMeans(5, (0, 1), 3)
+        clf = KMeans(epsilon=10, bounds=(0, 1), n_clusters=3)
 
-        X = np.zeros(1000) + 0.1
-        X[:666] = 0.5
-        X[:333] = 0.9
+        X = np.zeros(6000) + 0.1
+        X[:4000] = 0.5
+        X[:2000] = 0.9
         X = X.reshape(-1, 1)
 
         clf.fit(X)
         centers = clf.cluster_centers_
 
-        self.assertTrue(np.isclose(centers, 0.1, atol=0.1).any())
-        self.assertTrue(np.isclose(centers, 0.5, atol=0.1).any())
-        self.assertTrue(np.isclose(centers, 0.9, atol=0.1).any())
+        self.assertAlmostEqual(np.min(centers), 0.1, delta=0.1)
+        self.assertAlmostEqual(np.median(centers), 0.5, delta=0.1)
+        self.assertAlmostEqual(np.max(centers), 0.9, delta=0.1)
 
     def test_unused_args(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
