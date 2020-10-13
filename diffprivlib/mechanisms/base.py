@@ -149,7 +149,8 @@ class DPMechanism(DPMachine, abc.ABC):
         """
         return self.variance(value) + (self.bias(value)) ** 2
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not isinstance(epsilon, Real) or not isinstance(delta, Real):
             raise TypeError("Epsilon and delta must be numeric")
 
@@ -195,7 +196,8 @@ class TruncationAndFoldingMixin:
 
         return output
 
-    def _check_bounds(self, lower, upper):
+    @classmethod
+    def _check_bounds(cls, lower, upper):
         """Performs a check on the bounds provided for the mechanism."""
         if not isinstance(lower, Real) or not isinstance(upper, Real):
             raise TypeError("Bounds must be numeric")

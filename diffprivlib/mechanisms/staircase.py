@@ -48,13 +48,14 @@ class Staircase(Laplace):
     """
     def __init__(self, *, epsilon, sensitivity, gamma=None):
         super().__init__(epsilon=epsilon, delta=0, sensitivity=sensitivity)
-        self.gamma = self._check_gamma(gamma, init=True)
+        self.gamma = self._check_gamma(gamma, epsilon=self.epsilon)
 
         self._rng = np.random.default_rng()
 
-    def _check_gamma(self, gamma, init=False):
-        if init and gamma is None:
-            gamma = 1 / (1 + np.exp(self.epsilon / 2))
+    @classmethod
+    def _check_gamma(cls, gamma, epsilon=None):
+        if gamma is None and epsilon is not None:
+            gamma = 1 / (1 + np.exp(epsilon / 2))
 
         if not isinstance(gamma, Real):
             raise TypeError("Gamma must be numeric")
@@ -70,7 +71,8 @@ class Staircase(Laplace):
 
         return True
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 

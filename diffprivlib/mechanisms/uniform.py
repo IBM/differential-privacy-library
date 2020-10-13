@@ -45,7 +45,8 @@ class Uniform(DPMechanism):
         super().__init__(epsilon=0.0, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not epsilon == 0:
             raise ValueError("Epsilon must be strictly zero.")
 
@@ -54,8 +55,8 @@ class Uniform(DPMechanism):
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    @staticmethod
-    def _check_sensitivity(sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 

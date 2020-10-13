@@ -47,9 +47,8 @@ class Geometric(DPMechanism):
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = - self.epsilon / self.sensitivity if self.sensitivity > 0 else - float("inf")
 
-    def _check_sensitivity(self, sensitivity=None):
-        sensitivity = sensitivity if sensitivity is not None else self.sensitivity
-
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 
@@ -60,12 +59,13 @@ class Geometric(DPMechanism):
 
     def _check_all(self, value):
         super()._check_all(value)
-        self._check_sensitivity()
+        self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, Integral):
             raise TypeError("Value to be randomised must be an integer")
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
@@ -133,7 +133,8 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def _check_bounds(self, lower=None, upper=None):
+    @classmethod
+    def _check_bounds(cls, lower, upper):
         if not isinstance(lower, Integral) and abs(lower) != float("inf"):
             raise TypeError("Lower bound must be integer-valued, got {}".format(lower))
         if not isinstance(upper, Integral) and abs(upper) != float("inf"):
@@ -188,7 +189,8 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
-    def _check_bounds(self, lower, upper):
+    @classmethod
+    def _check_bounds(cls, lower, upper):
         if not np.isclose(2 * lower, np.round(2 * lower)) or not np.isclose(2 * upper, np.round(2 * upper)):
             raise ValueError("Bounds must be integer or half-integer floats")
 

@@ -62,14 +62,15 @@ class Vector(DPMechanism):
 
         self._rng = np.random.default_rng()
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    @staticmethod
-    def _check_alpha(alpha):
+    @classmethod
+    def _check_alpha(cls, alpha):
         if not isinstance(alpha, Real):
             raise TypeError("Alpha must be numeric")
 
@@ -78,8 +79,8 @@ class Vector(DPMechanism):
 
         return alpha
 
-    @staticmethod
-    def _check_dimension(vector_dim):
+    @classmethod
+    def _check_dimension(cls, vector_dim):
         if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
             raise TypeError("d must be integer-valued")
         if not vector_dim >= 1:
@@ -87,8 +88,8 @@ class Vector(DPMechanism):
 
         return int(vector_dim)
 
-    @staticmethod
-    def _check_sensitivity(function_sensitivity, data_sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, function_sensitivity, data_sensitivity):
         if not isinstance(function_sensitivity, Real) or not isinstance(data_sensitivity, Real):
             raise TypeError("Sensitivities must be numeric")
 
