@@ -50,14 +50,15 @@ class Wishart(DPMechanism):
 
         self._rng = np.random.default_rng()
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
             raise ValueError("Delta must be zero")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    @staticmethod
-    def _check_sensitivity(sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 

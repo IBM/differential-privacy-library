@@ -55,7 +55,8 @@ class Gaussian(DPMechanism):
         self._scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
         self._stored_gaussian = None
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
@@ -64,8 +65,8 @@ class Gaussian(DPMechanism):
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    @staticmethod
-    def _check_sensitivity(sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -134,11 +135,12 @@ class GaussianAnalytic(Gaussian):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
         self._scale = self._find_scale()
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        return DPMechanism._check_epsilon_delta(self, epsilon, delta)
+        return super(Gaussian, cls)._check_epsilon_delta(epsilon, delta)
 
     def _check_all(self, value):
         super()._check_all(value)
@@ -222,14 +224,15 @@ class GaussianDiscrete(DPMechanism):
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = self._find_scale()
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
         return super()._check_epsilon_delta(epsilon, delta)
 
-    @staticmethod
-    def _check_sensitivity(sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Integral):
             raise TypeError("Sensitivity must be an integer")
 

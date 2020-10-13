@@ -53,8 +53,8 @@ class Laplace(DPMechanism):
         super().__init__(epsilon=epsilon, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
-    @staticmethod
-    def _check_sensitivity(sensitivity):
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
         if not isinstance(sensitivity, Real):
             raise TypeError("Sensitivity must be numeric")
 
@@ -418,14 +418,15 @@ class LaplaceBoundedNoise(Laplace):
         self._scale = None
         self._noise_bound = None
 
-    def _check_epsilon_delta(self, epsilon, delta):
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
         if epsilon == 0:
             raise ValueError("Epsilon must be strictly positive. For zero epsilon, use :class:`.Uniform`.")
 
         if isinstance(delta, Real) and not 0 < delta < 0.5:
             raise ValueError("Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`.")
 
-        return DPMechanism._check_epsilon_delta(self, epsilon, delta)
+        return super(Laplace, cls)._check_epsilon_delta(epsilon, delta)
 
     def _cdf(self, value):
         if self._scale == 0:

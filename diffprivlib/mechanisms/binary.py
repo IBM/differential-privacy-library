@@ -54,10 +54,8 @@ class Binary(DPMechanism):
         super().__init__(epsilon=epsilon, delta=0.0)
         self.value0, self.value1 = self._check_labels(value0, value1)
 
-    def _check_labels(self, value0=None, value1=None):
-        value0 = value0 if value0 is not None else self.value0
-        value1 = value1 if value1 is not None else self.value1
-
+    @classmethod
+    def _check_labels(cls, value0, value1):
         if not isinstance(value0, str) or not isinstance(value1, str):
             raise TypeError("Binary labels must be strings. Use a DPTransformer  (e.g. transformers.IntToString) for "
                             "non-string labels")
@@ -72,7 +70,7 @@ class Binary(DPMechanism):
 
     def _check_all(self, value):
         super()._check_all(value)
-        self._check_labels()
+        self._check_labels(self.value0, self.value1)
 
         if not isinstance(value, str):
             raise TypeError("Value to be randomised must be a string")
