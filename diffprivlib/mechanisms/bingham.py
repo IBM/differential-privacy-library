@@ -47,6 +47,8 @@ class Bingham(DPMechanism):
         super().__init__(epsilon=epsilon, delta=0)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
+        self._rng = np.random.default_rng()
+
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
         if not delta == 0:
@@ -135,10 +137,10 @@ class Bingham(DPMechanism):
         norm_const = np.exp(-(dims - b_const) / 2) * ((dims / b_const) ** (dims / 2))
 
         while True:
-            rnd_vec = np.random.multivariate_normal(np.zeros(dims), omega_inv)
+            rnd_vec = self._rng.multivariate_normal(np.zeros(dims), omega_inv)
             unit_vec = rnd_vec / np.linalg.norm(rnd_vec)
             prob = np.exp(-unit_vec.dot(value_translated).dot(unit_vec)) / norm_const\
                 / ((unit_vec.dot(omega).dot(unit_vec)) ** (dims / 2))
 
-            if np.random.random() <= prob:
+            if self._rng.random() <= prob:
                 return unit_vec
