@@ -112,7 +112,7 @@ class TestLinearRegression(TestCase):
         self.assertTrue(np.allclose(predict1, predict2))
 
     def test_simple(self):
-        X = np.linspace(-1, 1, 1000)
+        X = np.linspace(-1, 1, 2000)
         y = X.copy()
         X = X[:, np.newaxis]
 
