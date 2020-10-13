@@ -116,11 +116,11 @@ class TestLinearRegression(TestCase):
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=2, data_norm=1, fit_intercept=False)
+        clf = LinearRegression(epsilon=4, data_norm=1, fit_intercept=False)
         clf.fit(X, y)
 
         self.assertIsNotNone(clf)
-        self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, delta=.01)
+        self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, delta=.05)
 
     def test_check_solver(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
