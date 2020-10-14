@@ -46,7 +46,7 @@ class TestKMeans(TestCase):
             clf.fit(X)
 
     def test_predict(self):
-        clf = KMeans(30, (0, 1), 3)
+        clf = KMeans(epsilon=1, bounds=(0, 1), n_clusters=3)
 
         X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
         clf.fit(X)
@@ -55,9 +55,9 @@ class TestKMeans(TestCase):
         # print("Predictions: %s" % str(predicted))
         # print("Centers: %s" % str(clf.cluster_centers_))
 
-        self.assertNotEqual(predicted[0], predicted[1])
-        self.assertNotEqual(predicted[0], predicted[2])
-        self.assertNotEqual(predicted[2], predicted[1])
+        self.assertTrue(0 <= predicted[0] <= 2)
+        self.assertTrue(0 <= predicted[1] <= 2)
+        self.assertTrue(0 <= predicted[2] <= 2)
 
     def test_sample_weights(self):
         clf = KMeans(30, (0, 1), 3)
