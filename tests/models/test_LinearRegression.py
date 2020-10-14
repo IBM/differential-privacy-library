@@ -112,11 +112,11 @@ class TestLinearRegression(TestCase):
         self.assertTrue(np.allclose(predict1, predict2))
 
     def test_simple(self):
-        X = np.linspace(-1, 1, 2000)
+        X = np.linspace(-1, 1, 3000)
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=4, data_norm=1, fit_intercept=False)
+        clf = LinearRegression(epsilon=5, data_norm=1, fit_intercept=False)
         clf.fit(X, y)
 
         self.assertIsNotNone(clf)
