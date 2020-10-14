@@ -29,7 +29,7 @@ class TestHistogram(TestCase):
         global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
         hist, _ = np.histogram(a, bins=3, range=(0, 10))
-        dp_hist, _ = histogram(a, epsilon=0.1, bins=3, range=(0, 10))
+        dp_hist, _ = histogram(a, epsilon=0.01, bins=3, range=(0, 10))
 
         # print("Non-private histogram: %s" % hist)
         # print("Private histogram: %s" % dp_hist)
