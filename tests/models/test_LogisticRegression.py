@@ -119,8 +119,7 @@ class TestLogisticRegression(TestCase):
 
         predict3 = clf.predict(X_test)
 
-        self.assertFalse(np.all(predict1 == predict2))
-        self.assertFalse(np.all(predict3 == predict1) and np.all(predict3 == predict2))
+        self.assertTrue(np.any(predict1 != predict2) or np.any(predict1 != predict3))
 
     def test_same_results(self):
         from sklearn import datasets
