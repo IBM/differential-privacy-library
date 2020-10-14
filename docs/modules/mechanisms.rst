@@ -28,7 +28,7 @@ Bingham mechanism
 .. autoclass:: Bingham
    :members:
    :inherited-members:
-   :exclude-members: copy,deepcopy,get_bias,get_mse,get_variance,set_epsilon_delta
+   :exclude-members: copy,bias,mse,variance
 
 Exponential mechanisms
 -----------------------------
