@@ -54,6 +54,7 @@ from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 from diffprivlib.validation import check_bounds
 
 _sum_ = sum
+_NoValue = np._NoValue
 
 
 def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
@@ -102,7 +103,7 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
                keepdims=keepdims)
 
 
-def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
+def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -159,8 +160,7 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._No
                  accountant=accountant, nan=False)
 
 
-def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
-            **unused_args):
+def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -219,7 +219,7 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np.
                  accountant=accountant, nan=True)
 
 
-def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
+def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -269,7 +269,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._N
     return dp_mech.randomise(actual_mean)
 
 
-def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
+def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -328,8 +328,7 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoV
                 nan=False)
 
 
-def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
-           **unused_args):
+def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -391,7 +390,7 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._
                 nan=True)
 
 
-def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
+def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -442,7 +441,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._No
     return np.minimum(dp_mech.randomise(actual_var), local_diam ** 2)
 
 
-def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, **unused_args):
+def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -501,8 +500,7 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoV
                 accountant=accountant, nan=False)
 
 
-def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None,
-           **unused_args):
+def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -563,7 +561,7 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._
                 nan=True)
 
 
-def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._NoValue, accountant=None, nan=False):
+def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
     ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
                nan=nan)
 
@@ -577,7 +575,7 @@ def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=np._No
     return ret
 
 
-def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue, **unused_args):
+def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, **unused_args):
     r"""Sum of array elements over a given axis with differential privacy.
 
     Parameters
@@ -634,8 +632,7 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
                 nan=False)
 
 
-def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue,
-           **unused_args):
+def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, **unused_args):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
     Parameters
@@ -692,7 +689,7 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
                 keepdims=keepdims, nan=True)
 
 
-def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=np._NoValue, nan=False):
+def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, nan=False):
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
