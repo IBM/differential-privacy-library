@@ -118,8 +118,6 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
     mono_coef_1 = np.zeros((n_features, n_targets))
 
     for i in range(n_targets):
-        _bounds = bounds_y[i]
-
         for j in range(n_features):
             sensitivity = get_max_sensitivity(bounds_y[0][i], bounds_y[1][i], bounds_X[0][j], bounds_X[1][j])
             mech = Laplace(epsilon=local_epsilon, sensitivity=sensitivity)
@@ -211,8 +209,8 @@ class LinearRegression(sk_lr.LinearRegression):
         regression analysis under differential privacy." arXiv preprint arXiv:1208.0219 (2012).
 
     """
-    def __init__(self, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True,
-                 accountant=None, **unused_args):
+    def __init__(self, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True, accountant=None,
+                 **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 
         self.epsilon = epsilon
@@ -269,16 +267,15 @@ class LinearRegression(sk_lr.LinearRegression):
         n_targets = y.shape[1] if y.ndim > 1 else 1
         epsilon_intercept_scale = 1 / (n_features + 1) if self.fit_intercept else 0
 
-        X, y, X_offset, y_offset, X_scale = self._preprocess_data(X, y, fit_intercept=self.fit_intercept,
-                                                                  bounds_X=self.bounds_X, bounds_y=self.bounds_y,
-                                                                  epsilon=self.epsilon * epsilon_intercept_scale,
-                                                                  copy=self.copy_X)
+        X, y, X_offset, y_offset, X_scale = self._preprocess_data(
+            X, y, fit_intercept=self.fit_intercept, bounds_X=self.bounds_X, bounds_y=self.bounds_y,
+            epsilon=self.epsilon * epsilon_intercept_scale, copy=self.copy_X)
 
         bounds_X = (self.bounds_X[0] - X_offset, self.bounds_X[1] - X_offset)
         bounds_y = (self.bounds_y[0] - y_offset, self.bounds_y[1] - y_offset)
 
-        objs, obj_coefs = _construct_regression_obj(X, y, bounds_X, bounds_y,
-                                                    epsilon=self.epsilon * (1 - epsilon_intercept_scale), alpha=0)
+        objs, obj_coefs = _construct_regression_obj(
+            X, y, bounds_X, bounds_y, epsilon=self.epsilon * (1 - epsilon_intercept_scale), alpha=0)
         coef = np.zeros((n_features, n_targets))
         residues = []
 
