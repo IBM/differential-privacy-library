@@ -114,11 +114,11 @@ class TestLinearRegression(TestCase):
         self.assertTrue(np.allclose(clf._residues, clf2._residues))
 
     def test_simple(self):
-        X = np.linspace(-1, 1, 300)
+        X = np.linspace(-1, 1, 1000)
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=1, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
+        clf = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
         clf.fit(X, y)
         print(clf.predict(np.array([0.5]).reshape(-1, 1)))
 
