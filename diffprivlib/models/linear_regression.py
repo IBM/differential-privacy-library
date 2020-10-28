@@ -47,16 +47,15 @@ import warnings
 
 import numpy as np
 import sklearn.linear_model as sk_lr
+from scipy.optimize import minimize
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.models.utils import covariance_eig
+from diffprivlib.mechanisms import Laplace, LaplaceFolded
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
-from diffprivlib.validation import clip_to_norm, check_bounds, clip_to_bounds
-
-_range = range
+from diffprivlib.validation import check_bounds, clip_to_bounds
 
 
 # noinspection PyPep8Naming
@@ -93,6 +92,74 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, bounds_X=None, bounds_y=N
     return X, y, X_offset, y_offset, X_scale
 
 
+def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
+    if y.ndim == 1:
+        y = y.reshape(-1, 1)
+
+    n_features = X.shape[1]
+    n_targets = y.shape[1]
+
+    local_epsilon = epsilon / (1 + n_targets * n_features + n_features * (n_features + 1) / 2)
+    coefs = ((y ** 2).sum(axis=0), 2 * np.einsum('ij,ik->jk', X, y), np.einsum('ij,ik', X, X))
+
+    def get_max_sensitivity(y_lower, y_upper, x_lower, x_upper):
+        corners = [y_lower * x_lower, y_lower * x_upper, y_upper * x_lower, y_upper * x_upper]
+        return np.max(corners) - np.min(corners)
+
+    # Randomise 0th-degree monomial coefficients
+    mono_coef_0 = np.zeros(n_targets)
+
+    for i in range(n_targets):
+        sensitivity = np.abs(bounds_y[i]).max() ** 2
+        mech = LaplaceFolded(epsilon=local_epsilon, sensitivity=sensitivity, lower=0, upper=float("inf"))
+        mono_coef_0[i] = mech.randomise(coefs[0][i])
+
+    # Randomise 1st-degree monomial coefficients
+    mono_coef_1 = np.zeros((n_features, n_targets))
+
+    for i in range(n_targets):
+        _bounds = bounds_y[i]
+
+        for j in range(n_features):
+            sensitivity = get_max_sensitivity(bounds_y[0][i], bounds_y[1][i], bounds_X[0][j], bounds_X[1][j])
+            mech = Laplace(epsilon=local_epsilon, sensitivity=sensitivity)
+            mono_coef_1[j, i] = mech.randomise(coefs[1][j, i])
+
+    # Randomise 2nd-degree monomial coefficients
+    mono_coef_2 = np.zeros((n_features, n_features))
+
+    for i in range(n_features):
+        sensitivity = np.max(np.abs([bounds_X[0][i], bounds_X[0][i]])) ** 2
+        mech = LaplaceFolded(epsilon=local_epsilon, sensitivity=sensitivity, lower=0, upper=float("inf"))
+        mono_coef_2[i, i] = mech.randomise(coefs[2][i, i])
+
+        for j in range(i + 1, n_features):
+            sensitivity = get_max_sensitivity(bounds_X[0][i], bounds_X[1][i], bounds_X[0][j], bounds_X[1][j])
+            mech = Laplace(epsilon=local_epsilon, sensitivity=sensitivity)
+            mono_coef_2[i, j] = mech.randomise(coefs[2][i, j])
+            mono_coef_2[j, i] = mono_coef_2[i, j]  # Enforce symmetry
+
+    del coefs
+    noisy_coefs = (mono_coef_0, mono_coef_1, mono_coef_2)
+
+    output = []
+
+    for i in range(n_targets):
+        def obj(omega):
+            func = noisy_coefs[0][i]
+            func -= np.dot(noisy_coefs[1][:, i], omega)
+            func += np.multiply(noisy_coefs[2], np.tensordot(omega, omega, axes=0)).sum()
+            func += alpha * (omega ** 2).sum()
+
+            grad = -noisy_coefs[1][:, i] + 2 * np.matmul(noisy_coefs[2], omega) + 2 * omega * alpha
+
+            return func, grad
+
+        output += [obj]
+
+    return tuple(output), noisy_coefs
+
+
 # noinspection PyPep8Naming,PyAttributeOutsideInit
 class LinearRegression(sk_lr.LinearRegression):
     r"""
@@ -102,24 +169,15 @@ class LinearRegression(sk_lr.LinearRegression):
     between the observed targets in the dataset, and the targets predicted by the linear approximation.  Differential
     privacy is guaranteed with respect to the training sample.
 
-    Differential privacy is achieved by adding noise to the second moment matrix using the :class:`.Wishart` mechanism.
-    This method is demonstrated in  [She15]_, but our implementation takes inspiration from the use of the Wishart
-    distribution in  [IS16]_ to achieve a strict differential privacy guarantee.
+    Differential privacy is achieved by adding noise to the coefficients of the objective function, taking inspiration
+    from [ZZX12]_.
 
     Parameters
     ----------
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    data_norm : float, optional
-        The max l2 norm of any row of the concatenated dataset A = [X; y].  This defines the spread of data that will be
-        protected by differential privacy.
-
-        If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
-        :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
-        `data_norm` should be selected independently of the data, i.e. with domain knowledge.
-
-    bounds_X:  tuple, optional
+    bounds_X:  tuple
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
@@ -144,30 +202,20 @@ class LinearRegression(sk_lr.LinearRegression):
         this is a 2D array of shape (n_targets, n_features), while if only one target is passed, this is a 1D array of
         length n_features.
 
-    rank_ : int
-        Rank of matrix `X`.
-
-    singular_ : array of shape (min(X, y),)
-        Singular values of `X`.
-
     intercept_ : float or array of shape of (n_targets,)
         Independent term in the linear model.  Set to 0.0 if `fit_intercept = False`.
 
     References
     ----------
-    .. [She15] Sheffet, Or. "Private approximations of the 2nd-moment matrix using existing techniques in linear
-        regression." arXiv preprint arXiv:1507.00056 (2015).
+    .. [ZZX12] Zhang, Jun, Zhenjie Zhang, Xiaokui Xiao, Yin Yang, and Marianne Winslett. "Functional mechanism:
+        regression analysis under differential privacy." arXiv preprint arXiv:1208.0219 (2012).
 
-    .. [IS16] Imtiaz, Hafiz, and Anand D. Sarwate. "Symmetric matrix perturbation for differentially-private principal
-        component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
-        pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, epsilon=1.0, data_norm=None, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True,
+    def __init__(self, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True,
                  accountant=None, **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 
         self.epsilon = epsilon
-        self.data_norm = data_norm
         self.bounds_X = bounds_X
         self.bounds_y = bounds_y
         self.accountant = BudgetAccountant.load_default(accountant)
@@ -201,24 +249,24 @@ class LinearRegression(sk_lr.LinearRegression):
 
         X, y = check_X_y(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
-        if self.fit_intercept:
-            if self.bounds_X is None or self.bounds_y is None:
-                warnings.warn(
-                    "Bounds parameters haven't been specified, so falling back to determining bounds from the "
-                    "data.\n"
-                    "This will result in additional privacy leakage. To ensure differential privacy with no "
-                    "additional privacy loss, specify `bounds_X` and `bounds_y`.",
-                    PrivacyLeakWarning)
+        if self.bounds_X is None or self.bounds_y is None:
+            warnings.warn(
+                "Bounds parameters haven't been specified, so falling back to determining bounds from the "
+                "data.\n"
+                "This will result in additional privacy leakage. To ensure differential privacy with no "
+                "additional privacy loss, specify `bounds_X` and `bounds_y`.",
+                PrivacyLeakWarning)
 
-                if self.bounds_X is None:
-                    self.bounds_X = (np.min(X, axis=0), np.max(X, axis=0))
-                if self.bounds_y is None:
-                    self.bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
+            if self.bounds_X is None:
+                self.bounds_X = (np.min(X, axis=0), np.max(X, axis=0))
+            if self.bounds_y is None:
+                self.bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
 
-            self.bounds_X = check_bounds(self.bounds_X, X.shape[1])
-            self.bounds_y = check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
+        self.bounds_X = check_bounds(self.bounds_X, X.shape[1])
+        self.bounds_y = check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
 
         n_features = X.shape[1]
+        n_targets = y.shape[1] if y.ndim > 1 else 1
         epsilon_intercept_scale = 1 / (n_features + 1) if self.fit_intercept else 0
 
         X, y, X_offset, y_offset, X_scale = self._preprocess_data(X, y, fit_intercept=self.fit_intercept,
@@ -226,31 +274,26 @@ class LinearRegression(sk_lr.LinearRegression):
                                                                   epsilon=self.epsilon * epsilon_intercept_scale,
                                                                   copy=self.copy_X)
 
-        if self.data_norm is None:
-            warnings.warn("Data norm has not been specified and will be calculated on the data provided.  This will "
-                          "result in additional privacy leakage. To ensure differential privacy and no additional "
-                          "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
-            self.data_norm = np.linalg.norm(X, axis=1).max()
+        bounds_X = (self.bounds_X[0] - X_offset, self.bounds_X[1] - X_offset)
+        bounds_y = (self.bounds_y[0] - y_offset, self.bounds_y[1] - y_offset)
 
-        X = clip_to_norm(X, self.data_norm)
-        A = np.hstack((X, y[:, np.newaxis] if y.ndim == 1 else y))
-        # TODO: Replace np.max(y) with equiv from bounds_y
-        eigvals, eigvecs = covariance_eig(A, epsilon=self.epsilon * (1 - epsilon_intercept_scale),
-                                          norm=np.sqrt(self.data_norm ** 2 + np.max(abs(y)) ** 2))
+        objs, obj_coefs = _construct_regression_obj(X, y, bounds_X, bounds_y,
+                                                    epsilon=self.epsilon * (1 - epsilon_intercept_scale), alpha=0)
+        coef = np.zeros((n_features, n_targets))
+        residues = []
 
-        noisy_AtA = np.zeros_like(eigvecs)
-        for i, eigval in enumerate(eigvals):
-            noisy_AtA += eigvecs[:, i].reshape(-1, 1).dot(eigvecs[:, i].reshape(1, -1)) * eigval
+        for i, obj in enumerate(objs):
+            opt_result = minimize(obj, np.zeros(n_features), jac=True)
+            coef[:, i] = opt_result.x
+            residues += [opt_result.fun]
 
-        noisy_AtA = noisy_AtA[:n_features, :]
-        XtX = noisy_AtA[:, :n_features]
-        Xty = noisy_AtA[:, n_features:]
-
-        self.coef_, self._residues, self.rank_, self.singular_ = np.linalg.lstsq(XtX, Xty, rcond=-1)
-        self.coef_ = self.coef_.T
+        self.coef_ = coef
+        self._residues = residues
+        self._obj_coefs = obj_coefs
 
         if y.ndim == 1:
             self.coef_ = np.ravel(self.coef_)
+            self._residues = self._residues[0]
         self._set_intercept(X_offset, y_offset, X_scale)
 
         self.accountant.spend(self.epsilon, 0)
