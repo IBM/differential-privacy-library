@@ -28,7 +28,7 @@ class TestLinearRegression(TestCase):
             clf.fit(X, y)
 
     def test_sample_weight_warning(self):
-        clf = LinearRegression(data_norm=5.5, bounds_X=(0, 5), bounds_y=(0, 1))
+        clf = LinearRegression(bounds_X=(0, 5), bounds_y=(0, 1))
 
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -39,8 +39,8 @@ class TestLinearRegression(TestCase):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             clf.fit(X, y, sample_weight=np.ones_like(y))
 
-    def test_no_range_y(self):
-        clf = LinearRegression(data_norm=5.5, bounds_X=(0, 5))
+    def test_no_bounds_y(self):
+        clf = LinearRegression(bounds_X=(0, 5))
 
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -51,14 +51,14 @@ class TestLinearRegression(TestCase):
         with self.assertWarns(PrivacyLeakWarning):
             clf.fit(X, y)
 
-    def test_large_norm(self):
+    def test_large_data(self):
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
              5.00, 5.50])
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(data_norm=1.0, fit_intercept=False)
+        clf = LinearRegression(bounds_X=(0, 3), bounds_y=(0, 1), fit_intercept=False)
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -71,12 +71,12 @@ class TestLinearRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = LinearRegression(data_norm=12, bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
+        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = LinearRegression(data_norm=12, bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
+        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
@@ -98,26 +98,29 @@ class TestLinearRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = LinearRegression(data_norm=12, epsilon=float("inf"),
-                               bounds_X=([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
+        clf = LinearRegression(epsilon=float("inf"), bounds_X=([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5]),
+                               bounds_y=(0, 2))
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = linear_model.LinearRegression(normalize=False)
-        clf.fit(X_train, y_train)
+        clf2 = linear_model.LinearRegression(normalize=False)
+        clf2.fit(X_train, y_train)
 
-        predict2 = clf.predict(X_test)
+        predict2 = clf2.predict(X_test)
 
         self.assertTrue(np.allclose(predict1, predict2))
+        self.assertTrue(np.allclose(clf.coef_, clf2.coef_))
+        self.assertTrue(np.allclose(clf._residues, clf2._residues))
 
     def test_simple(self):
-        X = np.linspace(-1, 1, 3000)
+        X = np.linspace(-1, 1, 300)
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=5, data_norm=1, fit_intercept=False)
+        clf = LinearRegression(epsilon=1, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
         clf.fit(X, y)
+        print(clf.predict(np.array([0.5]).reshape(-1, 1)))
 
         self.assertIsNotNone(clf)
         self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, delta=.05)
@@ -144,16 +147,16 @@ class TestLinearRegression(TestCase):
         from diffprivlib.accountant import BudgetAccountant
 
         acc = BudgetAccountant()
-        X = np.linspace(-1, 1, 1000)
+        X = np.linspace(-1, 1, 100)
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=2, data_norm=1, fit_intercept=False, accountant=acc)
+        clf = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1), accountant=acc)
         clf.fit(X, y)
         self.assertEqual((2, 0), acc.total())
 
         with BudgetAccountant(3, 0) as acc2:
-            clf = LinearRegression(epsilon=2, data_norm=1, fit_intercept=False)
+            clf = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
             clf.fit(X, y)
             self.assertEqual((2, 0), acc2.total())
 
