@@ -125,6 +125,27 @@ class TestLinearRegression(TestCase):
         self.assertIsNotNone(clf)
         self.assertAlmostEqual(clf.predict(np.array([0.5]).reshape(-1, 1))[0], 0.5, delta=.05)
 
+    def test_multiple_targets(self):
+        from sklearn.linear_model import LinearRegression as sk_LinearRegression
+        X = np.linspace(-1, 1, 1000)
+        y = np.vstack((X.copy(), X.copy())).T
+        X = X[:, np.newaxis]
+
+        clf_dp = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
+
+        with self.assertRaises(ValueError):
+            clf_dp.fit(X, y.T)
+
+        clf_dp.fit(X, y)
+
+        clf_sk = sk_LinearRegression(fit_intercept=False)
+        clf_sk.fit(X, y)
+
+        x0 = np.array([[0.5]])
+
+        self.assertEqual(clf_dp.coef_.shape, clf_sk.coef_.shape)
+        self.assertEqual(clf_dp.predict(x0).shape, clf_sk.predict(x0).shape)
+
     def test_check_solver(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             _check_solver("wrong_solver", "l2", False)
