@@ -146,6 +146,12 @@ class TestLinearRegression(TestCase):
         self.assertEqual(clf_dp.coef_.shape, clf_sk.coef_.shape)
         self.assertEqual(clf_dp.predict(x0).shape, clf_sk.predict(x0).shape)
 
+        clf_dp2 = LinearRegression(epsilon=2, fit_intercept=True, bounds_X=(-1, 1), bounds_y=(-1, 1)).fit(X, y)
+        self.assertIsNotNone(clf_dp2)
+        self.assertEqual(clf_dp2.intercept_.shape, (2,))
+        self.assertEqual(clf_dp2.coef_.shape, clf_sk.coef_.shape)
+        self.assertEqual(clf_dp2.predict(x0).shape, clf_sk.predict(x0).shape)
+
     def test_check_solver(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             _check_solver("wrong_solver", "l2", False)
