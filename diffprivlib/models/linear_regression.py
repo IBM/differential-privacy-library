@@ -284,7 +284,7 @@ class LinearRegression(sk_lr.LinearRegression):
             coef[:, i] = opt_result.x
             residues += [opt_result.fun]
 
-        self.coef_ = coef
+        self.coef_ = coef.T
         self._residues = residues
         self._obj_coefs = obj_coefs
 
