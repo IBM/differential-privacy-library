@@ -100,7 +100,9 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
     n_targets = y.shape[1]
 
     local_epsilon = epsilon / (1 + n_targets * n_features + n_features * (n_features + 1) / 2)
-    coefs = ((y ** 2).sum(axis=0), 2 * np.einsum('ij,ik->jk', X, y), np.einsum('ij,ik', X, X))
+    coefs = ((y ** 2).sum(axis=0), np.einsum('ij,ik->jk', X, y), np.einsum('ij,ik', X, X))
+
+    del X, y
 
     def get_max_sensitivity(y_lower, y_upper, x_lower, x_upper):
         corners = [y_lower * x_lower, y_lower * x_upper, y_upper * x_lower, y_upper * x_upper]
@@ -145,11 +147,11 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
     for i in range(n_targets):
         def obj(omega):
             func = noisy_coefs[0][i]
-            func -= np.dot(noisy_coefs[1][:, i], omega)
+            func -= 2 * np.dot(noisy_coefs[1][:, i], omega)
             func += np.multiply(noisy_coefs[2], np.tensordot(omega, omega, axes=0)).sum()
             func += alpha * (omega ** 2).sum()
 
-            grad = -noisy_coefs[1][:, i] + 2 * np.matmul(noisy_coefs[2], omega) + 2 * omega * alpha
+            grad = - 2 * noisy_coefs[1][:, i] + 2 * np.matmul(noisy_coefs[2], omega) + 2 * omega * alpha
 
             return func, grad
 
