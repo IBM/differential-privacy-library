@@ -27,7 +27,7 @@ from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.utils import copy_docstring
 
 
-class Exponential(DPMechanism):
+class ExponentialCategorical(DPMechanism):
     r"""
     The exponential mechanism for achieving differential privacy on categorical inputs, as first proposed by McSherry
     and Talwar.
@@ -214,7 +214,7 @@ class Exponential(DPMechanism):
         return _target_value
 
 
-class ExponentialHierarchical(Exponential):
+class ExponentialHierarchical(ExponentialCategorical):
     r"""
     Adaptation of the exponential mechanism to hierarchical data.  Simplifies the process of specifying utility values,
     as the values can be inferred from the hierarchy.
