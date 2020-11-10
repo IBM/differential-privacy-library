@@ -1,7 +1,7 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.mechanisms import Exponential
+from diffprivlib.mechanisms import ExponentialCategorical
 from diffprivlib.utils import global_seed
 
 
@@ -10,14 +10,14 @@ class TestExponential(TestCase):
         if method.__name__ .endswith("prob"):
             global_seed(314159)
 
-        self.mech = Exponential
+        self.mech = ExponentialCategorical
 
     def teardown_method(self, method):
         del self.mech
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMechanism
-        self.assertTrue(issubclass(Exponential, DPMechanism))
+        self.assertTrue(issubclass(ExponentialCategorical, DPMechanism))
 
     def test_inf_epsilon(self):
         utility_list = [
@@ -158,7 +158,7 @@ class TestExponential(TestCase):
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility_list=[]))
-        self.assertIn(".Exponential(", repr_)
+        self.assertIn(".ExponentialCategorical(", repr_)
 
     def test_bias(self):
         self.assertRaises(NotImplementedError, self.mech(epsilon=1, utility_list=[]).bias, 0)
