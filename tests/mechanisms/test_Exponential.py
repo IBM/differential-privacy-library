@@ -122,7 +122,7 @@ class TestExponential(TestCase):
         for i in range(runs):
             count[mech.randomise()] += 1
 
-        self.assertAlmostEqual(count[1] / count[0], 2, delta=0.05)
+        self.assertAlmostEqual(count[1] / count[0], 2, delta=0.075)
 
     def test_distrib_prob(self):
         epsilon = 2 * np.log(2)
@@ -137,7 +137,7 @@ class TestExponential(TestCase):
         # print("%f, %f" % (count[0] / count[1], count[1] / count[2]))
 
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
-        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.15)
+        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.2)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility=[1], sensitivity=1))
