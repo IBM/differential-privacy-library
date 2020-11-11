@@ -27,6 +27,153 @@ from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.utils import copy_docstring
 
 
+class Exponential(DPMechanism):
+    r"""
+    The exponential mechanism for achieving differential privacy on candidate selection, as first proposed by McSherry
+    and Talwar.
+
+    The exponential mechanism achieves differential privacy by randomly choosing a candidate subject to candidate
+    utility scores, with greater probability given to higher-utility candidates.
+
+    Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
+
+    sensitivity : float
+        The sensitivity in utility values to a change in a datapoint in the underlying dataset.
+
+    utility : list
+        A list of non-negative utility values for each candidate.
+
+    candidates : list, optional
+        An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
+
+    measure : list, optional
+        An optional list of measures for each candidate.  If omitted, a uniform measure is used.
+
+    """
+    def __init__(self, *, epsilon, sensitivity, utility, candidates=None, measure=None):
+        super().__init__(epsilon=epsilon, delta=0.0)
+        self.sensitivity = self._check_sensitivity(sensitivity)
+        self.utility, self.candidates, self.measure = self._check_utility_candidates_measure(utility, candidates,
+                                                                                             measure)
+        self._probabilities = self._find_probabilities(self.epsilon, self.sensitivity, self.utility, self.measure)
+
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
+        if not delta == 0:
+            raise ValueError("Delta must be zero")
+
+        return super()._check_epsilon_delta(epsilon, delta)
+
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
+        if not isinstance(sensitivity, Real):
+            raise TypeError("Sensitivity must be numeric")
+
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
+
+        return float(sensitivity)
+
+    @classmethod
+    def _check_utility_candidates_measure(cls, utility, candidates, measure):
+        if not isinstance(utility, list):
+            raise TypeError("Utility must be a list, got a {}.".format(utility))
+
+        if not all(isinstance(u, Real) for u in utility):
+            raise TypeError("Utility must be a list of real-valued numbers.")
+
+        if len(utility) < 1:
+            raise ValueError("Utility must have at least one element.")
+
+        if candidates is not None:
+            if not isinstance(candidates, list):
+                raise TypeError("Candidates must be a list, got a {}.".format(type(candidates)))
+
+            if len(candidates) != len(utility):
+                raise ValueError("List of candidates must be the same length as the list of utility values.")
+
+        if measure is not None:
+            if not isinstance(measure, list):
+                raise TypeError("Measure must be a list, got a {}.".format(type(measure)))
+
+            if not all(isinstance(m, Real) for m in measure):
+                raise TypeError("Utility must be a list of real-valued numbers.")
+
+            if len(measure) != len(utility):
+                raise ValueError("List of measures must be the same length as the list of utility values.")
+
+        return utility, candidates, measure
+
+    @classmethod
+    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
+        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+
+        # Set min utility to 0; will be normalised out before returning
+        utility = np.array(utility) - min(utility)
+
+        # Catch infinite scale and overflow errors
+        if np.isinf(scale) or np.isinf(np.exp(scale * max(utility))):
+            probabilities = np.isclose(utility, max(utility)).astype(float)
+        else:
+            probabilities = np.exp(scale * utility / 2)
+
+        probabilities *= np.array(measure) if measure else 1
+        probabilities /= probabilities.sum()
+
+        return np.cumsum(probabilities)
+
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
+        self._check_utility_candidates_measure(self.utility, self.candidates, self.measure)
+
+        if value is not None:
+            raise ValueError("Value to be randomised must be None. Got {}".format(value))
+
+        return True
+
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
+        raise NotImplementedError
+
+    def randomise(self, value=None):
+        """Select a candidate with differential privacy.
+
+        Parameters
+        ----------
+        value : None
+            Ignored.
+
+        Returns
+        -------
+        int or other
+            The randomised candidate.
+
+        """
+        self._check_all(value)
+
+        rand = self._rng.random()
+
+        if np.any(rand <= self._probabilities):
+            idx = np.argmax(rand <= self._probabilities)
+        elif np.isclose(rand, self._probabilities[-1]):
+            idx = len(self._probabilities)
+        else:
+            raise RuntimeError("Can't find a candidate to return. "
+                               "Debugging info: Rand: {}, Probabilities: {}".format(rand, self._probabilities))
+
+        return self.candidates[idx] if self.candidates else idx
+
+
 class ExponentialCategorical(DPMechanism):
     r"""
     The exponential mechanism for achieving differential privacy on categorical inputs, as first proposed by McSherry
