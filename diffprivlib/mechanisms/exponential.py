@@ -113,12 +113,11 @@ class Exponential(DPMechanism):
     def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
         scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
 
-        # Set min utility to 0; will be normalised out before returning
-        utility = np.array(utility) - min(utility)
+        # Set max utility to 0 to avoid overflow on high utility; will be normalised out before returning
+        utility = np.array(utility) - max(utility)
 
-        # Catch infinite scale and overflow errors
-        if np.isinf(scale) or np.isinf(np.exp(scale * max(utility))):
-            probabilities = np.isclose(utility, max(utility)).astype(float)
+        if np.isinf(scale):
+            probabilities = np.isclose(utility, 0).astype(float)
         else:
             probabilities = np.exp(scale * utility / 2)
 
@@ -133,7 +132,7 @@ class Exponential(DPMechanism):
         self._check_utility_candidates_measure(self.utility, self.candidates, self.measure)
 
         if value is not None:
-            raise ValueError("Value to be randomised must be None. Got {}".format(value))
+            raise ValueError("Value to be randomised must be None. Got: {}.".format(value))
 
         return True
 
