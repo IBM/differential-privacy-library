@@ -132,18 +132,3 @@ class TestGaussianDiscrete(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, delta=0.5))
         self.assertIn(".GaussianDiscrete(", repr_)
-
-    def test_bernoulli_exp_prob(self):
-        vals = []
-        runs = 200
-
-        for i in range(runs):
-            vals.append(self.mech(epsilon=1, delta=0.5)._bernoulli_exp(-np.log(0.5)))
-
-        self.assertAlmostEqual(sum(vals) / runs, 0.5, delta=0.1)
-
-        vals = []
-        for i in range(runs):
-            vals.append(self.mech(epsilon=1, delta=0.5)._bernoulli_exp(-np.log(0.1)))
-
-        self.assertAlmostEqual(sum(vals) / runs, 0.1, delta=0.1)

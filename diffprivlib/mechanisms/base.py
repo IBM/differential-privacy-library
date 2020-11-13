@@ -229,3 +229,41 @@ class TruncationAndFoldingMixin:
             return self._fold(2 * self.upper - value)
 
         return value
+
+
+def bernoulli_neg_exp(gamma, rng=None):
+    """Sample from Bernoulli(exp(-gamma)).
+
+    Adapted from "The Discrete Gaussian for Differential Privacy", Canonne, Kamath, Steinke, 2020.
+    https://arxiv.org/pdf/2004.00010v2.pdf
+
+    Parameters
+    ----------
+    gamma : float
+        Parameter to sample from Bernoulli(exp(-gamma)).  Must be non-negative
+
+    rng : Random number generator, optional
+        Random number generator to use.  If not provided, uses SystemRandom from secrets by default.
+
+    Returns
+    -------
+    One sample from the Bernoulli(exp(-gamma)) distribution.
+
+    """
+    if gamma < 0:
+        raise ValueError("Gamma must be Real-valued and non-negative, got {}.".format(gamma))
+
+    if rng is None:
+        rng = secrets.SystemRandom()
+
+    while gamma > 1:
+        gamma -= 1
+        if not bernoulli_neg_exp(1, rng):
+            return 0
+
+    counter = 1
+
+    while rng.random() <= gamma / counter:
+        counter += 1
+
+    return counter % 2
