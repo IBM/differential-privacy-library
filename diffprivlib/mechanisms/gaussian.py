@@ -23,7 +23,7 @@ from numbers import Real, Integral
 
 import numpy as np
 
-from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.mechanisms.base import DPMechanism, bernoulli_neg_exp
 from diffprivlib.mechanisms.geometric import Geometric
 from diffprivlib.mechanisms.laplace import Laplace
 from diffprivlib.utils import copy_docstring
@@ -270,7 +270,7 @@ class GaussianDiscrete(DPMechanism):
 
         while True:
             geom_x = 0
-            while self._bernoulli_exp(tau):
+            while bernoulli_neg_exp(tau, self._rng):
                 geom_x += 1
 
             bern_b = np.random.binomial(1, 0.5)
@@ -278,7 +278,7 @@ class GaussianDiscrete(DPMechanism):
                 continue
 
             lap_y = int((1 - 2 * bern_b) * geom_x)
-            bern_c = self._bernoulli_exp((abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2)
+            bern_c = bernoulli_neg_exp((abs(lap_y) - tau * sigma2) ** 2 / 2 / sigma2, self._rng)
             if bern_c:
                 return value + lap_y
 
@@ -349,24 +349,3 @@ class GaussianDiscrete(DPMechanism):
                 guess_0 = guess_mid
 
         return (guess_0 + guess_1) / 2
-
-    def _bernoulli_exp(self, gamma):
-        """Sample from Bernoulli(exp(-gamma))
-
-        Adapted from Appendix A of https://arxiv.org/pdf/2004.00010.pdf
-
-        """
-        if gamma > 1:
-            gamma_ceil = np.ceil(gamma)
-            for _ in np.arange(gamma_ceil):
-                if not self._bernoulli_exp(gamma / gamma_ceil):
-                    return 0
-
-            return 1
-
-        counter = 1
-
-        while np.random.binomial(1, gamma / counter):
-            counter += 1
-
-        return counter % 2
