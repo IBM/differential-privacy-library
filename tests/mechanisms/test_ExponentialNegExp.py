@@ -21,6 +21,10 @@ class TestBernoulliNegExp(TestCase):
         for i in range(1000):
             self.assertEqual(0, bernoulli_neg_exp(float("inf"), self.rng))
 
+    def test_zero_gamma(self):
+        for i in range(1000):
+            self.assertEqual(1, bernoulli_neg_exp(0, self.rng))
+
     def test_no_rng(self):
         for i in range(100):
             self.assertIn(bernoulli_neg_exp(1), [0, 1])
