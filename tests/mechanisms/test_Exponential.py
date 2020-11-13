@@ -122,7 +122,7 @@ class TestExponential(TestCase):
         for i in range(runs):
             count[mech.randomise()] += 1
 
-        self.assertAlmostEqual(count[1] / count[0], 2, delta=0.075)
+        self.assertAlmostEqual(count[1] / count[0], 2, delta=0.1)
 
     def test_distrib_prob(self):
         epsilon = 2 * np.log(2)

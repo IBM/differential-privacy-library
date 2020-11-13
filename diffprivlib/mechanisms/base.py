@@ -240,7 +240,7 @@ def bernoulli_neg_exp(gamma, rng=None):
     Parameters
     ----------
     gamma : float
-        Parameter to sample from Bernoulli(exp(-gamma)).  Must be non-negative
+        Parameter to sample from Bernoulli(exp(-gamma)).  Must be non-negative.
 
     rng : Random number generator, optional
         Random number generator to use.  If not provided, uses SystemRandom from secrets by default.
@@ -251,7 +251,7 @@ def bernoulli_neg_exp(gamma, rng=None):
 
     """
     if gamma < 0:
-        raise ValueError("Gamma must be Real-valued and non-negative, got {}.".format(gamma))
+        raise ValueError("Gamma must be non-negative, got {}.".format(gamma))
 
     if rng is None:
         rng = secrets.SystemRandom()
