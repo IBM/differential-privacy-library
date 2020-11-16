@@ -22,7 +22,7 @@ from numbers import Real
 
 import numpy as np
 
-from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.mechanisms.base import DPMechanism, bernoulli_neg_exp
 from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.utils import copy_docstring
 
@@ -90,6 +90,9 @@ class Exponential(DPMechanism):
         if len(utility) < 1:
             raise ValueError("Utility must have at least one element.")
 
+        if np.isinf(utility).any():
+            raise ValueError("Utility must be a list of finite numbers.")
+
         if candidates is not None:
             if not isinstance(candidates, list):
                 raise TypeError("Candidates must be a list, got a {}.".format(type(candidates)))
@@ -102,7 +105,10 @@ class Exponential(DPMechanism):
                 raise TypeError("Measure must be a list, got a {}.".format(type(measure)))
 
             if not all(isinstance(m, Real) for m in measure):
-                raise TypeError("Utility must be a list of real-valued numbers.")
+                raise TypeError("Measure must be a list of real-valued numbers.")
+
+            if np.isinf(measure).any():
+                raise ValueError("Measure must be a list of finite numbers.")
 
             if len(measure) != len(utility):
                 raise ValueError("List of measures must be the same length as the list of utility values.")
@@ -171,6 +177,86 @@ class Exponential(DPMechanism):
                                "Debugging info: Rand: {}, Probabilities: {}".format(rand, self._probabilities))
 
         return self.candidates[idx] if self.candidates else idx
+
+
+class PermuteAndFlip(Exponential):
+    r"""
+    The permute and flip mechanism for achieving differential privacy on candidate selection, as first proposed by
+    McKenna and Sheldon.
+
+    The permute and flip mechanism is an alternative to the exponential mechanism, and achieves differential privacy by
+    randomly choosing a candidate subject to candidate utility scores, with greater probability given to higher-utility
+    candidates.
+
+    Paper link: https://arxiv.org/pdf/2010.12603.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
+
+    sensitivity : float
+        The sensitivity in utility values to a change in a datapoint in the underlying dataset.
+
+    utility : list
+        A list of non-negative utility values for each candidate.
+
+    candidates : list, optional
+        An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
+
+    measure : list, optional
+        An optional list of measures for each candidate.  If omitted, a uniform measure is used.
+
+    """
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
+        raise NotImplementedError
+
+    @classmethod
+    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
+        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+
+        utility = np.array(utility) + 2 / scale * np.log(measure if measure else 1)
+        utility -= max(utility)
+
+        if np.isinf(scale):
+            log_probabilities = np.ones_like(utility) * (-float("inf"))
+            log_probabilities[utility == 0] = 0
+        else:
+            log_probabilities = scale * utility / 2
+
+        return log_probabilities
+
+    def randomise(self, value=None):
+        """Select a candidate with differential privacy.
+
+        Parameters
+        ----------
+        value : None
+            Ignored.
+
+        Returns
+        -------
+        int or other
+            The randomised candidate.
+
+        """
+        self._check_all(value)
+
+        candidate_ids = list(range(len(self.utility)))
+
+        while len(candidate_ids):
+            idx = candidate_ids[int(self._rng.random() * len(candidate_ids))]
+            candidate_ids.remove(idx)
+
+            if bernoulli_neg_exp(-self._probabilities[idx], self._rng):
+                return self.candidates[idx] if self.candidates else idx
+
+        raise RuntimeError("No value to return.  Probabilities: {}.".format(self._probabilities))
 
 
 class ExponentialCategorical(DPMechanism):

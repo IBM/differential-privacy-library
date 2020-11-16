@@ -83,8 +83,9 @@ class TestExponentialHierarchical(TestCase):
         # print(_mech._sensitivity)
 
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
-        self.assertAlmostEqual(count[0] / runs, np.exp(epsilon / (1 if balanced_tree else 2)) * count[2] / runs, delta=0.1)
-        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.1)
+        self.assertAlmostEqual(count[0] / runs, np.exp(epsilon / (1 if balanced_tree else 2)) * count[2] / runs,
+                               delta=0.1)
+        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.15)
 
     def test_neighbours_prob(self):
         epsilon = np.log(2)

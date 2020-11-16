@@ -22,7 +22,8 @@ from diffprivlib.mechanisms.base import DPMachine, DPMechanism, TruncationAndFol
 
 from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.mechanisms.bingham import Bingham
-from diffprivlib.mechanisms.exponential import Exponential, ExponentialCategorical, ExponentialHierarchical
+from diffprivlib.mechanisms.exponential import Exponential, ExponentialCategorical, ExponentialHierarchical, \
+    PermuteAndFlip
 from diffprivlib.mechanisms.gaussian import Gaussian, GaussianAnalytic, GaussianDiscrete
 from diffprivlib.mechanisms.geometric import Geometric, GeometricFolded, GeometricTruncated
 from diffprivlib.mechanisms.laplace import Laplace, LaplaceBoundedDomain, LaplaceBoundedNoise, LaplaceFolded,\
