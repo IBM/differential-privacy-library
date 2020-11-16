@@ -47,6 +47,11 @@ Exponential mechanisms
    :inherited-members:
    :exclude-members: copy,bias,mse,variance,utility_list
 
+.. autoclass:: PermuteAndFlip
+   :members:
+   :inherited-members:
+   :exclude-members: copy,bias,mse,variance
+
 Gaussian mechanisms
 -----------------------------
 .. autoclass:: Gaussian

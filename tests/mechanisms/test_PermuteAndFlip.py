@@ -1,23 +1,19 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.mechanisms import Exponential
-from diffprivlib.utils import global_seed
+from diffprivlib.mechanisms import PermuteAndFlip
 
 
-class TestExponential(TestCase):
+class TestPermuteAndFlip(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
-        self.mech = Exponential
+        self.mech = PermuteAndFlip
 
     def teardown_method(self, method):
         del self.mech
 
     def test_class(self):
         from diffprivlib.mechanisms import DPMechanism
-        self.assertTrue(issubclass(Exponential, DPMechanism))
+        self.assertTrue(issubclass(PermuteAndFlip, DPMechanism))
 
     def test_inf_epsilon(self):
         utility = [1, 0, 0, 0, 0]
@@ -113,16 +109,23 @@ class TestExponential(TestCase):
             self.assertIn(mech.randomise(), candidates)
 
     def test_non_uniform_measure(self):
-        measure = [1, 2, 1, 1]
-        utility = [1, 1, 0, 0]
-        runs = 20000
-        mech = self.mech(epsilon=2 * np.log(2), utility=utility, measure=measure, sensitivity=1)
+        measure = [2, 1]
+        utility = [1, 1]
+        runs = 10000
+        mech = self.mech(epsilon=1, utility=utility, measure=measure, sensitivity=1)
         count = [0] * 4
 
         for i in range(runs):
             count[mech.randomise()] += 1
 
-        self.assertAlmostEqual(count[1] / count[0], 2, delta=0.1)
+        # print("Counts: {}".format([c/runs for c in count]))
+        # print("Probs: {}".format(mech._probabilities))
+        # print("Exp probs: {}".format([np.exp(prob) for prob in mech._probabilities]))
+
+        # Second candidate has half the probability of being selected (due to measure)
+        # Second candidate has 25% chance of selection
+        self.assertAlmostEqual(count[0] / runs, 0.75, delta=0.1)
+        self.assertAlmostEqual(count[1] / runs, 0.25, delta=0.1)
 
     def test_inf_utility_measure(self):
         list_with_inf = [1, 0, float("inf")]
@@ -135,7 +138,7 @@ class TestExponential(TestCase):
                           sensitivity=1)
 
     def test_distrib_prob(self):
-        epsilon = 2 * np.log(2)
+        epsilon = np.log(2)
         runs = 20000
         mech = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1)
         count = [0, 0, 0]
@@ -146,12 +149,11 @@ class TestExponential(TestCase):
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
         # print("%f, %f" % (count[0] / count[1], count[1] / count[2]))
 
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
-        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.2)
+        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.05)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility=[1], sensitivity=1))
-        self.assertIn(".Exponential(", repr_)
+        self.assertIn(".PermuteAndFlip(", repr_)
 
     def test_bias(self):
         self.assertRaises(NotImplementedError, self.mech(epsilon=1, utility=[1], sensitivity=1).bias, 0)
