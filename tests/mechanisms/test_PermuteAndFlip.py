@@ -127,6 +127,19 @@ class TestPermuteAndFlip(TestCase):
         self.assertAlmostEqual(count[0] / runs, 0.75, delta=0.1)
         self.assertAlmostEqual(count[1] / runs, 0.25, delta=0.1)
 
+    def test_zero_measure(self):
+        measure = [1, 1, 0]
+        utility = [1, 1, 1]
+        runs = 10000
+        mech = self.mech(epsilon=1, utility=utility, measure=measure, sensitivity=1)
+        count = [0] * 3
+
+        for i in range(runs):
+            count[mech.randomise()] += 1
+
+        self.assertEqual(count[2], 0)
+        self.assertAlmostEqual(count[0], count[1], delta=runs*0.01)
+
     def test_inf_utility_measure(self):
         list_with_inf = [1, 0, float("inf")]
 

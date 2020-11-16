@@ -220,8 +220,10 @@ class PermuteAndFlip(Exponential):
     def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
         scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
 
+        old_settings = np.seterr(divide='ignore')  # Ignore division by zero warning when measure=0
         utility = np.array(utility) + 2 / scale * np.log(measure if measure else 1)
         utility -= max(utility)
+        np.seterr(**old_settings)
 
         if np.isinf(scale):
             log_probabilities = np.ones_like(utility) * (-float("inf"))
