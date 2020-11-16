@@ -138,7 +138,7 @@ class TestPermuteAndFlip(TestCase):
             count[mech.randomise()] += 1
 
         self.assertEqual(count[2], 0)
-        self.assertAlmostEqual(count[0], count[1], delta=runs*0.01)
+        self.assertAlmostEqual(count[0], count[1], delta=runs*0.03)
 
     def test_inf_utility_measure(self):
         list_with_inf = [1, 0, float("inf")]
