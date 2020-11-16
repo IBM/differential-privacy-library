@@ -249,7 +249,7 @@ class PermuteAndFlip(Exponential):
 
         candidate_ids = list(range(len(self.utility)))
 
-        while len(candidate_ids):
+        while candidate_ids:
             idx = candidate_ids[int(self._rng.random() * len(candidate_ids))]
             candidate_ids.remove(idx)
 
