@@ -160,7 +160,7 @@ class TestExponential(TestCase):
         # print("%f, %f" % (count[0] / count[1], count[1] / count[2]))
 
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
-        self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.2)
+        # self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.2)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility=[1], sensitivity=1))
