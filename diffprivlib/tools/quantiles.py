@@ -26,9 +26,10 @@ from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Exponential
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
 from diffprivlib.validation import clip_to_bounds, check_bounds
+from diffprivlib.tools.utils import _wrap_axis
 
 
-def quantile(array, q, epsilon=1.0, bounds=None, keepdims=False, accountant=None, **unused_args):
+def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private quartile of the array.
 
@@ -47,12 +48,20 @@ def quantile(array, q, epsilon=1.0, bounds=None, keepdims=False, accountant=None
         Quartile or list of quartiles sought.  Each quartile must be in the unit interval [0, 1].
 
     epsilon : float, default: 1.0
-        Privacy parameter :math:`\epsilon`.
+        Privacy parameter :math:`\epsilon`.  Differential privacy is achieved over the entire output, with epsilon split
+        evenly between each output value.
 
     bounds : tuple, optional
         Bounds of the values of the array, of the form (min, max).
 
-    keepdims : bool, optional
+    axis : None or int or tuple of ints, optional
+        Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
+        array.  If axis is negative it counts from the last to the first axis.
+
+        If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a single
+        axis or all the axes as before.
+
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
@@ -77,22 +86,29 @@ def quantile(array, q, epsilon=1.0, bounds=None, keepdims=False, accountant=None
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         bounds = (np.min(array), np.max(array))
 
-    bounds = check_bounds(bounds)
+    q = np.ravel(q)
 
-    qs = np.atleast_1d(q)
+    if len(q) > 1:
+        return np.array([quantile(array, q_i, epsilon=epsilon / len(q), bounds=bounds, axis=axis, keepdims=keepdims,
+                                  accountant=accountant) for q_i in q])
 
-    if len(qs) > 1:
-        return np.array([quantile(array, q_i, epsilon=epsilon / len(qs), bounds=bounds, keepdims=keepdims)
-                         for q_i in qs])
+    # Dealing with a single q from now on
+    q = q[0]
+
+    if not 0 <= q <= 1:
+        raise ValueError("Quantiles must be in [0, 1], got {}.".format(q))
+
+    if axis is not None or keepdims:
+        return _wrap_axis(quantile, array, q=q, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims,
+                          accountant=accountant)
+
+    # Dealing with a scalar output from now on
+    bounds = check_bounds(bounds, shape=0)
 
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    q = qs[0]
-
-    if not 0 <= q <= 1:
-        raise ValueError("Quantile must be in [0, 1], got {}.".format(q))
-
+    # Let's ravel array to be single-dimensional
     array = clip_to_bounds(np.ravel(array), bounds)
 
     k = array.size
@@ -101,13 +117,15 @@ def quantile(array, q, epsilon=1.0, bounds=None, keepdims=False, accountant=None
 
     interval_sizes = np.diff(array)
 
-    if np.any(np.isnan(interval_sizes)):
+    # Todo: Need to find a way to do this in a differentially private way
+    if np.isnan(interval_sizes).any():
         return np.nan
 
     mech = Exponential(epsilon=epsilon, sensitivity=1, utility=list(-np.abs(np.arange(0, k + 1) - q * k)),
                        measure=list(interval_sizes))
     idx = mech.randomise()
+    output = mech._rng.random() * (array[idx+1] - array[idx]) + array[idx]
 
     accountant.spend(epsilon, 0)
 
-    return mech._rng.random() * (array[idx+1] - array[idx]) + array[idx]
+    return output

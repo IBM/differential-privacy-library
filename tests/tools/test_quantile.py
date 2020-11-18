@@ -47,10 +47,17 @@ class TestQuantile(TestCase):
 
     def test_large_epsilon(self):
         a = np.random.random(1000)
-        res = float(np.quantile(a, 0.5))
+        res = np.quantile(a, 0.5)
         res_dp = quantile(a, 0.5, epsilon=5, bounds=(0, 1))
 
-        self.assertAlmostEqual(res, res_dp, delta=0.01)
+        self.assertAlmostEqual(float(res), float(res_dp), delta=0.01)
+
+    def test_inf_epsilon(self):
+        a = [0, 1, 2, 3]
+
+        for _ in range(100):
+            res_dp = quantile(a, 0.5, epsilon=float("inf"), bounds=(0, 3))
+            self.assertTrue(1 <= res_dp <= 2)
 
     def test_output_type(self):
         res = quantile([1, 2, 3], 0.5, bounds=(1, 3))
@@ -76,8 +83,17 @@ class TestQuantile(TestCase):
         self.assertTrue(np.isclose(res, q, atol=0.05).all())
 
     def test_axis(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            quantile([1], 0.5, epsilon=1, bounds=(0, 1), axis=0)
+        a = np.random.random((10, 5))
+        out = quantile(a, 0.5, epsilon=1, bounds=(0, 1), axis=0)
+        self.assertEqual(out.shape, (5,))
+
+        out = quantile(a, 0.5, epsilon=1, bounds=(0, 1), axis=())
+        self.assertEqual(out.shape, a.shape)
+
+    def test_keepdims(self):
+        a = np.random.random((10, 5))
+        out = quantile(a, 0.5, epsilon=1, bounds=(0, 1), keepdims=True)
+        self.assertEqual(a.ndim, out.ndim)
 
     def test_array_like(self):
         self.assertIsNotNone(quantile([1, 2, 3], 0.5, bounds=(1, 3)))
@@ -107,3 +123,14 @@ class TestQuantile(TestCase):
         with acc:
             with self.assertRaises(BudgetError):
                 quantile(a, 0.5, epsilon=1, bounds=(0, 1))
+
+    def test_accountant_with_axes(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        a = np.random.random((1000, 4))
+        quantile(a, (0.5, 0.75), epsilon=1, bounds=(0, 1), axis=0, accountant=acc)
+
+        # Expecting a different spend on each of the 8 outputs
+        self.assertEqual((1, 0), acc.total())
+        self.assertEqual(8, len(acc))
