@@ -19,5 +19,5 @@
 Tools for data analysis with differential privacy.
 """
 from diffprivlib.tools.histograms import histogram, histogramdd, histogram2d
-from diffprivlib.tools.quantiles import quantile
+from diffprivlib.tools.quantiles import quantile, median, percentile
 from diffprivlib.tools.utils import count_nonzero, mean, std, sum, var, nanmean, nanstd, nansum, nanvar

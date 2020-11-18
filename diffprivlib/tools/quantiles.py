@@ -29,7 +29,7 @@ from diffprivlib.validation import clip_to_bounds, check_bounds
 from diffprivlib.tools.utils import _wrap_axis
 
 
-def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private quartile of the array.
 
@@ -44,7 +44,7 @@ def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, acco
     array : array_like
         Array containing numbers whose quartile is sought.  If `array` is not an array, a conversion is attempted.
 
-    q : float or array-like
+    quant : float or array-like
         Quartile or list of quartiles sought.  Each quartile must be in the unit interval [0, 1].
 
     epsilon : float, default: 1.0
@@ -75,7 +75,13 @@ def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, acco
     Returns
     -------
     m : ndarray
-        Returns a new array containing the mean values.
+        Returns a new array containing the quantile values.
+
+    See Also
+    --------
+    numpy.quantile : Equivalent non-private method.
+
+    percentile, median
 
     """
     warn_unused_args(unused_args)
@@ -86,20 +92,20 @@ def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, acco
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
         bounds = (np.min(array), np.max(array))
 
-    q = np.ravel(q)
+    quant = np.ravel(quant)
 
-    if len(q) > 1:
-        return np.array([quantile(array, q_i, epsilon=epsilon / len(q), bounds=bounds, axis=axis, keepdims=keepdims,
-                                  accountant=accountant) for q_i in q])
+    if len(quant) > 1:
+        return np.array([quantile(array, q_i, epsilon=epsilon / len(quant), bounds=bounds, axis=axis, keepdims=keepdims,
+                                  accountant=accountant) for q_i in quant])
 
-    # Dealing with a single q from now on
-    q = q[0]
+    # Dealing with a single quant from now on
+    quant = quant[0]
 
-    if not 0 <= q <= 1:
-        raise ValueError("Quantiles must be in [0, 1], got {}.".format(q))
+    if not 0 <= quant <= 1:
+        raise ValueError("Quantiles must be in [0, 1], got {}.".format(quant))
 
     if axis is not None or keepdims:
-        return _wrap_axis(quantile, array, q=q, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims,
+        return _wrap_axis(quantile, array, quant=quant, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims,
                           accountant=accountant)
 
     # Dealing with a scalar output from now on
@@ -121,7 +127,7 @@ def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, acco
     if np.isnan(interval_sizes).any():
         return np.nan
 
-    mech = Exponential(epsilon=epsilon, sensitivity=1, utility=list(-np.abs(np.arange(0, k + 1) - q * k)),
+    mech = Exponential(epsilon=epsilon, sensitivity=1, utility=list(-np.abs(np.arange(0, k + 1) - quant * k)),
                        measure=list(interval_sizes))
     idx = mech.randomise()
     output = mech._rng.random() * (array[idx+1] - array[idx]) + array[idx]
@@ -129,3 +135,118 @@ def quantile(array, q, epsilon=1.0, bounds=None, axis=None, keepdims=False, acco
     accountant.spend(epsilon, 0)
 
     return output
+
+
+def percentile(array, percent, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+    r"""
+    Compute the differentially private percentile of the array.
+
+    This method calls quantile, where quantile = percentile / 100.
+
+    Parameters
+    ----------
+    array : array_like
+        Array containing numbers whose quartile is sought.  If `array` is not an array, a conversion is attempted.
+
+    percent : float or array-like
+        Percentile or list of percentiles sought.  Each percentile must be in [0, 100].
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.  Differential privacy is achieved over the entire output, with epsilon split
+        evenly between each output value.
+
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
+
+    axis : None or int or tuple of ints, optional
+        Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
+        array.  If axis is negative it counts from the last to the first axis.
+
+        If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a single
+        axis or all the axes as before.
+
+    keepdims : bool, default: False
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
+
+        If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
+        of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
+        exceptions will be raised.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+    Returns
+    -------
+    m : ndarray
+        Returns a new array containing the percentile values.
+
+    See Also
+    --------
+    numpy.percentile : Equivalent non-private method.
+
+    quantile, median
+
+    """
+    warn_unused_args(unused_args)
+
+    quant = np.asarray(percent) / 100
+
+    if np.any(quant < 0) or np.any(quant > 1):
+        raise ValueError("Percentiles must be between 0 and 100 inclusive")
+
+    return quantile(array, quant, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims, accountant=accountant)
+
+
+def median(array, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+    r"""
+    Compute the differentially private median of the array.
+
+    Returns the median with differential privacy.  The median is calculated over each axis, or the flattened array
+    if an axis is not provided.  This method calls the quantile method, for the 0.5 quantile.
+
+    Parameters
+    ----------
+    array : array_like
+        Array containing numbers whose quartile is sought.  If `array` is not an array, a conversion is attempted.
+
+    epsilon : float, default: 1.0
+        Privacy parameter :math:`\epsilon`.  Differential privacy is achieved over the entire output, with epsilon split
+        evenly between each output value.
+
+    bounds : tuple, optional
+        Bounds of the values of the array, of the form (min, max).
+
+    axis : None or int or tuple of ints, optional
+        Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
+        array.  If axis is negative it counts from the last to the first axis.
+
+        If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a single
+        axis or all the axes as before.
+
+    keepdims : bool, default: False
+        If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
+        this option, the result will broadcast correctly against the input array.
+
+        If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
+        of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
+        exceptions will be raised.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
+    Returns
+    -------
+    m : ndarray
+        Returns a new array containing the median values.
+
+    See Also
+    --------
+    numpy.median : Equivalent non-private method.
+
+    quantile, percentile
+
+    """
+    warn_unused_args(unused_args)
+
+    return quantile(array, 0.5, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims, accountant=accountant)

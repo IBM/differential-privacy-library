@@ -33,3 +33,8 @@ General Utilities
 Quantile-like functions
 -----------------------------
 .. autofunction:: quantile
+
+.. autofunction:: percentile
+
+.. autofunction:: median
+
