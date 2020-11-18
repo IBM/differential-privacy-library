@@ -47,7 +47,7 @@ class TestVar(TestCase):
     def test_large_epsilon_axis(self):
         a = np.random.random((1000, 5))
         res = np.var(a, axis=0)
-        res_dp = var(a, epsilon=5, bounds=(0, 1), axis=0)
+        res_dp = var(a, epsilon=15, bounds=(0, 1), axis=0)
 
         for i in range(res.shape[0]):
             self.assertAlmostEqual(res[i], res_dp[i], delta=0.01)

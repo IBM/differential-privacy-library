@@ -197,7 +197,7 @@ class StandardScaler(sk_pp.StandardScaler):
         """
         self.accountant.check(self.epsilon, 0)
 
-        epsilon_0 = self.epsilon if self.with_std is None else self.epsilon / 2
+        epsilon_0 = self.epsilon / 2 if self.with_std else self.epsilon
 
         X = check_array(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=FLOAT_DTYPES,
                         force_all_finite='allow-nan')
