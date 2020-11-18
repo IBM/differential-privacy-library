@@ -57,6 +57,47 @@ _sum_ = sum
 _NoValue = np._NoValue
 
 
+def _wrap_axis(func, array, *, axis, keepdims, epsilon, bounds, **kwargs):
+    """Wrapper for functions with axis and keepdims parameters to ensure the function only needs to be evaluated on
+    scalar outputs.
+
+    """
+    dummy = np.zeros_like(array).sum(axis=axis, keepdims=keepdims)
+    array = np.asarray(array)
+    ndim = array.ndim
+    bounds = check_bounds(bounds, np.size(dummy) if np.ndim(dummy) == 1 else 0)
+
+    if isinstance(axis, int):
+        axis = (axis,)
+    elif axis is None:
+        axis = tuple(range(ndim))
+
+    # Ensure all axes are non-negative
+    axis = tuple(ndim + ax if ax < 0 else ax for ax in axis)
+
+    if isinstance(dummy, np.ndarray):
+        iterator = np.nditer(dummy, flags=['multi_index'])
+
+        while not iterator.finished:
+            idx = list(iterator.multi_index)  # Multi index on 'dummy'
+            _bounds = (bounds[0][idx], bounds[1][idx]) if np.ndim(dummy) == 1 else bounds
+
+            # Construct slicing tuple on 'array'
+            if len(idx) + len(axis) > ndim:
+                full_slice = tuple(slice(None) if ax in axis else idx[ax] for ax in range(ndim))
+            else:
+                idx.reverse()
+                full_slice = tuple(slice(None) if ax in axis else idx.pop() for ax in range(ndim))
+
+            dummy[iterator.multi_index] = func(array[full_slice], epsilon=epsilon / dummy.size, bounds=_bounds,
+                                               **kwargs)
+            iterator.iternext()
+
+        return dummy
+
+    return func(array, bounds=bounds, epsilon=epsilon, **kwargs)
+
+
 def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
     r"""Counts the number of non-zero values in the array ``array`` with differential privacy.
 
@@ -253,7 +294,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoVa
             dp_mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=local_diam / n_datapoints, lower=_lower,
                                        upper=_upper)
 
-            dp_mean[iterator.multi_index] = dp_mech.randomise(actual_mean[idx])
+            dp_mean[idx] = dp_mech.randomise(actual_mean[idx])
             iterator.iternext()
 
         accountant.spend(epsilon, 0)
@@ -424,7 +465,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoVal
                                            sensitivity=(local_diam / n_datapoints) ** 2 * (n_datapoints - 1),
                                            lower=0, upper=float("inf"))
 
-            dp_var[iterator.multi_index] = np.minimum(dp_mech.randomise(actual_var[idx]), local_diam ** 2)
+            dp_var[idx] = np.minimum(dp_mech.randomise(actual_var[idx]), local_diam ** 2)
             iterator.iternext()
 
         accountant.spend(epsilon, 0)
