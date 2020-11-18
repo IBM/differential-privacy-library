@@ -40,6 +40,6 @@ class TestBernoulliNegExp(TestCase):
         runs = 5000
 
         self.assertAlmostEqual(sum(bernoulli_neg_exp(-np.log(0.5), self.rng) for _ in range(runs)) / runs,
-                               0.5, delta=0.02)
+                               0.5, delta=0.025)
         self.assertAlmostEqual(sum(bernoulli_neg_exp(-np.log(0.1), self.rng) for _ in range(runs)) / runs,
-                               0.1, delta=0.02)
+                               0.1, delta=0.025)
