@@ -204,10 +204,10 @@ class PermuteAndFlip(Exponential):
     candidates : list, optional
         An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
 
-    measure : list, optional
-        An optional list of measures for each candidate.  If omitted, a uniform measure is used.
-
     """
+    def __init__(self, *, epsilon, sensitivity, utility, candidates=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, utility=utility, candidates=candidates, measure=None)
+
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):
         raise NotImplementedError
