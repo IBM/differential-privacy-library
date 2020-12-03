@@ -32,3 +32,4 @@ from diffprivlib.mechanisms.staircase import Staircase
 from diffprivlib.mechanisms.uniform import Uniform
 from diffprivlib.mechanisms.vector import Vector
 from diffprivlib.mechanisms.wishart import Wishart
+from diffprivlib.mechanisms.krr import KRR
