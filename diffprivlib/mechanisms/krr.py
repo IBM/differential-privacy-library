@@ -26,16 +26,17 @@ from diffprivlib.utils import copy_docstring
 
 class KRR(DPMechanism):
     r"""
-    The k-RR mechanism - also known as flat mechanism or randomized response 
-    mechanism - is one of the simplest LPD mechanisms. It can be visualized as a generalization of the randomised response proposed by [Warner, 1965].
-    
-    The k-RR mechahism returns the original value of an attribute domain with 
-    probability :math:`\frac{e^\varepsilon}{|X|-1+e^\varepsilon}` and returns 
-    any other value different from the original with probability 
-    :math:`\frac{1}{|X|-1+e^\varepsilon}`, where :math:`|X|` is the domain 
-    size. P. Kairouz, S. Oh, and P. Viswanath has showed that the mechanism is 
-    optimal in the low privacy regime for a large class of information 
-    theoretic utility functions.    
+    The k-RR mechanism - also known as flat mechanism or randomized response
+    mechanism - is one of the simplest LPD mechanisms. It can be visualized as
+    a generalization of the randomised response proposed by [Warner, 1965].
+  
+    The k-RR mechahism returns the original value of an attribute domain with
+    probability :math:`\frac{e^\varepsilon}{|X|-1+e^\varepsilon}` and returns
+    any other value different from the original with probability
+    :math:`\frac{1}{|X|-1+e^\varepsilon}`, where :math:`|X|` is the domain
+    size. P. Kairouz, S. Oh, and P. Viswanath has showed that the mechanism is
+    optimal in the low privacy regime for a large class of information
+    theoretic utility functions.
 
     Paper link: https://proceedings.neurips.cc/paper/2014/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf
 
@@ -63,7 +64,7 @@ class KRR(DPMechanism):
         super()._check_all(value)
 
         if value not in self._domain_values:
-            raise ValueError("Value \"%s\" not in domain" % value)
+            raise ValueError("Value " + str(value) + " not in domain")
 
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):
@@ -91,11 +92,13 @@ class KRR(DPMechanism):
         self._check_all(value)
         unif_prob = self._rng.random()
 
-        if unif_prob <= e**self.epsilon / (self._data_size - 1 + e**self.epsilon):
+        if (e**self.epsilon == float("inf") or 
+            unif_prob <= e**self.epsilon / 
+            (self._data_size - 1 + e**self.epsilon)):
             return value
         
         self._domain_values.remove(value)
-        idx = int(self._rng.random()*(self._data_size-1)) % self._data_size-1
+        idx = int(self._rng.random()*(self._data_size-1)) % (self._data_size-1)
         randomised_value = self._domain_values[idx]
         self._domain_values.append(value)           
 
