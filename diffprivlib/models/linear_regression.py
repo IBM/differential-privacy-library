@@ -112,7 +112,7 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
     mono_coef_0 = np.zeros(n_targets)
 
     for i in range(n_targets):
-        sensitivity = np.abs(bounds_y[i]).max() ** 2
+        sensitivity = np.abs([bounds_y[0][i], bounds_y[1][i]]).max() ** 2
         mech = LaplaceFolded(epsilon=local_epsilon, sensitivity=sensitivity, lower=0, upper=float("inf"))
         mono_coef_0[i] = mech.randomise(coefs[0][i])
 
