@@ -58,6 +58,9 @@ class KRR(DPMechanism):
         if not isinstance(domain_values, list):
             raise TypeError("Domain must be a list")
         
+        if len(domain_values) <= 1:
+            raise ValueError("The domain must have at least 2 elements")
+
         return domain_values, len(domain_values)
 
     @copy_docstring(DPMechanism.bias)
