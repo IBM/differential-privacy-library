@@ -60,12 +60,6 @@ class KRR(DPMechanism):
         
         return domain_values, len(domain_values)
 
-    def _check_all(self, value):
-        super()._check_all(value)
-
-        if value not in self._domain_values:
-            raise ValueError("Value " + str(value) + " not in domain")
-
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):
         raise NotImplementedError
@@ -97,9 +91,9 @@ class KRR(DPMechanism):
             (self._data_size - 1 + e**self.epsilon)):
             return value
         
-        self._domain_values.remove(value)
-        idx = int(self._rng.random()*(self._data_size-1)) % (self._data_size-1)
-        randomised_value = self._domain_values[idx]
-        self._domain_values.append(value)           
+        # Select a random index from domain that is different from the index of the value that is being randomised
+        idx = self._rng.randrange(self._data_size)
+        while self._domain_values[idx] == value:
+            idx = self._rng.randrange(self._data_size)
 
-        return randomised_value
+        return self._domain_values[idx]
