@@ -88,6 +88,26 @@ class TestLogisticRegression(TestCase):
 
         self.assertIsNotNone(clf.fit(X, y))
 
+    def test_quadnomial(self):
+        X = np.array(
+            [0.25, 0.50, 0.75, 1.00])
+        y = np.array([0, 1, 2, 3])
+        X = X[:, np.newaxis]
+
+        clf = LogisticRegression(data_norm=1.0)
+
+        self.assertIsNotNone(clf.fit(X, y))
+
+    def test_multi_dim_y(self):
+        X = np.array(
+            [0.25, 0.50, 0.75, 1.00])
+        y = np.array([[0, 1, 2, 3], [4, 5, 6, 7]])
+        X = X[:, np.newaxis]
+
+        clf = LogisticRegression(data_norm=1.0)
+
+        self.assertRaises(ValueError, clf.fit, X, y)
+
     def test_solver_warning(self):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             LogisticRegression(solver="newton-cg")
