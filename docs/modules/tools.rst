@@ -29,3 +29,12 @@ General Utilities
 .. autofunction:: var
 
 .. autofunction:: nanvar
+
+Quantile-like functions
+-----------------------------
+.. autofunction:: quantile
+
+.. autofunction:: percentile
+
+.. autofunction:: median
+

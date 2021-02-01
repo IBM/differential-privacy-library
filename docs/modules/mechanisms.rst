@@ -35,12 +35,22 @@ Exponential mechanisms
 .. autoclass:: Exponential
    :members:
    :inherited-members:
+   :exclude-members: copy,bias,mse,variance
+
+.. autoclass:: ExponentialCategorical
+   :members:
+   :inherited-members:
    :exclude-members: copy,bias,mse,variance,utility_list
 
 .. autoclass:: ExponentialHierarchical
    :members:
    :inherited-members:
    :exclude-members: copy,bias,mse,variance,utility_list
+
+.. autoclass:: PermuteAndFlip
+   :members:
+   :inherited-members:
+   :exclude-members: copy,bias,mse,variance
 
 Gaussian mechanisms
 -----------------------------

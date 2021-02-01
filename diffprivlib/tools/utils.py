@@ -51,10 +51,50 @@ from numpy.core import umath as um
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
-from diffprivlib.validation import check_bounds
+from diffprivlib.validation import check_bounds, clip_to_bounds
 
 _sum_ = sum
-_NoValue = np._NoValue
+
+
+def _wrap_axis(func, array, *, axis, keepdims, epsilon, bounds, **kwargs):
+    """Wrapper for functions with axis and keepdims parameters to ensure the function only needs to be evaluated on
+    scalar outputs.
+
+    """
+    dummy = np.zeros_like(array).sum(axis=axis, keepdims=keepdims)
+    array = np.asarray(array)
+    ndim = array.ndim
+    bounds = check_bounds(bounds, np.size(dummy) if np.ndim(dummy) == 1 else 0)
+
+    if isinstance(axis, int):
+        axis = (axis,)
+    elif axis is None:
+        axis = tuple(range(ndim))
+
+    # Ensure all axes are non-negative
+    axis = tuple(ndim + ax if ax < 0 else ax for ax in axis)
+
+    if isinstance(dummy, np.ndarray):
+        iterator = np.nditer(dummy, flags=['multi_index'])
+
+        while not iterator.finished:
+            idx = list(iterator.multi_index)  # Multi index on 'dummy'
+            _bounds = (bounds[0][idx], bounds[1][idx]) if np.ndim(dummy) == 1 else bounds
+
+            # Construct slicing tuple on 'array'
+            if len(idx) + len(axis) > ndim:
+                full_slice = tuple(slice(None) if ax in axis else idx[ax] for ax in range(ndim))
+            else:
+                idx.reverse()
+                full_slice = tuple(slice(None) if ax in axis else idx.pop() for ax in range(ndim))
+
+            dummy[iterator.multi_index] = func(array[full_slice], epsilon=epsilon / dummy.size, bounds=_bounds,
+                                               **kwargs)
+            iterator.iternext()
+
+        return dummy
+
+    return func(array, bounds=bounds, epsilon=epsilon, **kwargs)
 
 
 def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
@@ -81,7 +121,7 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
         Axis or tuple of axes along which to count non-zeros.  Default is None, meaning that non-zeros will be counted
         along a flattened version of ``array``.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes that are counted are left in the result as dimensions with size one. With this
         option, the result will broadcast correctly against the input array.
 
@@ -103,7 +143,7 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
                keepdims=keepdims)
 
 
-def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -133,13 +173,9 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoVal
         Type to use in computing the mean.  For integer inputs, the default is `float64`; for floating point inputs, it
         is the same as the input dtype.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
-        of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -160,7 +196,7 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoVal
                  accountant=accountant, nan=False)
 
 
-def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -192,13 +228,9 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_No
         Type to use in computing the mean.  For integer inputs, the default is `float64`; for floating point inputs, it
         is the same as the input dtype.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `mean` method of sub-classes
-        of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -219,57 +251,37 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_No
                  accountant=accountant, nan=True)
 
 
-def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
-    accountant = BudgetAccountant.load_default(accountant)
-    accountant.check(epsilon, 0)
-
-    _func = np.nanmean if nan else np.mean
-    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
-    vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(array), axis=axis, keepdims=keepdims).flat[0]
-
+def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(output_form) <= 1:
-            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
-        else:
-            bounds = (np.min(array), np.max(array))
+        bounds = (np.min(array), np.max(array))
 
-    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    array = np.clip(array, lower, upper)
+    if axis is not None or keepdims:
+        return _wrap_axis(_mean, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                          accountant=accountant, nan=nan)
 
+    lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
+
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
+    array = clip_to_bounds(np.ravel(array), bounds)
+
+    _func = np.nanmean if nan else np.mean
     actual_mean = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
-    if isinstance(actual_mean, np.ndarray):
-        dp_mean = np.zeros_like(actual_mean)
-        iterator = np.nditer(actual_mean, flags=['multi_index'])
-
-        while not iterator.finished:
-            idx = iterator.multi_index
-            _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
-            local_diam = _upper - _lower
-            dp_mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=local_diam / n_datapoints, lower=_lower,
-                                       upper=_upper)
-
-            dp_mean[iterator.multi_index] = dp_mech.randomise(actual_mean[idx])
-            iterator.iternext()
-
-        accountant.spend(epsilon, 0)
-
-        return dp_mean
-
-    local_diam = upper[0] - lower[0]
-    dp_mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=local_diam / n_datapoints, lower=lower[0],
-                               upper=upper[0])
+    mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=(upper - lower) / array.size, lower=lower,
+                            upper=upper)
+    output = mech.randomise(actual_mean)
 
     accountant.spend(epsilon, 0)
 
-    return dp_mech.randomise(actual_mean)
+    return output
 
 
-def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -301,13 +313,9 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValu
         Type to use in computing the variance.  For arrays of integer type the default is `float32`; for arrays of float
         types it is the same as the array type.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `var` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -328,7 +336,7 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValu
                 nan=False)
 
 
-def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -362,13 +370,9 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoV
         Type to use in computing the variance.  For arrays of integer type the default is `float32`; for arrays of float
         types it is the same as the array type.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `var` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -390,58 +394,39 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoV
                 nan=True)
 
 
-def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
-    accountant = BudgetAccountant.load_default(accountant)
-    accountant.check(epsilon, 0)
-
-    _func = np.nanvar if nan else np.var
-    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
-    vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(array, dtype=int), axis=axis, keepdims=keepdims).flat[0]
-
+def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(output_form) <= 1:
-            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
-        else:
-            bounds = (np.min(array), np.max(array))
+        bounds = (np.min(array), np.max(array))
 
-    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    array = np.clip(array, lower, upper)
+    if axis is not None or keepdims:
+        return _wrap_axis(_var, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                          accountant=accountant, nan=nan)
 
+    lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
+
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
+    # Let's ravel array to be single-dimensional
+    array = clip_to_bounds(np.ravel(array), bounds)
+
+    _func = np.nanvar if nan else np.var
     actual_var = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
-    if isinstance(actual_var, np.ndarray):
-        dp_var = np.zeros_like(actual_var)
-        iterator = np.nditer(actual_var, flags=['multi_index'])
-
-        while not iterator.finished:
-            idx = iterator.multi_index
-            local_diam = upper[idx] - lower[idx] if vector_out else upper[0] - lower[0]
-            dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
-                                           sensitivity=(local_diam / n_datapoints) ** 2 * (n_datapoints - 1),
-                                           lower=0, upper=float("inf"))
-
-            dp_var[iterator.multi_index] = np.minimum(dp_mech.randomise(actual_var[idx]), local_diam ** 2)
-            iterator.iternext()
-
-        accountant.spend(epsilon, 0)
-
-        return dp_var
-
-    local_diam = upper[0] - lower[0]
     dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
-                                   sensitivity=(local_diam / n_datapoints) ** 2 * (n_datapoints - 1), lower=0,
+                                   sensitivity=((upper - lower) / array.size) ** 2 * (array.size - 1), lower=0,
                                    upper=float("inf"))
+    output = np.minimum(dp_mech.randomise(actual_var), (upper - lower) ** 2)
 
     accountant.spend(epsilon, 0)
 
-    return np.minimum(dp_mech.randomise(actual_var), local_diam ** 2)
+    return output
 
 
-def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -473,13 +458,9 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValu
         Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `std` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -500,7 +481,7 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValu
                 accountant=accountant, nan=False)
 
 
-def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, **unused_args):
+def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -534,13 +515,9 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoV
         Type to use in computing the standard deviation.  For arrays of integer type the default is float64, for arrays
         of float types it is the same as the array type.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `std` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -561,7 +538,7 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoV
                 nan=True)
 
 
-def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoValue, accountant=None, nan=False):
+def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
     ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
                nan=nan)
 
@@ -575,7 +552,7 @@ def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=_NoVal
     return ret
 
 
-def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, **unused_args):
+def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, **unused_args):
     r"""Sum of array elements over a given axis with differential privacy.
 
     Parameters
@@ -605,13 +582,9 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
         that case, if `array` is signed then the platform integer is used while if `array` is unsigned then an unsigned
         integer of the same precision as the platform integer is used.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     Returns
     -------
@@ -632,7 +605,7 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
                 nan=False)
 
 
-def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, **unused_args):
+def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, **unused_args):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
     Parameters
@@ -662,13 +635,9 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
         that case, if `array` is signed then the platform integer is used while if `array` is unsigned then an unsigned
         integer of the same precision as the platform integer is used.
 
-    keepdims : bool, optional
+    keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
-
-        If the default value is passed, then `keepdims` will not be passed through to the `sum` method of sub-classes of
-        `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
-        exceptions will be raised.
 
     Returns
     -------
@@ -689,53 +658,32 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
                 keepdims=keepdims, nan=True)
 
 
-def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=_NoValue, nan=False):
-    accountant = BudgetAccountant.load_default(accountant)
-    accountant.check(epsilon, 0)
-
-    _func = np.nansum if nan else np.sum
-    output_form = _func(np.zeros_like(array), axis=axis, keepdims=keepdims)
-    vector_out = (np.ndim(output_form) == 1)
-    n_datapoints = np.sum(np.ones_like(array, dtype=int), axis=axis, keepdims=keepdims).flat[0]
-
+def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, nan=False):
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        if np.ndim(output_form) <= 1:
-            bounds = (np.min(array, axis=axis, keepdims=keepdims), np.max(array, axis=axis, keepdims=keepdims))
-        else:
-            bounds = (np.min(array), np.max(array))
+        bounds = (np.min(array), np.max(array))
 
-    lower, upper = check_bounds(bounds, output_form.shape[0] if vector_out else 1, dtype=dtype or float)
-    array = np.clip(array, lower, upper)
+    if axis is not None or keepdims:
+        return _wrap_axis(_sum, array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype,
+                          keepdims=keepdims, nan=nan)
 
+    lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
+
+    accountant = BudgetAccountant.load_default(accountant)
+    accountant.check(epsilon, 0)
+
+    # Let's ravel array to be single-dimensional
+    array = clip_to_bounds(np.ravel(array), bounds)
+
+    _func = np.nansum if nan else np.sum
     actual_sum = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
-    dp_mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
-
-    if isinstance(actual_sum, np.ndarray):
-        dp_sum = np.zeros_like(actual_sum, dtype=dtype)
-        iterator = np.nditer(actual_sum, flags=['multi_index'])
-
-        while not iterator.finished:
-            idx = iterator.multi_index
-            _lower, _upper = (lower[idx], upper[idx]) if vector_out else (lower[0], upper[0])
-            local_diam = _upper - _lower
-            mech = dp_mech(epsilon=epsilon, sensitivity=local_diam, lower=_lower * n_datapoints,
-                           upper=_upper * n_datapoints)
-
-            dp_sum[idx] = mech.randomise(actual_sum[idx])
-            iterator.iternext()
-
-        accountant.spend(epsilon, 0)
-
-        return dp_sum
-
-    local_diam = upper[0] - lower[0]
-    mech = dp_mech(epsilon=epsilon, sensitivity=local_diam, lower=lower[0] * n_datapoints,
-                   upper=upper[0] * n_datapoints)
+    mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
+    mech = mech(epsilon=epsilon, sensitivity=upper - lower, lower=lower * array.size, upper=upper * array.size)
+    output = mech.randomise(actual_sum)
 
     accountant.spend(epsilon, 0)
 
-    return mech.randomise(actual_sum)
+    return output

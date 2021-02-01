@@ -22,12 +22,244 @@ from numbers import Real
 
 import numpy as np
 
-from diffprivlib.mechanisms.base import DPMechanism
+from diffprivlib.mechanisms.base import DPMechanism, bernoulli_neg_exp
 from diffprivlib.mechanisms.binary import Binary
 from diffprivlib.utils import copy_docstring
 
 
 class Exponential(DPMechanism):
+    r"""
+    The exponential mechanism for achieving differential privacy on candidate selection, as first proposed by McSherry
+    and Talwar.
+
+    The exponential mechanism achieves differential privacy by randomly choosing a candidate subject to candidate
+    utility scores, with greater probability given to higher-utility candidates.
+
+    Paper link: https://www.cs.drexel.edu/~greenie/privacy/mdviadp.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
+
+    sensitivity : float
+        The sensitivity in utility values to a change in a datapoint in the underlying dataset.
+
+    utility : list
+        A list of non-negative utility values for each candidate.
+
+    candidates : list, optional
+        An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
+
+    measure : list, optional
+        An optional list of measures for each candidate.  If omitted, a uniform measure is used.
+
+    """
+    def __init__(self, *, epsilon, sensitivity, utility, candidates=None, measure=None):
+        super().__init__(epsilon=epsilon, delta=0.0)
+        self.sensitivity = self._check_sensitivity(sensitivity)
+        self.utility, self.candidates, self.measure = self._check_utility_candidates_measure(utility, candidates,
+                                                                                             measure)
+        self._probabilities = self._find_probabilities(self.epsilon, self.sensitivity, self.utility, self.measure)
+
+    @classmethod
+    def _check_epsilon_delta(cls, epsilon, delta):
+        if not delta == 0:
+            raise ValueError("Delta must be zero")
+
+        return super()._check_epsilon_delta(epsilon, delta)
+
+    @classmethod
+    def _check_sensitivity(cls, sensitivity):
+        if not isinstance(sensitivity, Real):
+            raise TypeError("Sensitivity must be numeric")
+
+        if sensitivity < 0:
+            raise ValueError("Sensitivity must be non-negative")
+
+        return float(sensitivity)
+
+    @classmethod
+    def _check_utility_candidates_measure(cls, utility, candidates, measure):
+        if not isinstance(utility, list):
+            raise TypeError("Utility must be a list, got a {}.".format(utility))
+
+        if not all(isinstance(u, Real) for u in utility):
+            raise TypeError("Utility must be a list of real-valued numbers.")
+
+        if len(utility) < 1:
+            raise ValueError("Utility must have at least one element.")
+
+        if np.isinf(utility).any():
+            raise ValueError("Utility must be a list of finite numbers.")
+
+        if candidates is not None:
+            if not isinstance(candidates, list):
+                raise TypeError("Candidates must be a list, got a {}.".format(type(candidates)))
+
+            if len(candidates) != len(utility):
+                raise ValueError("List of candidates must be the same length as the list of utility values.")
+
+        if measure is not None:
+            if not isinstance(measure, list):
+                raise TypeError("Measure must be a list, got a {}.".format(type(measure)))
+
+            if not all(isinstance(m, Real) for m in measure):
+                raise TypeError("Measure must be a list of real-valued numbers.")
+
+            if np.isinf(measure).any():
+                raise ValueError("Measure must be a list of finite numbers.")
+
+            if len(measure) != len(utility):
+                raise ValueError("List of measures must be the same length as the list of utility values.")
+
+        return utility, candidates, measure
+
+    @classmethod
+    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
+        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+
+        # Set max utility to 0 to avoid overflow on high utility; will be normalised out before returning
+        utility = np.array(utility) - max(utility)
+
+        if np.isinf(scale):
+            probabilities = np.isclose(utility, 0).astype(float)
+        else:
+            probabilities = np.exp(scale * utility / 2)
+
+        probabilities *= np.array(measure) if measure else 1
+        probabilities /= probabilities.sum()
+
+        return np.cumsum(probabilities)
+
+    def _check_all(self, value):
+        super()._check_all(value)
+        self._check_sensitivity(self.sensitivity)
+        self._check_utility_candidates_measure(self.utility, self.candidates, self.measure)
+
+        if value is not None:
+            raise ValueError("Value to be randomised must be None. Got: {}.".format(value))
+
+        return True
+
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
+        raise NotImplementedError
+
+    def randomise(self, value=None):
+        """Select a candidate with differential privacy.
+
+        Parameters
+        ----------
+        value : None
+            Ignored.
+
+        Returns
+        -------
+        int or other
+            The randomised candidate.
+
+        """
+        self._check_all(value)
+
+        rand = self._rng.random()
+
+        if np.any(rand <= self._probabilities):
+            idx = np.argmax(rand <= self._probabilities)
+        elif np.isclose(rand, self._probabilities[-1]):
+            idx = len(self._probabilities)
+        else:
+            raise RuntimeError("Can't find a candidate to return. "
+                               "Debugging info: Rand: {}, Probabilities: {}".format(rand, self._probabilities))
+
+        return self.candidates[idx] if self.candidates else idx
+
+
+class PermuteAndFlip(Exponential):
+    r"""
+    The permute and flip mechanism for achieving differential privacy on candidate selection, as first proposed by
+    McKenna and Sheldon.
+
+    The permute and flip mechanism is an alternative to the exponential mechanism, and achieves differential privacy by
+    randomly choosing a candidate subject to candidate utility scores, with greater probability given to higher-utility
+    candidates.
+
+    Paper link: https://arxiv.org/pdf/2010.12603.pdf
+
+    Parameters
+    ----------
+    epsilon : float
+        Privacy parameter :math:`\epsilon` for the mechanism.  Must be in (0, ∞].
+
+    sensitivity : float
+        The sensitivity in utility values to a change in a datapoint in the underlying dataset.
+
+    utility : list
+        A list of non-negative utility values for each candidate.
+
+    candidates : list, optional
+        An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
+
+    """
+    def __init__(self, *, epsilon, sensitivity, utility, candidates=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, utility=utility, candidates=candidates, measure=None)
+
+    @copy_docstring(DPMechanism.bias)
+    def bias(self, value):
+        raise NotImplementedError
+
+    @copy_docstring(DPMechanism.variance)
+    def variance(self, value):
+        raise NotImplementedError
+
+    @classmethod
+    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
+        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+
+        utility = np.array(utility)
+        utility -= max(utility)
+
+        if np.isinf(scale):
+            log_probabilities = np.ones_like(utility) * (-float("inf"))
+            log_probabilities[utility == 0] = 0
+        else:
+            log_probabilities = scale * utility / 2
+
+        return log_probabilities
+
+    def randomise(self, value=None):
+        """Select a candidate with differential privacy.
+
+        Parameters
+        ----------
+        value : None
+            Ignored.
+
+        Returns
+        -------
+        int or other
+            The randomised candidate.
+
+        """
+        self._check_all(value)
+
+        candidate_ids = list(range(len(self.utility)))
+
+        while candidate_ids:
+            idx = candidate_ids[int(self._rng.random() * len(candidate_ids))]
+            candidate_ids.remove(idx)
+
+            if bernoulli_neg_exp(-self._probabilities[idx], self._rng):
+                return self.candidates[idx] if self.candidates else idx
+
+        raise RuntimeError("No value to return.  Probabilities: {}.".format(self._probabilities))
+
+
+class ExponentialCategorical(DPMechanism):
     r"""
     The exponential mechanism for achieving differential privacy on categorical inputs, as first proposed by McSherry
     and Talwar.
@@ -214,7 +446,7 @@ class Exponential(DPMechanism):
         return _target_value
 
 
-class ExponentialHierarchical(Exponential):
+class ExponentialHierarchical(ExponentialCategorical):
     r"""
     Adaptation of the exponential mechanism to hierarchical data.  Simplifies the process of specifying utility values,
     as the values can be inferred from the hierarchy.
