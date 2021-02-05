@@ -102,8 +102,8 @@ class Gaussian(DPMechanism):
             unif_rv1 = self._rng.random()
             unif_rv2 = self._rng.random()
 
-            self._stored_gaussian = np.sqrt(- 2 * np.log(unif_rv1)) * np.sin(2 * np.pi * unif_rv2)
-            standard_normal = np.sqrt(- 2 * np.log(unif_rv1)) * np.cos(2 * np.pi * unif_rv2)
+            self._stored_gaussian = np.sqrt(- 2 * np.log(1 - unif_rv1)) * np.sin(2 * np.pi * unif_rv2)
+            standard_normal = np.sqrt(- 2 * np.log(1 - unif_rv1)) * np.cos(2 * np.pi * unif_rv2)
         else:
             standard_normal = self._stored_gaussian
             self._stored_gaussian = None
