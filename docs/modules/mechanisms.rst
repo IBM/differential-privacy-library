@@ -86,13 +86,6 @@ Geometric mechanisms
    :inherited-members:
    :exclude-members: copy,bias,mse,variance
 
-k-RR mechanism
------------------------------
-.. autoclass:: KRR
-   :members:
-   :inherited-members:
-   :exclude-members: copy,mse,variance,bias
-
 Laplace mechanisms
 -----------------------------
 .. autoclass:: Laplace
@@ -126,6 +119,11 @@ Staircase mechanism
    :members:
    :inherited-members:
    :exclude-members: copy,mse,variance
+
+.. autoclass:: KRR
+   :members:
+   :inherited-members:
+   :exclude-members: copy,mse,variance,bias
 
 Uniform mechanism
 -----------------------------
