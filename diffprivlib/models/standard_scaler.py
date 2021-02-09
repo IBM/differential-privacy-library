@@ -52,7 +52,7 @@ from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 from diffprivlib.tools import nanvar, nanmean
 from diffprivlib.validation import clip_to_bounds, check_bounds
 
@@ -177,7 +177,7 @@ class StandardScaler(sk_pp.StandardScaler):
         self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
-    def partial_fit(self, X, y=None):
+    def partial_fit(self, X, y=None, sample_weight=None):
         """Online computation of mean and std with differential privacy on X for later scaling.  All of X is processed
         as a single batch.  This is intended for cases when `fit` is not feasible due to very large number of
         `n_samples` or because X is read from a continuous stream.
@@ -194,8 +194,14 @@ class StandardScaler(sk_pp.StandardScaler):
         y
             Ignored
 
+        sample_weight
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
+
         """
         self.accountant.check(self.epsilon, 0)
+
+        if sample_weight is not None:
+            warn_unused_args("sample_weight")
 
         epsilon_0 = self.epsilon / 2 if self.with_std else self.epsilon
 

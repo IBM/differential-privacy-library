@@ -128,7 +128,7 @@ class TestLinearRegression(TestCase):
     def test_multiple_targets(self):
         from sklearn.linear_model import LinearRegression as sk_LinearRegression
         X = np.linspace(-1, 1, 1000)
-        y = np.vstack((X.copy(), X.copy())).T
+        y = np.vstack((X.copy(), X.copy(), X.copy(), X.copy())).T
         X = X[:, np.newaxis]
 
         clf_dp = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
@@ -148,7 +148,7 @@ class TestLinearRegression(TestCase):
 
         clf_dp2 = LinearRegression(epsilon=2, fit_intercept=True, bounds_X=(-1, 1), bounds_y=(-1, 1)).fit(X, y)
         self.assertIsNotNone(clf_dp2)
-        self.assertEqual(clf_dp2.intercept_.shape, (2,))
+        self.assertEqual(clf_dp2.intercept_.shape, (4,))
         self.assertEqual(clf_dp2.coef_.shape, clf_sk.coef_.shape)
         self.assertEqual(clf_dp2.predict(x0).shape, clf_sk.predict(x0).shape)
 
