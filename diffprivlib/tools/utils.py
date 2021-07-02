@@ -419,7 +419,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
                                    sensitivity=((upper - lower) / array.size) ** 2 * (array.size - 1), lower=0,
                                    upper=float("inf"))
-    output = np.minimum(dp_mech.randomise(actual_var), (upper - lower) ** 2)
+    output = np.minimum(dp_mech.randomise(actual_var), ((upper - lower) ** 2) / 4 )
 
     accountant.spend(epsilon, 0)
 
