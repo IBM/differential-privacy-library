@@ -1,11 +1,12 @@
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from diffprivlib.tools.quantiles import percentile
 
 
-class TestQuantile(TestCase):
+class TestPercentile(TestCase):
     def test_not_none(self):
         mech = percentile
         self.assertIsNotNone(mech)
@@ -22,3 +23,9 @@ class TestQuantile(TestCase):
 
         res = percentile(a, 50, epsilon=5, bounds=(0, 1))
         self.assertAlmostEqual(res, 0.5, delta=0.05)
+
+    @pytest.mark.filterwarnings("ignore:Bounds have not been specified")
+    def test_uniform_array(self):
+        a = np.array([1] * 10)
+        res = percentile(a, 20, epsilon=1)
+        self.assertTrue(0 <= res <= 2)

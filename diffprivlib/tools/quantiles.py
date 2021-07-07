@@ -110,7 +110,7 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
                           accountant=accountant)
 
     # Dealing with a scalar output from now on
-    bounds = check_bounds(bounds, shape=0)
+    bounds = check_bounds(bounds, shape=0, min_separation=1e-5)
 
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)

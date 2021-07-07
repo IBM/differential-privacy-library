@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from diffprivlib.tools.quantiles import quantile
 from diffprivlib.utils import PrivacyLeakWarning, BudgetError
@@ -73,6 +74,12 @@ class TestQuantile(TestCase):
         a = np.random.normal(size=2000)
         res = quantile(a, 0.5, epsilon=3, bounds=(-3, 3))
         self.assertAlmostEqual(res, 0, delta=0.1)
+
+    @pytest.mark.filterwarnings("ignore:Bounds have not been specified")
+    def test_uniform_array(self):
+        a = np.array([1] * 10)
+        res = quantile(a, 0.5, epsilon=1)
+        self.assertTrue(0 <= res <= 2)
 
     def test_multiple_q(self):
         a = np.random.random(1000)
