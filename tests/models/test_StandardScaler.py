@@ -48,9 +48,9 @@ class TestStandardScaler(TestCase):
         ss2.fit(X)
 
         self.assertFalse(np.allclose(ss1.mean_, ss2.mean_), "Arrays %s and %s should be different" %
-                        (ss1.mean_, ss2.mean_))
+                         (ss1.mean_, ss2.mean_))
         self.assertFalse(np.allclose(ss1.var_, ss2.var_), "Arrays %s and %s should be different" %
-                        (ss1.var_, ss2.var_))
+                         (ss1.var_, ss2.var_))
 
     def test_functionality(self):
         X = np.random.rand(10, 5)
