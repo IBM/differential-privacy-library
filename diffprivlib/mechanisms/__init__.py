@@ -31,4 +31,3 @@ from diffprivlib.mechanisms.laplace import Laplace, LaplaceBoundedDomain, Laplac
 from diffprivlib.mechanisms.staircase import Staircase
 from diffprivlib.mechanisms.uniform import Uniform
 from diffprivlib.mechanisms.vector import Vector
-from diffprivlib.mechanisms.wishart import Wishart

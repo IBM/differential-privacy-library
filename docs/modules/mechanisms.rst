@@ -133,10 +133,3 @@ Vector mechanism
    :members:
    :inherited-members:
    :exclude-members: copy,bias,mse,variance
-
-Wishart mechanism
------------------------------
-.. autoclass:: Wishart
-   :members:
-   :inherited-members:
-   :exclude-members: copy,bias,mse,variance
