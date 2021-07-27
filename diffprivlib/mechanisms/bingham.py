@@ -137,7 +137,7 @@ class Bingham(DPMechanism):
         norm_const = np.exp(-(dims - b_const) / 2) * ((dims / b_const) ** (dims / 2))
 
         while True:
-            rnd_vec = self._rng.multivariate_normal(np.zeros(dims), omega_inv)
+            rnd_vec = self._rng.multivariate_normal(np.zeros(dims), omega_inv / 4, size=4).sum(axis=0)
             unit_vec = rnd_vec / np.linalg.norm(rnd_vec)
             prob = np.exp(-unit_vec.dot(value_translated).dot(unit_vec)) / norm_const\
                 / ((unit_vec.dot(omega).dot(unit_vec)) ** (dims / 2))

@@ -28,13 +28,13 @@ from diffprivlib.utils import copy_docstring
 
 class Laplace(DPMechanism):
     r"""
-    The classic Laplace mechanism in differential privacy, as first proposed by Dwork, McSherry, Nissim and Smith.
+    The classical Laplace mechanism in differential privacy.
 
-    Paper link: https://link.springer.com/content/pdf/10.1007/11681878_14.pdf
+    First proposed by Dwork, McSherry, Nissim and Smith [DMNS16]_, with support for (relaxed)
+    :math:`(\epsilon,\delta)`-differential privacy [HLM15]_.
 
-    Includes extension to (relaxed) :math:`(\epsilon,\delta)`-differential privacy, as proposed by Holohan et al.
-
-    Paper link: https://arxiv.org/pdf/1402.6124.pdf
+    Samples from the Laplace distribution are generated using 4 uniform variates, as detailed in [HB21]_, to prevent
+    against reconstruction attacks due to limited floating point precision.
 
     Parameters
     ----------
@@ -48,10 +48,22 @@ class Laplace(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    References
+    ----------
+    .. [DMNS16] Dwork, Cynthia, Frank McSherry, Kobbi Nissim, and Adam Smith. "Calibrating noise to sensitivity in
+        private data analysis." Journal of Privacy and Confidentiality 7, no. 3 (2016): 17-51.
+
+    .. [HLM15] Holohan, Naoise, Douglas J. Leith, and Oliver Mason. "Differential privacy in metric spaces: Numerical,
+        categorical and functional data under the one roof." Information Sciences 305 (2015): 256-268.
+
+    .. [HB21] Holohan, Naoise, and Stefano Braghin. "Secure Random Sampling in Differential Privacy." arXiv preprint
+        arXiv:2107.10138 (2021).
+
     """
     def __init__(self, *, epsilon, delta=0.0, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
+        self._scale = None
 
     @classmethod
     def _check_sensitivity(cls, sensitivity):
@@ -106,6 +118,20 @@ class Laplace(DPMechanism):
 
         return 2 * (self.sensitivity / (self.epsilon - np.log(1 - self.delta))) ** 2
 
+    @staticmethod
+    def _laplace_sampler(unif1, unif2, unif3, unif4):
+        return np.log(1 - unif1) * np.cos(np.pi * unif2) + np.log(1 - unif3) * np.cos(np.pi * unif4)
+
+    def _cdf(self, value):
+        # Allow for infinite epsilon
+        if self._scale == 0:
+            return 0 if value < 0 else 1
+
+        if value < 0:
+            return 0.5 * np.exp(value / self._scale)
+
+        return 1 - 0.5 * np.exp(-value / self._scale)
+
     def randomise(self, value):
         """Randomise `value` with the mechanism.
 
@@ -123,10 +149,9 @@ class Laplace(DPMechanism):
         self._check_all(value)
 
         scale = self.sensitivity / (self.epsilon - np.log(1 - self.delta))
+        standard_laplace = self._laplace_sampler(self._rng.random(), self._rng.random(), self._rng.random(), self._rng.random())
 
-        unif_rv = self._rng.random() - 0.5
-
-        return value - scale * np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv))
+        return value - scale * standard_laplace
 
 
 class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
@@ -253,8 +278,8 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
 
 class LaplaceBoundedDomain(LaplaceTruncated):
     r"""
-    The bounded Laplace mechanism on a bounded domain.  The mechanism draws values directly from the domain, without any
-    post-processing.
+    The bounded Laplace mechanism on a bounded domain.  The mechanism draws values directly from the domain using
+    rejection sampling, without any post-processing [HABM20]_.
 
     Parameters
     ----------
@@ -274,10 +299,15 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     upper : float
         The upper bound of the mechanism.
 
+    References
+    ----------
+    .. [HABM20] Holohan, Naoise, Spiros Antonatos, Stefano Braghin, and Pól Mac Aonghusa. "The Bounded Laplace Mechanism
+        in Differential Privacy." Journal of Privacy and Confidentiality 10, no. 1 (2020).
+
     """
     def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, lower=lower, upper=upper)
-        self._scale = None
+        self._rng = np.random.default_rng()
 
     def _find_scale(self):
         eps = self.epsilon
@@ -307,16 +337,6 @@ class LaplaceBoundedDomain(LaplaceTruncated):
                 right = middle
 
         return (right + left) / 2
-
-    def _cdf(self, value):
-        # Allow for infinite epsilon
-        if self._scale == 0:
-            return 0 if value < 0 else 1
-
-        if value < 0:
-            return 0.5 * np.exp(value / self._scale)
-
-        return 1 - 0.5 * np.exp(-value / self._scale)
 
     def effective_epsilon(self):
         r"""Gets the effective epsilon of the mechanism, only for strict :math:`\epsilon`-differential privacy.  Returns
@@ -378,28 +398,29 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         if self._scale is None:
             self._scale = self._find_scale()
 
-        value = min(value, self.upper)
-        value = max(value, self.lower)
+        value = max(min(value, self.upper), self.lower)
+        if np.isnan(value):
+            return float("nan")
 
-        unif_rv = self._rng.random()
-        unif_rv *= self._cdf(self.upper - value) - self._cdf(self.lower - value)
-        unif_rv += self._cdf(self.lower - value)
-        unif_rv -= 0.5
+        samples = 1
 
-        unif_rv = min(unif_rv, 0.5 - 1e-10)
-
-        return value - self._scale * np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv))
+        while True:
+            noisy = value + self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
+                                                                self._rng.random(samples), self._rng.random(samples))
+            if ((noisy >= self.lower) & (noisy <= self.upper)).any():
+                idx = np.argmax((noisy >= self.lower) & (noisy <= self.upper))
+                return noisy[idx]
+            samples = min(100000, samples * 2)
 
 
 class LaplaceBoundedNoise(Laplace):
     r"""
-    The Laplace mechanism with bounded noise, only applicable for approximate differential privacy (delta > 0).
+    The Laplace mechanism with bounded noise, only applicable for approximate differential privacy (delta > 0)
+    [GDGK18]_.
 
     Epsilon must be strictly positive, `epsilon` > 0. `delta` must be strictly in the interval (0, 0.5).
      - For zero `epsilon`, use :class:`.Uniform`.
      - For zero `delta`, use :class:`.Laplace`.
-
-    Paper link: https://arxiv.org/pdf/1810.00877v1.pdf
 
     Parameters
     ----------
@@ -412,11 +433,16 @@ class LaplaceBoundedNoise(Laplace):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    References
+    ----------
+    .. [GDGK18] Geng, Quan, Wei Ding, Ruiqi Guo, and Sanjiv Kumar. "Truncated Laplacian Mechanism for Approximate
+        Differential Privacy." arXiv preprint arXiv:1810.00877v1 (2018).
+
     """
     def __init__(self, *, epsilon, delta, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
-        self._scale = None
         self._noise_bound = None
+        self._rng = np.random.default_rng()
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -427,15 +453,6 @@ class LaplaceBoundedNoise(Laplace):
             raise ValueError("Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`.")
 
         return super(Laplace, cls)._check_epsilon_delta(epsilon, delta)
-
-    def _cdf(self, value):
-        if self._scale == 0:
-            return 0 if value < 0 else 1
-
-        if value < 0:
-            return 0.5 * np.exp(value / self._scale)
-
-        return 1 - 0.5 * np.exp(-value / self._scale)
 
     @copy_docstring(Laplace.bias)
     def bias(self, value):
@@ -451,12 +468,18 @@ class LaplaceBoundedNoise(Laplace):
 
         if self._scale is None or self._noise_bound is None:
             self._scale = self.sensitivity / self.epsilon
-            self._noise_bound = -1 if self._scale == 0 else \
+            self._noise_bound = 0 if self._scale == 0 else \
                 self._scale * np.log(1 + (np.exp(self.epsilon) - 1) / 2 / self.delta)
 
-        unif_rv = self._rng.random()
-        unif_rv *= self._cdf(self._noise_bound) - self._cdf(- self._noise_bound)
-        unif_rv += self._cdf(- self._noise_bound)
-        unif_rv -= 0.5
+        if np.isnan(value):
+            return float("nan")
 
-        return value - self._scale * (np.sign(unif_rv) * np.log(1 - 2 * np.abs(unif_rv)))
+        samples = 1
+
+        while True:
+            noisy = self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
+                                                        self._rng.random(samples), self._rng.random(samples))
+            if ((noisy >= - self._noise_bound) & (noisy <= self._noise_bound)).any():
+                idx = np.argmax((noisy >= - self._noise_bound) & (noisy <= self._noise_bound))
+                return value + noisy[idx]
+            samples = min(100000, samples * 2)
