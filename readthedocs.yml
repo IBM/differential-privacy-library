@@ -1,6 +1,11 @@
+version: 2
+sphinx:
+  configuration: docs/conf.py
 python:
     version: 3.6
-    pip_install: true
-    use_system_site_packages: true
-    extra_requirements:
-        - docs
+    install:
+      - method: pip
+        path: .
+        extra_requirements:
+          - docs
+    system_packages: true
