@@ -171,7 +171,7 @@ class Exponential(DPMechanism):
         if np.any(rand <= self._probabilities):
             idx = np.argmax(rand <= self._probabilities)
         elif np.isclose(rand, self._probabilities[-1]):
-            idx = len(self._probabilities)
+            idx = len(self._probabilities) - 1
         else:
             raise RuntimeError("Can't find a candidate to return. "
                                "Debugging info: Rand: {}, Probabilities: {}".format(rand, self._probabilities))
