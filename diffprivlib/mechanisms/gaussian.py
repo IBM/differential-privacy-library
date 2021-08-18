@@ -32,9 +32,9 @@ from diffprivlib.utils import copy_docstring
 class Gaussian(DPMechanism):
     r"""The Gaussian mechanism in differential privacy.
 
-    As first proposed by Dwork and Roth in "The algorithmic foundations of differential privacy".
-
-    Paper link: https://www.nowpublishers.com/article/DownloadSummary/TCS-042
+    First proposed by Dwork and Roth in "The algorithmic foundations of differential privacy" [DR14]_.  Samples from the
+    Gaussian distribution are generated using two samples from `random.normalvariate` as detailed in [HB21b]_, to prevent
+    against reconstruction attacks due to limited floating point precision.
 
     Parameters
     ----------
@@ -48,12 +48,19 @@ class Gaussian(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    References
+    ----------
+    .. [DR14] Dwork, Cynthia, and Aaron Roth. "The algorithmic foundations of differential privacy." Found. Trends
+        Theor. Comput. Sci. 9, no. 3-4 (2014): 211-407.
+
+    .. [HB21b] Holohan, Naoise, and Stefano Braghin. "Secure Random Sampling in Differential Privacy." arXiv preprint
+        arXiv:2107.10138 (2021).
+
     """
     def __init__(self, *, epsilon, delta, sensitivity):
         super().__init__(epsilon=epsilon, delta=delta)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
-        self._stored_gaussian = None
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -98,15 +105,7 @@ class Gaussian(DPMechanism):
     def randomise(self, value):
         self._check_all(value)
 
-        if self._stored_gaussian is None:
-            unif_rv1 = self._rng.random()
-            unif_rv2 = self._rng.random()
-
-            self._stored_gaussian = np.sqrt(- 2 * np.log(1 - unif_rv1)) * np.sin(2 * np.pi * unif_rv2)
-            standard_normal = np.sqrt(- 2 * np.log(1 - unif_rv1)) * np.cos(2 * np.pi * unif_rv2)
-        else:
-            standard_normal = self._stored_gaussian
-            self._stored_gaussian = None
+        standard_normal = (self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)) / np.sqrt(2)
 
         return value + standard_normal * self._scale
 

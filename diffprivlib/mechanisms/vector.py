@@ -83,7 +83,7 @@ class Vector(DPMechanism):
     def _check_dimension(cls, vector_dim):
         if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
             raise TypeError("d must be integer-valued")
-        if not vector_dim >= 1:
+        if not int(vector_dim) >= 1:
             raise ValueError("d must be strictly positive")
 
         return int(vector_dim)
@@ -147,9 +147,9 @@ class Vector(DPMechanism):
 
         scale = self.data_sensitivity * 2 / epsilon_p
 
-        normed_noisy_vector = self._rng.normal(0, 1, self.dimension)
+        normed_noisy_vector = self._rng.standard_normal((self.dimension, 4)).sum(axis=1) / 2
         norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = self._rng.gamma(self.dimension, scale, 1)
+        noisy_norm = self._rng.gamma(self.dimension / 4, scale, 4).sum()
 
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 
