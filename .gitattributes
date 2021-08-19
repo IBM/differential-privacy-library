@@ -1,0 +1,3 @@
+# Remove IPython notebooks from language statistics
+*.ipynb linguist-detectable=false
+
