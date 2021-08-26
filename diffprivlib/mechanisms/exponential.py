@@ -48,6 +48,10 @@ class Exponential(DPMechanism):
     utility : list
         A list of non-negative utility values for each candidate.
 
+    monotonic : bool, default: False
+        Specifies if the utility function is monotonic, i.e. that adding an individual to the underlying dataset can
+        only increase the values in `utility`.
+
     candidates : list, optional
         An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
 
@@ -55,12 +59,14 @@ class Exponential(DPMechanism):
         An optional list of measures for each candidate.  If omitted, a uniform measure is used.
 
     """
-    def __init__(self, *, epsilon, sensitivity, utility, candidates=None, measure=None):
+    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None, measure=None):
         super().__init__(epsilon=epsilon, delta=0.0)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self.utility, self.candidates, self.measure = self._check_utility_candidates_measure(utility, candidates,
                                                                                              measure)
-        self._probabilities = self._find_probabilities(self.epsilon, self.sensitivity, self.utility, self.measure)
+        self.monotonic = bool(monotonic)
+        self._probabilities = self._find_probabilities(self.epsilon, self.sensitivity, self.utility, self.monotonic,
+                                                       self.measure)
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -116,8 +122,8 @@ class Exponential(DPMechanism):
         return utility, candidates, measure
 
     @classmethod
-    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
-        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+    def _find_probabilities(cls, epsilon, sensitivity, utility, monotonic, measure):
+        scale = epsilon / sensitivity / (2 - monotonic) if sensitivity / epsilon > 0 else float("inf")
 
         # Set max utility to 0 to avoid overflow on high utility; will be normalised out before returning
         utility = np.array(utility) - max(utility)
@@ -125,7 +131,7 @@ class Exponential(DPMechanism):
         if np.isinf(scale):
             probabilities = np.isclose(utility, 0).astype(float)
         else:
-            probabilities = np.exp(scale * utility / 2)
+            probabilities = np.exp(scale * utility)
 
         probabilities *= np.array(measure) if measure else 1
         probabilities /= probabilities.sum()
@@ -201,12 +207,17 @@ class PermuteAndFlip(Exponential):
     utility : list
         A list of non-negative utility values for each candidate.
 
+    monotonic : bool, default: False
+        Specifies if the utility function is monotonic, i.e. that adding an individual to the underlying dataset can
+        only increase the values in `utility`.
+
     candidates : list, optional
         An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
 
     """
-    def __init__(self, *, epsilon, sensitivity, utility, candidates=None):
-        super().__init__(epsilon=epsilon, sensitivity=sensitivity, utility=utility, candidates=candidates, measure=None)
+    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, utility=utility, monotonic=monotonic,
+                         candidates=candidates, measure=None)
 
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):
@@ -217,8 +228,8 @@ class PermuteAndFlip(Exponential):
         raise NotImplementedError
 
     @classmethod
-    def _find_probabilities(cls, epsilon, sensitivity, utility, measure):
-        scale = epsilon / sensitivity if sensitivity / epsilon > 0 else float("inf")
+    def _find_probabilities(cls, epsilon, sensitivity, utility, monotonic, measure):
+        scale = epsilon / sensitivity / (2 - monotonic) if sensitivity / epsilon > 0 else float("inf")
 
         utility = np.array(utility)
         utility -= max(utility)
@@ -227,7 +238,7 @@ class PermuteAndFlip(Exponential):
             log_probabilities = np.ones_like(utility) * (-float("inf"))
             log_probabilities[utility == 0] = 0
         else:
-            log_probabilities = scale * utility / 2
+            log_probabilities = scale * utility
 
         return log_probabilities
 

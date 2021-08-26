@@ -45,6 +45,15 @@ class TestPermuteAndFlip(TestCase):
         with self.assertRaises(ValueError):
             self.mech(epsilon=1, utility=[1], sensitivity=-1)
 
+    def test_monotonic(self):
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=True))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=False))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=""))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic="Hello"))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=[]))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=[1]))
+        self.assertIsNotNone(self.mech(epsilon=1, utility=[1], sensitivity=1, monotonic=(1, 2, 3)))
+
     def test_wrong_input_types(self):
         with self.assertRaises(TypeError):
             self.mech(epsilon=1j, utility=[1], sensitivity=1)
@@ -153,16 +162,32 @@ class TestPermuteAndFlip(TestCase):
     def test_distrib_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        mech = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1)
-        count = [0, 0, 0]
+        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=False)
+        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=False)
+        counts = np.zeros((2, 3))
 
         for i in range(runs):
-            count[mech.randomise()] += 1
+            counts[0, mech1.randomise()] += 1
+            counts[1, mech2.randomise()] += 1
 
-        # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
-        # print("%f, %f" % (count[0] / count[1], count[1] / count[2]))
+        for vec in counts.T:
+            # print(vec.max() / vec.min())
+            self.assertLessEqual(vec.max() / vec.min(), np.exp(epsilon) + 0.1)
 
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.05)
+    def test_monotonic_distrib(self):
+        epsilon = np.log(2)
+        runs = 20000
+        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=True)
+        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=True)
+        counts = np.zeros((2, 3))
+
+        for i in range(runs):
+            counts[0, mech1.randomise()] += 1
+            counts[1, mech2.randomise()] += 1
+
+        for vec in counts.T:
+            # print(vec.max() / vec.min())
+            self.assertLessEqual(vec.max() / vec.min(), np.exp(epsilon) + 0.1)
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility=[1], sensitivity=1))
