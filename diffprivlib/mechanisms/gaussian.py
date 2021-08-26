@@ -33,8 +33,8 @@ class Gaussian(DPMechanism):
     r"""The Gaussian mechanism in differential privacy.
 
     First proposed by Dwork and Roth in "The algorithmic foundations of differential privacy" [DR14]_.  Samples from the
-    Gaussian distribution are generated using two samples from `random.normalvariate` as detailed in [HB21b]_, to prevent
-    against reconstruction attacks due to limited floating point precision.
+    Gaussian distribution are generated using two samples from `random.normalvariate` as detailed in [HB21b]_, to
+    prevent against reconstruction attacks due to limited floating point precision.
 
     Parameters
     ----------

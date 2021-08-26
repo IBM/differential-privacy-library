@@ -83,7 +83,7 @@ class Vector(DPMechanism):
     def _check_dimension(cls, vector_dim):
         if not isinstance(vector_dim, Real) or not np.isclose(vector_dim, int(vector_dim)):
             raise TypeError("d must be integer-valued")
-        if not int(vector_dim) >= 1:
+        if int(vector_dim) < 1:
             raise ValueError("d must be strictly positive")
 
         return int(vector_dim)
