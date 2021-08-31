@@ -176,7 +176,7 @@ class TestPermuteAndFlip(TestCase):
 
     def test_monotonic_distrib(self):
         epsilon = np.log(2)
-        runs = 20000
+        runs = 40000
         mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=True)
         mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=True)
         counts = np.zeros((2, 3))
