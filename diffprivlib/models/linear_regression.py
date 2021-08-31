@@ -48,7 +48,7 @@ import warnings
 import numpy as np
 import sklearn.linear_model as sk_lr
 from scipy.optimize import minimize
-from sklearn.utils import check_X_y, check_array
+from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
@@ -247,7 +247,7 @@ class LinearRegression(sk_lr.LinearRegression):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        X, y = check_X_y(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
+        X, y = self._validate_data(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
         if self.bounds_X is None or self.bounds_y is None:
             warnings.warn(

@@ -48,8 +48,6 @@ import warnings
 import numpy as np
 import sklearn.preprocessing as sk_pp
 from sklearn.preprocessing._data import _handle_zeros_in_scale
-from sklearn.utils import check_array
-from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
@@ -205,10 +203,8 @@ class StandardScaler(sk_pp.StandardScaler):
 
         epsilon_0 = self.epsilon / 2 if self.with_std else self.epsilon
 
-        X = check_array(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=FLOAT_DTYPES,
-                        force_all_finite='allow-nan')
-        # Hotfix for sklearn v 0.23
-        self.n_features_in_ = X.shape[1]
+        X = self._validate_data(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=float,
+                                force_all_finite='allow-nan')
 
         if self.bounds is None:
             warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"

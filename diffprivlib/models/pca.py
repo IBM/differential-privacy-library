@@ -241,11 +241,7 @@ class PCA(sk_pca.PCA):
 
         # Post-process the number of components required
         if n_components == 'mle':
-            # TODO: Update when sklearn requirement changes to >= 0.23, removing try...except
-            try:
-                n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
-            except AttributeError:
-                n_components = sk_pca._infer_dimension_(explained_variance_, n_samples, n_features)
+            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold

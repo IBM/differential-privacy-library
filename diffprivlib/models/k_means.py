@@ -117,7 +117,7 @@ class KMeans(sk_cluster.KMeans):
 
         del y
 
-        X = check_array(X, accept_sparse=False, dtype=[np.float64, np.float32])
+        X = self._validate_data(X, accept_sparse=False, dtype=[np.float64, np.float32])
         n_samples, n_dims = X.shape
 
         if n_samples < self.n_clusters:

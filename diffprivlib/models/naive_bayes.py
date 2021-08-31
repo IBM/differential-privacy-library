@@ -22,7 +22,6 @@ import warnings
 
 import numpy as np
 import sklearn.naive_bayes as sk_nb
-from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
@@ -94,7 +93,7 @@ class GaussianNB(sk_nb.GaussianNB):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        X, y = check_X_y(X, y)
+        X, y = self._validate_data(X, y)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "

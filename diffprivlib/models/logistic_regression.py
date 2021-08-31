@@ -211,8 +211,8 @@ class LogisticRegression(linear_model.LogisticRegression):
             raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
 
         solver = _check_solver(self.solver, self.penalty, self.dual)
-        X, y = check_X_y(X, y, accept_sparse='csr', dtype=np.float64, order="C",
-                         accept_large_sparse=solver != 'liblinear')
+        X, y = self._validate_data(X, y, accept_sparse='csr', dtype=float, order="C",
+                                   accept_large_sparse=solver != 'liblinear')
         check_classification_targets(y)
         self.classes_ = np.unique(y)
         _, n_features = X.shape

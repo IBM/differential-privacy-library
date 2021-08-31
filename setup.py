@@ -20,11 +20,11 @@ def get_version(file_path):
     raise RuntimeError("Unable to find version string.")
 
 
-install_requires = ['numpy >= 1.17.0',
-                    'setuptools >= 39.0.1',
-                    'scikit-learn >= 0.22.0',
-                    'scipy >= 1.2.1',
-                    'joblib >= 0.11',
+install_requires = ['numpy >= 1.19.0',
+                    'setuptools >= 49.0.0',
+                    'scikit-learn >= 0.23.0',
+                    'scipy >= 1.5.0',
+                    'joblib >= 0.16.0',
                     ]
 
 docs_require = ['sphinx >= 1.4',
