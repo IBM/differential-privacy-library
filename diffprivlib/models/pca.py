@@ -53,12 +53,12 @@ from sklearn.utils.extmath import stable_cumsum, svd_flip
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
-from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
-from diffprivlib.validation import clip_to_norm, check_bounds
+from diffprivlib.utils import copy_docstring, PrivacyLeakWarning
+from diffprivlib.validation import DiffprivlibMixin
 
 
 # noinspection PyPep8Naming
-class PCA(sk_pca.PCA):
+class PCA(sk_pca.PCA, DiffprivlibMixin):
     r"""Principal component analysis (PCA) with differential privacy.
 
     This class is a child of :obj:`sklearn.decomposition.PCA`, with amendments to allow for the implementation of
@@ -194,7 +194,7 @@ class PCA(sk_pca.PCA):
         self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
     def _fit_full(self, X, n_components):
         self.accountant.check(self.epsilon, 0)
@@ -213,7 +213,7 @@ class PCA(sk_pca.PCA):
 
                 self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-            self.bounds = check_bounds(self.bounds, n_features)
+            self.bounds = self._check_bounds(self.bounds, n_features)
             self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())
 
         X -= self.mean_
@@ -224,7 +224,7 @@ class PCA(sk_pca.PCA):
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        X = clip_to_norm(X, self.data_norm)
+        X = self._clip_to_norm(X, self.data_norm)
 
         s, u = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2, norm=self.data_norm,
                               dims=n_components if isinstance(n_components, Integral) else None)

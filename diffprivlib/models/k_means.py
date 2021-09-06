@@ -22,15 +22,14 @@ import warnings
 
 import numpy as np
 import sklearn.cluster as sk_cluster
-from sklearn.utils import check_array
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
-from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
-from diffprivlib.validation import check_bounds, clip_to_bounds
+from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.validation import DiffprivlibMixin
 
 
-class KMeans(sk_cluster.KMeans):
+class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
     r"""K-Means clustering with differential privacy.
 
     Implements the DPLloyd approach presented in [SCL16]_, leveraging the :class:`sklearn.cluster.KMeans` class for full
@@ -82,7 +81,7 @@ class KMeans(sk_cluster.KMeans):
         self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
         self.cluster_centers_ = None
         self.bounds_processed = None
@@ -113,7 +112,7 @@ class KMeans(sk_cluster.KMeans):
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
-            warn_unused_args("sample_weight")
+            self._warn_unused_args("sample_weight")
 
         del y
 
@@ -131,8 +130,8 @@ class KMeans(sk_cluster.KMeans):
                           "privacy leakage, specify `bounds` for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = check_bounds(self.bounds, n_dims, min_separation=1e-5)
-        X = clip_to_bounds(X, self.bounds)
+        self.bounds = self._check_bounds(self.bounds, n_dims, min_separation=1e-5)
+        X = self._clip_to_bounds(X, self.bounds)
 
         centers = self._init_centers(n_dims)
         labels = None

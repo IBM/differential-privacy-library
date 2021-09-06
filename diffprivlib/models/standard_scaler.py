@@ -50,9 +50,9 @@ import sklearn.preprocessing as sk_pp
 from sklearn.preprocessing._data import _handle_zeros_in_scale
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
-from diffprivlib.validation import clip_to_bounds, check_bounds
+from diffprivlib.validation import DiffprivlibMixin
 
 range_ = range
 
@@ -95,7 +95,7 @@ def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last
 
 
 # noinspection PyPep8Naming,PyAttributeOutsideInit
-class StandardScaler(sk_pp.StandardScaler):
+class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
     """Standardize features by removing the mean and scaling to unit variance, calculated with differential privacy
     guarantees.  Differential privacy is guaranteed on the learned scaler with respect to the training sample; the
     transformed output will certainly not satisfy differential privacy.
@@ -199,7 +199,7 @@ class StandardScaler(sk_pp.StandardScaler):
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
-            warn_unused_args("sample_weight")
+            self._warn_unused_args("sample_weight")
 
         epsilon_0 = self.epsilon / 2 if self.with_std else self.epsilon
 
@@ -213,8 +213,8 @@ class StandardScaler(sk_pp.StandardScaler):
                           PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = check_bounds(self.bounds, X.shape[1])
-        X = clip_to_bounds(X, self.bounds)
+        self.bounds = self._check_bounds(self.bounds, X.shape[1])
+        X = self._clip_to_bounds(X, self.bounds)
 
         # Even in the case of `with_mean=False`, we update the mean anyway. This is needed for the incremental
         # computation of the var See incr_mean_variance_axis and _incremental_mean_variance_axis

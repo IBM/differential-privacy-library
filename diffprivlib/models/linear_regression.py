@@ -55,7 +55,7 @@ from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceFolded
 from diffprivlib.tools import mean
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
-from diffprivlib.validation import check_bounds, clip_to_bounds
+from diffprivlib.validation import check_bounds, clip_to_bounds, DiffprivlibMixin
 
 
 # noinspection PyPep8Naming
@@ -161,7 +161,7 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
 
 
 # noinspection PyPep8Naming,PyAttributeOutsideInit
-class LinearRegression(sk_lr.LinearRegression):
+class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
     r"""
     Ordinary least squares Linear Regression with differential privacy.
 
@@ -221,7 +221,7 @@ class LinearRegression(sk_lr.LinearRegression):
         self.accountant = BudgetAccountant.load_default(accountant)
         self.__repr__()
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
     def fit(self, X, y, sample_weight=None):
         """
@@ -245,7 +245,7 @@ class LinearRegression(sk_lr.LinearRegression):
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
-            warn_unused_args("sample_weight")
+            self._warn_unused_args("sample_weight")
 
         X, y = self._validate_data(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
@@ -262,8 +262,8 @@ class LinearRegression(sk_lr.LinearRegression):
             if self.bounds_y is None:
                 self.bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
 
-        self.bounds_X = check_bounds(self.bounds_X, X.shape[1])
-        self.bounds_y = check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
+        self.bounds_X = self._check_bounds(self.bounds_X, X.shape[1])
+        self.bounds_y = self._check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
 
         n_features = X.shape[1]
         n_targets = y.shape[1] if y.ndim > 1 else 1

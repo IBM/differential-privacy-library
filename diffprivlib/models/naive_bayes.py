@@ -27,10 +27,10 @@ from sklearn.utils.multiclass import _check_partial_fit_first_call
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
-from diffprivlib.validation import check_bounds, clip_to_bounds
+from diffprivlib.validation import DiffprivlibMixin
 
 
-class GaussianNB(sk_nb.GaussianNB):
+class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
     r"""Gaussian Naive Bayes (GaussianNB) with differential privacy
 
     Inherits the :class:`sklearn.naive_bayes.GaussianNB` class from Scikit Learn and adds noise to satisfy differential
@@ -101,8 +101,8 @@ class GaussianNB(sk_nb.GaussianNB):
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = check_bounds(self.bounds, shape=X.shape[1])
-        X = clip_to_bounds(X, self.bounds)
+        self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
+        X = self._clip_to_bounds(X, self.bounds)
 
         self.epsilon_ = self.var_smoothing
 

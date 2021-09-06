@@ -52,17 +52,17 @@ from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.linear_model._logistic import _logistic_loss_and_grad
-from sklearn.utils import check_X_y, check_array, check_consistent_length
+from sklearn.utils import check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args
-from diffprivlib.validation import clip_to_norm
+from diffprivlib.validation import DiffprivlibMixin
 
 
-class LogisticRegression(linear_model.LogisticRegression):
+class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
     r"""Logistic Regression (aka logit, MaxEnt) classifier with differential privacy.
 
     This class implements regularised logistic regression using :ref:`Scipy's L-BFGS-B algorithm
@@ -176,7 +176,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         self.classes_ = None
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
     # noinspection PyAttributeOutsideInit
     def fit(self, X, y, sample_weight=None):
@@ -201,7 +201,7 @@ class LogisticRegression(linear_model.LogisticRegression):
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
-            warn_unused_args("sample_weight")
+            self._warn_unused_args("sample_weight")
 
         if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
@@ -223,7 +223,7 @@ class LogisticRegression(linear_model.LogisticRegression):
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        X = clip_to_norm(X, self.data_norm)
+        X = self._clip_to_norm(X, self.data_norm)
 
         self.multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 
