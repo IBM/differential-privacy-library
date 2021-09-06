@@ -213,7 +213,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
     """
     def __init__(self, *, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True, accountant=None,
                  **unused_args):
-        super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
+        super().__init__(fit_intercept=fit_intercept, copy_X=copy_X, n_jobs=None)
 
         self.epsilon = epsilon
         self.bounds_X = bounds_X

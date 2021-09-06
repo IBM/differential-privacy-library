@@ -66,7 +66,7 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
     theta_ : array, shape (n_classes, n_features)
         mean of each feature per class
 
-    sigma_ : array, shape (n_classes, n_features)
+    var_ : array, shape (n_classes, n_features)
         variance of each feature per class
 
     epsilon_ : float
@@ -113,7 +113,7 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
             n_features = X.shape[1]
             n_classes = len(self.classes_)
             self.theta_ = np.zeros((n_classes, n_features))
-            self.sigma_ = np.zeros((n_classes, n_features))
+            self.var_ = np.zeros((n_classes, n_features))
 
             self.class_count_ = np.zeros(n_classes, dtype=np.float64)
 
@@ -135,7 +135,7 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
                 raise ValueError("Number of features %d does not match previous data %d." %
                                  (X.shape[1], self.theta_.shape[1]))
             # Put epsilon back in each time
-            self.sigma_[:, :] -= self.epsilon_
+            self.var_[:, :] -= self.epsilon_
 
         classes = self.classes_
 
@@ -154,14 +154,14 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
 
             n_i = noisy_class_counts[_i]
 
-            new_theta, new_sigma = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
-                                                              self.sigma_[i, :], X_i, n_noisy=n_i)
+            new_theta, new_var = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
+                                                            self.var_[i, :], X_i, n_noisy=n_i)
 
             self.theta_[i, :] = new_theta
-            self.sigma_[i, :] = new_sigma
+            self.var_[i, :] = new_var
             self.class_count_[i] += n_i
 
-        self.sigma_[:, :] += self.epsilon_
+        self.var_[:, :] += self.epsilon_
 
         # Update if only no priors is provided
         if self.priors is None:
@@ -284,3 +284,8 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
             i = (i - sgn) % len(unique_y)
 
         return noisy_counts
+
+    @property
+    def sigma_(self):
+        # Todo: Consider removing when sklearn v1.0 is required
+        return self.var_
