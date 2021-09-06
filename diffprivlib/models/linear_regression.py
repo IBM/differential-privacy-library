@@ -211,7 +211,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         regression analysis under differential privacy." arXiv preprint arXiv:1208.0219 (2012).
 
     """
-    def __init__(self, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True, accountant=None,
+    def __init__(self, *, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True, accountant=None,
                  **unused_args):
         super().__init__(fit_intercept=fit_intercept, normalize=False, copy_X=copy_X, n_jobs=None)
 

@@ -166,7 +166,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
     """
 
-    def __init__(self, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
+    def __init__(self, *, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
                  warm_start=False, n_jobs=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=None, solver='lbfgs', max_iter=max_iter, multi_class='ovr',

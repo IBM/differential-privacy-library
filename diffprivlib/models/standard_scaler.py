@@ -169,7 +169,7 @@ class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
     NaNs are treated as missing values: disregarded in fit, and maintained in transform.
 
     """  # noqa
-    def __init__(self, epsilon=1.0, bounds=None, copy=True, with_mean=True, with_std=True, accountant=None):
+    def __init__(self, *, epsilon=1.0, bounds=None, copy=True, with_mean=True, with_std=True, accountant=None):
         super().__init__(copy=copy, with_mean=with_mean, with_std=with_std)
         self.epsilon = epsilon
         self.bounds = bounds

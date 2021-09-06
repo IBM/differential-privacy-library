@@ -86,13 +86,6 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
             n_components == min(n_samples, n_features) - 1
 
-    centered : bool, default: False
-        If False, the data will be centered before calculating the principal components.  This will be calculated with
-        differential privacy, consuming privacy budget from epsilon.
-
-        If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
-        therefore will not require the consumption of privacy budget to calculate the mean.
-
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.  If ``centered=False``, half of epsilon is used to calculate the
         differentially private mean to center the data prior to the calculation of principal components.
@@ -104,6 +97,13 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
+
+    centered : bool, default: False
+        If False, the data will be centered before calculating the principal components.  This will be calculated with
+        differential privacy, consuming privacy budget from epsilon.
+
+        If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
+        therefore will not require the consumption of privacy budget to calculate the mean.
 
     bounds:  tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
@@ -184,7 +184,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, bounds=None, copy=True,
+    def __init__(self, n_components=None, *, epsilon=1.0, data_norm=None, centered=False, bounds=None, copy=True,
                  whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)

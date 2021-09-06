@@ -37,6 +37,9 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
     Parameters
     ----------
+    n_clusters : int, default: 8
+        The number of clusters to form as well as the number of centroids to generate.
+
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
@@ -44,9 +47,6 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
-
-    n_clusters : int, default: 8
-        The number of clusters to form as well as the number of centroids to generate.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -74,7 +74,7 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
     """
 
-    def __init__(self, epsilon=1.0, bounds=None, n_clusters=8, accountant=None, **unused_args):
+    def __init__(self, n_clusters=8, *, epsilon=1.0, bounds=None, accountant=None, **unused_args):
         super().__init__(n_clusters=n_clusters)
 
         self.epsilon = epsilon
