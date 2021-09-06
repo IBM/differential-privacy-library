@@ -219,7 +219,6 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         self.bounds_X = bounds_X
         self.bounds_y = bounds_y
         self.accountant = BudgetAccountant.load_default(accountant)
-        self.__repr__()
 
         self._warn_unused_args(unused_args)
 

@@ -54,8 +54,6 @@ from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.tools import nanvar, nanmean
 from diffprivlib.validation import DiffprivlibMixin
 
-range_ = range
-
 
 def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last_sample_count):
     # Initialising new accountant, as budget is tracked in main class. Subject to review in line with GH issue #21
@@ -207,9 +205,9 @@ class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
                                 force_all_finite='allow-nan')
 
         if self.bounds is None:
-            warnings.warn("Range parameter hasn't been specified, so falling back to determining range from the data.\n"
-                          "This will result in additional privacy leakage.  To ensure differential privacy with no "
-                          "additional privacy loss, specify `range` for each valued returned by np.mean().",
+            warnings.warn("Bounds parameter hasn't been specified, so falling back to determining bounds from the "
+                          "data.\n This will result in additional privacy leakage.  To ensure differential privacy "
+                          "with no additional privacy loss, specify `bounds` for each valued returned by np.mean().",
                           PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 

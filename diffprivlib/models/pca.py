@@ -226,18 +226,19 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
         X = self._clip_to_norm(X, self.data_norm)
 
-        s, u = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2, norm=self.data_norm,
-                              dims=n_components if isinstance(n_components, Integral) else None)
-        u, _ = svd_flip(u, np.zeros_like(u).T)
-        s = np.sqrt(s)
+        sigma_vec, u_mtx = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2,
+                                          norm=self.data_norm,
+                                          dims=n_components if isinstance(n_components, Integral) else None)
+        u_mtx, _ = svd_flip(u_mtx, np.zeros_like(u_mtx).T)
+        sigma_vec = np.sqrt(sigma_vec)
 
-        components_ = u.T
+        components_ = u_mtx.T
 
         # Get variance explained by singular values
-        explained_variance_ = np.sort((s ** 2) / (n_samples - 1))[::-1]
+        explained_variance_ = np.sort((sigma_vec ** 2) / (n_samples - 1))[::-1]
         total_var = explained_variance_.sum()
         explained_variance_ratio_ = explained_variance_ / total_var
-        singular_values_ = s.copy()  # Store the singular values.
+        singular_values_ = sigma_vec.copy()  # Store the singular values.
 
         # Post-process the number of components required
         if n_components == 'mle':
@@ -264,7 +265,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
         self.accountant.spend(self.epsilon, 0)
 
-        return u, s[:n_components], u.T
+        return u_mtx, sigma_vec[:n_components], u_mtx.T
 
     @copy_docstring(sk_pca.PCA.fit_transform)
     def fit_transform(self, X, y=None):
