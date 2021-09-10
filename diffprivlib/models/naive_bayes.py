@@ -22,16 +22,15 @@ import warnings
 
 import numpy as np
 import sklearn.naive_bayes as sk_nb
-from sklearn.utils import check_X_y
 from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
-from diffprivlib.validation import check_bounds, clip_to_bounds
+from diffprivlib.validation import DiffprivlibMixin
 
 
-class GaussianNB(sk_nb.GaussianNB):
+class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
     r"""Gaussian Naive Bayes (GaussianNB) with differential privacy
 
     Inherits the :class:`sklearn.naive_bayes.GaussianNB` class from Scikit Learn and adds noise to satisfy differential
@@ -67,7 +66,7 @@ class GaussianNB(sk_nb.GaussianNB):
     theta_ : array, shape (n_classes, n_features)
         mean of each feature per class
 
-    sigma_ : array, shape (n_classes, n_features)
+    var_ : array, shape (n_classes, n_features)
         variance of each feature per class
 
     epsilon_ : float
@@ -81,7 +80,7 @@ class GaussianNB(sk_nb.GaussianNB):
 
     """
 
-    def __init__(self, epsilon=1.0, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
+    def __init__(self, *, epsilon=1.0, bounds=None, priors=None, var_smoothing=1e-9, accountant=None):
         super().__init__(priors=priors, var_smoothing=var_smoothing)
 
         self.epsilon = epsilon
@@ -94,7 +93,7 @@ class GaussianNB(sk_nb.GaussianNB):
         if sample_weight is not None:
             warn_unused_args("sample_weight")
 
-        X, y = check_X_y(X, y)
+        X, y = self._validate_data(X, y)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -102,8 +101,8 @@ class GaussianNB(sk_nb.GaussianNB):
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-        self.bounds = check_bounds(self.bounds, shape=X.shape[1])
-        X = clip_to_bounds(X, self.bounds)
+        self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
+        X = self._clip_to_bounds(X, self.bounds)
 
         self.epsilon_ = self.var_smoothing
 
@@ -114,7 +113,7 @@ class GaussianNB(sk_nb.GaussianNB):
             n_features = X.shape[1]
             n_classes = len(self.classes_)
             self.theta_ = np.zeros((n_classes, n_features))
-            self.sigma_ = np.zeros((n_classes, n_features))
+            self.var_ = np.zeros((n_classes, n_features))
 
             self.class_count_ = np.zeros(n_classes, dtype=np.float64)
 
@@ -136,7 +135,7 @@ class GaussianNB(sk_nb.GaussianNB):
                 raise ValueError("Number of features %d does not match previous data %d." %
                                  (X.shape[1], self.theta_.shape[1]))
             # Put epsilon back in each time
-            self.sigma_[:, :] -= self.epsilon_
+            self.var_[:, :] -= self.epsilon_
 
         classes = self.classes_
 
@@ -155,14 +154,14 @@ class GaussianNB(sk_nb.GaussianNB):
 
             n_i = noisy_class_counts[_i]
 
-            new_theta, new_sigma = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
-                                                              self.sigma_[i, :], X_i, n_noisy=n_i)
+            new_theta, new_var = self._update_mean_variance(self.class_count_[i], self.theta_[i, :],
+                                                            self.var_[i, :], X_i, n_noisy=n_i)
 
             self.theta_[i, :] = new_theta
-            self.sigma_[i, :] = new_sigma
+            self.var_[i, :] = new_var
             self.class_count_[i] += n_i
 
-        self.sigma_[:, :] += self.epsilon_
+        self.var_[:, :] += self.epsilon_
 
         # Update if only no priors is provided
         if self.priors is None:
@@ -231,18 +230,18 @@ class GaussianNB(sk_nb.GaussianNB):
         new_var = np.zeros((n_features,))
 
         for feature in range(n_features):
-            _X = X[:, feature]
+            temp_x = X[:, feature]
             lower, upper = self.bounds[0][feature], self.bounds[1][feature]
             local_diameter = upper - lower
 
             mech_mu = LaplaceTruncated(epsilon=local_epsilon, delta=0, sensitivity=local_diameter,
                                        lower=lower * n_noisy, upper=upper * n_noisy)
-            _mu = mech_mu.randomise(_X.sum()) / n_noisy
+            _mu = mech_mu.randomise(temp_x.sum()) / n_noisy
 
             local_sq_sens = max(_mu - lower, upper - _mu) ** 2
             mech_var = LaplaceBoundedDomain(epsilon=local_epsilon, delta=0, sensitivity=local_sq_sens, lower=0,
                                             upper=local_sq_sens * n_noisy)
-            _var = mech_var.randomise(((_X - _mu) ** 2).sum()) / n_noisy
+            _var = mech_var.randomise(((temp_x - _mu) ** 2).sum()) / n_noisy
 
             new_mu[feature] = _mu
             new_var[feature] = _var
@@ -285,3 +284,8 @@ class GaussianNB(sk_nb.GaussianNB):
             i = (i - sgn) % len(unique_y)
 
         return noisy_counts
+
+    @property
+    def sigma_(self):
+        # Todo: Consider removing when sklearn v1.0 is required
+        return self.var_

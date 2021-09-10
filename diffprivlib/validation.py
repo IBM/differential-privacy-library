@@ -22,6 +22,8 @@ from numbers import Real, Integral
 
 import numpy as np
 
+from diffprivlib.utils import warn_unused_args
+
 
 def check_epsilon_delta(epsilon, delta, allow_zero=False):
     """Checks that epsilon and delta are valid values for differential privacy.  Throws an error if checks fail,
@@ -203,3 +205,10 @@ def clip_to_bounds(array, bounds):
             clipped_array[:, feature] = np.clip(array[:, feature], lower[feature], upper[feature])
 
     return clipped_array
+
+
+class DiffprivlibMixin:
+    _check_bounds = staticmethod(check_bounds)
+    _clip_to_norm = staticmethod(clip_to_norm)
+    _clip_to_bounds = staticmethod(clip_to_bounds)
+    _warn_unused_args = staticmethod(warn_unused_args)

@@ -22,8 +22,6 @@ import warnings
 
 import numpy as np
 
-from diffprivlib.validation import check_epsilon_delta
-
 
 def global_seed(seed):
     """Sets the seed for all random number generators, to guarantee reproducibility in experiments.
@@ -108,6 +106,8 @@ class Budget(tuple):
 
     """
     def __new__(cls, epsilon, delta):
+        from diffprivlib.validation import check_epsilon_delta
+
         check_epsilon_delta(epsilon, delta, allow_zero=True)
         return tuple.__new__(cls, (epsilon, delta))
 

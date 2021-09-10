@@ -98,11 +98,17 @@ class TestGaussianNB(TestCase):
         for clf in [clf_dp, clf_non_private]:
             clf.fit(x_train, y_train)
 
+        # Todo: remove try...except when sklearn v1.0 is required
+        try:
+            nonprivate_var = clf_non_private.var_
+        except AttributeError:
+            nonprivate_var = clf_non_private.sigma_
+
         theta_diff = (clf_dp.theta_ - clf_non_private.theta_) ** 2
         self.assertGreater(theta_diff.sum(), 0)
 
-        sigma_diff = (clf_dp.sigma_ - clf_non_private.sigma_) ** 2
-        self.assertGreater(sigma_diff.sum(), 0)
+        var_diff = (clf_dp.var_ - nonprivate_var) ** 2
+        self.assertGreater(var_diff.sum(), 0)
 
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_with_iris(self):

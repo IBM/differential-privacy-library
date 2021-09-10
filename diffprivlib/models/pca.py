@@ -53,12 +53,12 @@ from sklearn.utils.extmath import stable_cumsum, svd_flip
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
-from diffprivlib.utils import warn_unused_args, copy_docstring, PrivacyLeakWarning
-from diffprivlib.validation import clip_to_norm, check_bounds
+from diffprivlib.utils import copy_docstring, PrivacyLeakWarning
+from diffprivlib.validation import DiffprivlibMixin
 
 
 # noinspection PyPep8Naming
-class PCA(sk_pca.PCA):
+class PCA(sk_pca.PCA, DiffprivlibMixin):
     r"""Principal component analysis (PCA) with differential privacy.
 
     This class is a child of :obj:`sklearn.decomposition.PCA`, with amendments to allow for the implementation of
@@ -86,13 +86,6 @@ class PCA(sk_pca.PCA):
 
             n_components == min(n_samples, n_features) - 1
 
-    centered : bool, default: False
-        If False, the data will be centered before calculating the principal components.  This will be calculated with
-        differential privacy, consuming privacy budget from epsilon.
-
-        If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
-        therefore will not require the consumption of privacy budget to calculate the mean.
-
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.  If ``centered=False``, half of epsilon is used to calculate the
         differentially private mean to center the data prior to the calculation of principal components.
@@ -104,6 +97,13 @@ class PCA(sk_pca.PCA):
         If not specified, the max norm is taken from the data when ``.fit()`` is first called, but will result in a
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
+
+    centered : bool, default: False
+        If False, the data will be centered before calculating the principal components.  This will be calculated with
+        differential privacy, consuming privacy budget from epsilon.
+
+        If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
+        therefore will not require the consumption of privacy budget to calculate the mean.
 
     bounds:  tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
@@ -184,7 +184,7 @@ class PCA(sk_pca.PCA):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
-    def __init__(self, n_components=None, centered=False, epsilon=1.0, data_norm=None, bounds=None, copy=True,
+    def __init__(self, n_components=None, *, epsilon=1.0, data_norm=None, centered=False, bounds=None, copy=True,
                  whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,
                          iterated_power='auto', random_state=random_state)
@@ -194,7 +194,7 @@ class PCA(sk_pca.PCA):
         self.bounds = bounds
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
     def _fit_full(self, X, n_components):
         self.accountant.check(self.epsilon, 0)
@@ -213,7 +213,7 @@ class PCA(sk_pca.PCA):
 
                 self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
-            self.bounds = check_bounds(self.bounds, n_features)
+            self.bounds = self._check_bounds(self.bounds, n_features)
             self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())
 
         X -= self.mean_
@@ -224,28 +224,25 @@ class PCA(sk_pca.PCA):
                           "privacy leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
-        X = clip_to_norm(X, self.data_norm)
+        X = self._clip_to_norm(X, self.data_norm)
 
-        s, u = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2, norm=self.data_norm,
-                              dims=n_components if isinstance(n_components, Integral) else None)
-        u, _ = svd_flip(u, np.zeros_like(u).T)
-        s = np.sqrt(s)
+        sigma_vec, u_mtx = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2,
+                                          norm=self.data_norm,
+                                          dims=n_components if isinstance(n_components, Integral) else None)
+        u_mtx, _ = svd_flip(u_mtx, np.zeros_like(u_mtx).T)
+        sigma_vec = np.sqrt(sigma_vec)
 
-        components_ = u.T
+        components_ = u_mtx.T
 
         # Get variance explained by singular values
-        explained_variance_ = np.sort((s ** 2) / (n_samples - 1))[::-1]
+        explained_variance_ = np.sort((sigma_vec ** 2) / (n_samples - 1))[::-1]
         total_var = explained_variance_.sum()
         explained_variance_ratio_ = explained_variance_ / total_var
-        singular_values_ = s.copy()  # Store the singular values.
+        singular_values_ = sigma_vec.copy()  # Store the singular values.
 
         # Post-process the number of components required
         if n_components == 'mle':
-            # TODO: Update when sklearn requirement changes to >= 0.23, removing try...except
-            try:
-                n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
-            except AttributeError:
-                n_components = sk_pca._infer_dimension_(explained_variance_, n_samples, n_features)
+            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold
@@ -268,7 +265,7 @@ class PCA(sk_pca.PCA):
 
         self.accountant.spend(self.epsilon, 0)
 
-        return u, s[:n_components], u.T
+        return u_mtx, sigma_vec[:n_components], u_mtx.T
 
     @copy_docstring(sk_pca.PCA.fit_transform)
     def fit_transform(self, X, y=None):

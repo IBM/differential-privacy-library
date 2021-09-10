@@ -104,7 +104,7 @@ class TestLinearRegression(TestCase):
 
         predict1 = clf.predict(X_test)
 
-        clf2 = linear_model.LinearRegression(normalize=False)
+        clf2 = linear_model.LinearRegression()
         clf2.fit(X_train, y_train)
 
         predict2 = clf2.predict(X_test)

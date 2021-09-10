@@ -149,7 +149,8 @@ class Laplace(DPMechanism):
         self._check_all(value)
 
         scale = self.sensitivity / (self.epsilon - np.log(1 - self.delta))
-        standard_laplace = self._laplace_sampler(self._rng.random(), self._rng.random(), self._rng.random(), self._rng.random())
+        standard_laplace = self._laplace_sampler(self._rng.random(), self._rng.random(), self._rng.random(),
+                                                 self._rng.random())
 
         return value - scale * standard_laplace
 
