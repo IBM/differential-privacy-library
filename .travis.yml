@@ -8,7 +8,7 @@ matrix:
   include:
   - python: 3.9
     script:
-    - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0) && (pytest --cov || exit 0)
+    - (pycodestyle --max-line-length=120 diffprivlib || exit 0) && (pylint -rn diffprivlib || exit 0) && (pytest --cov-report=xml --cov=diffprivlib --cov-append || exit 0)
 install:
 - pip install pylint pycodestyle pytest-cov
 - pip install .
