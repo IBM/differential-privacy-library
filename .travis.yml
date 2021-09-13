@@ -22,3 +22,5 @@ deploy:
     tags: true
     branch: main
     condition: $TRAVIS_PYTHON_VERSION = 3.8
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
