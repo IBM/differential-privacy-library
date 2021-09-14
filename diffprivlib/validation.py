@@ -187,10 +187,6 @@ def clip_to_bounds(array, bounds):
     if not isinstance(array, np.ndarray):
         raise TypeError("Input array must be a numpy array, got {}.".format(type(array)))
 
-    if np.shape(bounds[0]) != np.shape(bounds[1]):
-        raise ValueError("Bounds must be of the same shape, got {} and {}.".format(np.shape(bounds[0]),
-                                                                                   np.shape(bounds[1])))
-
     lower, upper = check_bounds(bounds, np.size(bounds[0]), min_separation=0)
     clipped_array = array.copy()
 

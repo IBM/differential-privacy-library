@@ -54,7 +54,9 @@ class TestGaussianAnalytic(TestCase):
 
     def test_simple(self):
         mech = self.mech(epsilon=2, delta=0.1, sensitivity=1)
+        self.assertIsNotNone(mech.randomise(3))
 
+        mech = self.mech(epsilon=1e-3, delta=0.1, sensitivity=1)
         self.assertIsNotNone(mech.randomise(3))
 
     def test_zero_median_prob(self):

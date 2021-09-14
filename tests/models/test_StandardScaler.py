@@ -4,7 +4,7 @@ import numpy as np
 import sklearn.preprocessing as sk_pp
 
 from diffprivlib.models.standard_scaler import StandardScaler
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, global_seed, BudgetError
 
 
 class TestStandardScaler(TestCase):
@@ -22,6 +22,30 @@ class TestStandardScaler(TestCase):
 
         with self.assertWarns(PrivacyLeakWarning):
             ss.fit(X)
+
+    def test_do_nothing(self):
+        X = np.random.rand(10, 5)
+
+        dp_ss = StandardScaler(bounds=(0, 1), epsilon=1, with_std=False, with_mean=False)
+        dp_ss.fit(X)
+
+        self.assertIsNotNone(dp_ss)
+
+    def test_refit(self):
+        X = np.random.rand(10, 5)
+
+        dp_ss = StandardScaler(bounds=(0, 1), epsilon=1)
+        dp_ss.fit(X)
+        dp_ss.partial_fit(X)
+        self.assertIsNotNone(dp_ss)
+
+    def test_sample_weights(self):
+        X = np.random.rand(10, 5)
+
+        dp_ss = StandardScaler(bounds=(0, 1), epsilon=1)
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            dp_ss.fit(X, sample_weight=1)
 
     def test_inf_epsilon(self):
         X = np.random.rand(10, 5)

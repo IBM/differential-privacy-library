@@ -169,7 +169,7 @@ class TestGaussianNB(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
-    def test_refit(self):
+    def test_bad_refit_shape(self):
         X = np.random.random((10, 2))
         y = np.random.randint(2, size=10)
 
@@ -181,3 +181,35 @@ class TestGaussianNB(TestCase):
 
         with self.assertRaises(ValueError):
             clf.partial_fit(X2, y)
+
+    def test_bad_refit_classes(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf.fit(X, y)
+
+        X2 = np.random.random((10, 2))
+        y2 = np.random.randint(3, size=10)
+
+        with self.assertRaises(ValueError):
+            clf.partial_fit(X2, y2)
+
+    def test_update_mean_variance(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, n_noisy=5))
+        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, n_noisy=0))
+        self.assertWarns(PrivacyLeakWarning, clf._update_mean_variance, 0, 0, 0, X)
+        self.assertWarns(DiffprivlibCompatibilityWarning, clf._update_mean_variance, 0, 0, 0, X, n_noisy=1,
+                         sample_weight=1)
+
+    def test_sigma(self):
+        X = np.random.random((10, 2))
+        y = np.random.randint(2, size=10)
+
+        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf.fit(X, y)
+        self.assertIsInstance(clf.sigma_, np.ndarray)

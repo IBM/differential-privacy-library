@@ -9,7 +9,7 @@ class TestTruncationAndFoldingMixin(TestCase):
 
     def test_lone_instantiation(self):
         with self.assertRaises(TypeError):
-            TruncationAndFoldingMixin()
+            TruncationAndFoldingMixin(lower=0, upper=1)
 
     def test_dummy_instantiation(self):
         class TestClass(DPMechanism, TruncationAndFoldingMixin):

@@ -50,6 +50,14 @@ class TestPCA(TestCase):
 
         self.assertIsNotNone(clf.fit(X))
 
+    def test_fit_transform(self):
+        X = np.random.randn(1000, 5)
+        X -= np.mean(X, axis=0)
+        X /= np.linalg.norm(X, axis=1).max()
+
+        clf = PCA(2, epsilon=5, centered=True, data_norm=1)
+        self.assertIsNotNone(clf.fit_transform(X))
+
     def test_large_norm(self):
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -101,6 +109,14 @@ class TestPCA(TestCase):
         X /= np.linalg.norm(X, axis=1).max()
 
         clf = PCA("mle", epsilon=5, centered=True, data_norm=1)
+        self.assertIsNotNone(clf.fit(X))
+
+    def test_float_components(self):
+        X = np.random.randn(1000, 5)
+        X -= np.mean(X, axis=0)
+        X /= np.linalg.norm(X, axis=1).max()
+
+        clf = PCA(0.5, epsilon=5, centered=True, data_norm=1)
         self.assertIsNotNone(clf.fit(X))
 
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')

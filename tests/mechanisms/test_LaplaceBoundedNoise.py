@@ -60,6 +60,10 @@ class TestLaplaceBoundedNoise(TestCase):
         with self.assertRaises(TypeError):
             mech.randomise("Hello")
 
+    def test_non_nan(self):
+        mech = self.mech(epsilon=1, delta=0.1, sensitivity=1)
+        self.assertTrue(np.isnan(mech.randomise(np.nan)))
+
     def test_zero_median_prob(self):
         mech = self.mech(epsilon=1, delta=0.1, sensitivity=1)
         vals = []

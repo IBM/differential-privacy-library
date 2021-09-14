@@ -29,6 +29,10 @@ class TestClipToBounds(TestCase):
         X5 = clip_to_bounds(X4, (0, 1))
         self.assertTrue(np.all(X5 == X))
 
+    def test_bad_bounds(self):
+        X = np.ones(shape=(5, 1))
+        self.assertRaises(ValueError, clip_to_bounds, X, ([1], [2, 3]))
+
     def test_1d_array(self):
         X = np.ones(shape=(5,))
         X2 = clip_to_bounds(X, (0, 0.5))
@@ -41,6 +45,10 @@ class TestClipToBounds(TestCase):
         X4[0] = 2
         X5 = clip_to_bounds(X4, (0, 1))
         self.assertTrue(np.all(X5 == X))
+
+    def test_3d_array(self):
+        X = np.ones(shape=(2, 2, 2))
+        self.assertRaises(ValueError, clip_to_bounds, X, ([0, 0.5], [0, 0.5]))
 
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_iris(self):

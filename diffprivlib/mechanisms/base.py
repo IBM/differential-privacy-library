@@ -190,12 +190,6 @@ class TruncationAndFoldingMixin:
 
         self.lower, self.upper = self._check_bounds(lower, upper)
 
-    def __repr__(self):
-        output = ".set_bounds(" + str(self.lower) + ", " + str(self.upper) + ")" \
-            if self.lower is not None else ""
-
-        return output
-
     @classmethod
     def _check_bounds(cls, lower, upper):
         """Performs a check on the bounds provided for the mechanism."""

@@ -40,6 +40,12 @@ class TestDPMechanism(TestCase):
         mech1 = self.mech(epsilon=1, delta=0).copy()
         self.assertIsNotNone(mech1)
 
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, delta=0).bias, 1)
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, delta=0).variance, 1)
+
     def test_mse(self):
         self.assertRaises(NotImplementedError, self.mech(epsilon=1, delta=0).mse, 1)
 

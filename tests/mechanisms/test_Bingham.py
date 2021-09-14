@@ -117,6 +117,14 @@ class TestBingham(TestCase):
         with self.assertRaises(ValueError):
             mech.randomise(np.ones((3, 4)))
 
+    def test_non_symmetric_input(self):
+        mech = self.mech(epsilon=1, sensitivity=1)
+        data = self.generate_data()
+        data[0, 1] -= 1
+
+        with self.assertRaises(ValueError):
+            mech.randomise(data)
+
     def test_3D_input(self):
         mech = self.mech(epsilon=1, sensitivity=1)
 
@@ -147,3 +155,9 @@ class TestBingham(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, sensitivity=1))
         self.assertIn(".Bingham(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, sensitivity=1).bias, np.array([[1]]))
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, sensitivity=1).variance, np.array([[1]]))

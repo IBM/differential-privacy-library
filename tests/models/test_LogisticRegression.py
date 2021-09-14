@@ -78,6 +78,16 @@ class TestLogisticRegression(TestCase):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             clf.fit(X, y, sample_weight=np.ones_like(y))
 
+    def test_warm_start(self):
+        X = np.array(
+            [0.50, 0.75, 1.00])
+        y = np.array([0, 1, 2])
+        X = X[:, np.newaxis]
+
+        clf = LogisticRegression(data_norm=1.0, warm_start=True)
+        clf.fit(X, y)
+        self.assertIsNotNone(clf.fit(X, y))
+
     def test_trinomial(self):
         X = np.array(
             [0.50, 0.75, 1.00])

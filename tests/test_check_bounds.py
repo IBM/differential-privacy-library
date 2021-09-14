@@ -52,13 +52,27 @@ class TestCheckBounds(TestCase):
         with self.assertRaises(ValueError):
             check_bounds(([1, 1], [2, 2]), shape=3)
 
+        with self.assertRaises(ValueError):
+            check_bounds(([[1, 1]], [[2, 2]]), shape=2)
+
+    def test_bad_shape(self):
+        with self.assertRaises(ValueError):
+            check_bounds(([1, 1], [2, 2]), shape=-2)
+
+        with self.assertRaises(TypeError):
+            check_bounds(([1, 1], [2, 2]), shape=2.0)
+
     def test_wrong_order(self):
         with self.assertRaises(ValueError):
             check_bounds((2, 1))
 
     def test_non_numeric(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValueError):
             check_bounds(("One", "Two"))
+
+    def test_complex(self):
+        with self.assertRaises(TypeError):
+            check_bounds((1.0, 1+2j), dtype=complex)
 
     def test_min_separation(self):
         bounds = check_bounds((1, 1), min_separation=2)

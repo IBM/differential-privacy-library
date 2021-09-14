@@ -122,16 +122,6 @@ class Laplace(DPMechanism):
     def _laplace_sampler(unif1, unif2, unif3, unif4):
         return np.log(1 - unif1) * np.cos(np.pi * unif2) + np.log(1 - unif3) * np.cos(np.pi * unif4)
 
-    def _cdf(self, value):
-        # Allow for infinite epsilon
-        if self._scale == 0:
-            return 0 if value < 0 else 1
-
-        if value < 0:
-            return 0.5 * np.exp(value / self._scale)
-
-        return 1 - 0.5 * np.exp(-value / self._scale)
-
     def randomise(self, value):
         """Randomise `value` with the mechanism.
 

@@ -25,6 +25,10 @@ class TestGaussian(TestCase):
         for i in range(1000):
             self.assertAlmostEqual(mech.randomise(1), 1)
 
+    def test_zero_epsilon_delta(self):
+        self.assertRaises(ValueError, self.mech, epsilon=0, delta=0.1, sensitivity=1)
+        self.assertRaises(ValueError, self.mech, epsilon=0.5, delta=0, sensitivity=1)
+
     def test_wrong_sensitivity(self):
         with self.assertRaises(TypeError):
             self.mech(epsilon=0.5, delta=0.1, sensitivity="1")

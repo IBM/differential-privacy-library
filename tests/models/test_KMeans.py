@@ -66,6 +66,12 @@ class TestKMeans(TestCase):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             clf.fit(X, None, 1)
 
+    def test_too_many_clusters(self):
+        clf = KMeans(100, epsilon=30, bounds=(0, 1))
+
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
+        self.assertRaises(ValueError, clf.fit, X)
+
     def test_inf_epsilon(self):
         global_seed(3141592653)
         clf = KMeans(3, epsilon=float("inf"), bounds=(0, 1))

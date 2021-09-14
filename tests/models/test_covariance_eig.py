@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.models.utils import covariance_eig
+from diffprivlib.utils import PrivacyLeakWarning
 
 
 class TestCovarianceEig(TestCase):
@@ -64,6 +65,17 @@ class TestCovarianceEig(TestCase):
         self.assertTrue(np.allclose(vals[vals.argsort()], dp_vals[dp_vals.argsort()]))
         self.assertTrue(np.allclose(abs(dp_vecs.T.dot(vecs).sum(axis=1)), 1))
         self.assertTrue(np.allclose(abs(dp_vecs.T.dot(vecs).sum(axis=0)), 1))
+
+    def test_bad_norm(self):
+        d, n = 3, 10
+        data = self.generate_normed_data(d, n)
+        data *= 2
+
+        with self.assertWarns(PrivacyLeakWarning):
+            covariance_eig(data, epsilon=float("inf"), norm=None)
+
+        with self.assertRaises(ValueError):
+            covariance_eig(data, epsilon=float("inf"), norm=1)
 
     def test_dims(self):
         d, n = 5, 10

@@ -72,3 +72,9 @@ class TestBinary(TestCase):
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, value0="0", value1="1"))
         self.assertIn(".Binary(", repr_)
+
+    def test_bias(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, value0="0", value1="1").bias, "0")
+
+    def test_variance(self):
+        self.assertRaises(NotImplementedError, self.mech(epsilon=1, value0="0", value1="1").variance, "0")
