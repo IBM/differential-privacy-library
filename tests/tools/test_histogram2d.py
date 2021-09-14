@@ -28,6 +28,18 @@ class TestHistogram2d(TestCase):
             res = histogram2d(x, y, epsilon=1, range=[(0, 10), None])
         self.assertIsNotNone(res)
 
+    def test_bins_instead_of_range(self):
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([5, 7, 1, 5, 9])
+        res = histogram2d(x, y, epsilon=1, range=None, bins=([0, 1, 10], [0, 1, 10]))
+        self.assertIsNotNone(res)
+
+    def test_custom_bins(self):
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([5, 7, 1, 5, 9])
+        res = histogram2d(x, y, epsilon=1, bins=[0, 3, 10])
+        self.assertIsNotNone(res)
+
     def test_same_edges(self):
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([5, 7, 1, 5, 9])

@@ -19,6 +19,11 @@ class TestHistogramdd(TestCase):
             res = histogramdd(a, epsilon=2)
         self.assertIsNotNone(res)
 
+    def test_bins_instead_of_range(self):
+        a = np.array([1, 2, 3, 4, 5])
+        res = histogramdd([a, a], epsilon=2, bins=([0, 2, 6], [0, 2, 6]))
+        self.assertIsNotNone(res)
+
     def test_same_edges(self):
         a = np.array([1, 2, 3, 4, 5])
         _, edges = np.histogramdd(a, bins=3, range=[(0, 10)])

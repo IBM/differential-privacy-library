@@ -221,12 +221,14 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
-    if range is None or (isinstance(range, list) and None in range):
-        warnings.warn("Range parameter has not been specified (or has missing elements). Falling back to taking range "
-                      "from the data.\n "
-                      "To ensure differential privacy, and no additional privacy leakage, the range must be "
-                      "specified for each dimension independently of the data (i.e., using domain knowledge).",
-                      PrivacyLeakWarning)
+    # Range only required if bin edges not specified
+    if np.array(bins, dtype=object).ndim == 0 or not np.all([np.ndim(_bin) for _bin in bins]):
+        if range is None or (isinstance(range, list) and None in range):
+            warnings.warn("Range parameter has not been specified (or has missing elements). Falling back to taking "
+                          "range from the data.\n "
+                          "To ensure differential privacy, and no additional privacy leakage, the range must be "
+                          "specified for each dimension independently of the data (i.e., using domain knowledge).",
+                          PrivacyLeakWarning)
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
