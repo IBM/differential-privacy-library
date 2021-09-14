@@ -44,8 +44,10 @@ class TestStandardScaler(TestCase):
 
         dp_ss = StandardScaler(bounds=(0, 1), epsilon=1)
 
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            dp_ss.fit(X, sample_weight=1)
+        try:
+            self.assertWarns(DiffprivlibCompatibilityWarning, dp_ss.fit, X, sample_weight=1)
+        except TypeError:
+            pass
 
     def test_inf_epsilon(self):
         X = np.random.rand(10, 5)
