@@ -4,6 +4,7 @@
 name: Style and coverage tests
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, gh-actions ]
   pull_request:

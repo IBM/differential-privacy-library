@@ -4,6 +4,7 @@
 name: General tests
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, gh-actions ]
   pull_request:
