@@ -1,4 +1,5 @@
 import numbers
+import warnings
 import numpy as np
 from joblib import Parallel, delayed
 from collections import defaultdict, Counter, namedtuple
@@ -6,14 +7,17 @@ from collections import defaultdict, Counter, namedtuple
 from scipy import stats
 from sklearn.utils import check_X_y, check_array
 from sklearn.utils.fixes import _joblib_parallel_args
+from sklearn.ensemble._forest import ForestClassifier
+from sklearn.tree import BaseDecisionTree
+from sklearn.base import ClassifierMixin
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import warn_unused_args
+from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
 
 Dataset = namedtuple('Dataset', ['X', 'y'])
 
 
-class RandomForestClassifier:
+class RandomForestClassifier(ForestClassifier):
     r"""Random Forest Classifier with differential privacy.
 
     This class implements Differentially Private Random Decision Forests using Smooth Sensitivity [1].
@@ -49,6 +53,13 @@ class RandomForestClassifier:
 
     random_state: float, optional
         Sets the numpy random seed.
+    
+    feature_domains: dict, optional
+        A dictionary of domain values for all features where keys are the feature indexes in the training data and
+        the values are an array of domain values for categorical features and an array of min and max values for
+        continuous features. For example, if the training data is [[2, 'dog'], [5, 'cat'], [7, 'dog']], then
+        the feature_domains would be {'0': [2, 7], '1': ['dog', 'cat']}. If not provided, feature domains will
+        be constructed from the data, but this will result in :class:`.PrivacyLeakWarning`.
 
     Attributes
     ----------
@@ -70,6 +81,9 @@ class RandomForestClassifier:
     estimators: list of DecisionTreeClassifier
         The collection of fitted sub-estimators.
 
+    feature_domains: dictionary of domain values mapped to feature
+        indexes in the training data
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification
@@ -90,7 +104,14 @@ class RandomForestClassifier:
     """
 
     def __init__(self, n_estimators=10, epsilon=1.0, cat_feature_threshold=10,
-                 n_jobs=1, verbose=0, accountant=None, max_depth=15, random_state=None, **unused_args):
+                 n_jobs=1, verbose=0, accountant=None, max_depth=15, random_state=None, feature_domains=None, **unused_args):
+        super().__init__(
+            base_estimator=DecisionTreeClassifier(),
+            n_estimators=n_estimators,
+            estimator_params=("cat_feature_threshold", "max_depth", "epsilon", "random_state"),
+            n_jobs=n_jobs,
+            random_state=random_state,
+            verbose=verbose)
         self._n_estimators = n_estimators
         self._n_jobs = n_jobs
         self._epsilon = epsilon
@@ -103,6 +124,7 @@ class RandomForestClassifier:
         self._n_features = None
         self._classes = None
         self._cat_features = None
+        self._feature_domains = feature_domains
 
         if random_state is not None:
             np.random.seed(random_state)
@@ -133,6 +155,10 @@ class RandomForestClassifier:
     def estimators(self):
         return self._estimators
 
+    @property
+    def feature_domains(self):
+        return self._feature_domains
+
     def fit(self, X, y):
         """Fit the model to the given training data.
 
@@ -162,10 +188,19 @@ class RandomForestClassifier:
         self._cat_features = get_cat_features(X, self._cat_feature_threshold)
         self._max_depth = calc_tree_depth(n_cont_features=self._n_features-len(self._cat_features),
                                           n_cat_features=len(self._cat_features), max_depth=self._max_depth)
-        self._feature_domains = get_feature_domains(X, self._cat_features)
-        features = list(range(self._n_features))
         self._classes = np.unique(y)
         self._n_classes = len(self._classes)
+
+        if self._feature_domains is None:
+            warnings.warn(
+                "`feature_domains` parameter hasn't been specified, so falling back to determining domains from the data.\n"
+                "This may result in additional privacy leakage. To ensure differential privacy with no "
+                "additional privacy loss, specify `feature_domains` according to the documentation",
+                PrivacyLeakWarning)
+            self._feature_domains = get_feature_domains(X, self._cat_features)
+
+        if len(self._feature_domains) != self._n_features:
+            raise ValueError("Missing domains for some features in `feature_domains`")
 
         if self._n_estimators > len(X):
             raise ValueError('Number of estimators is more than the available samples')
@@ -175,9 +210,8 @@ class RandomForestClassifier:
         estimators = []
 
         for i in range(self._n_estimators):
-            estimator = DecisionTreeClassifier(max_depth=self._max_depth, epsilon=self._epsilon)
+            estimator = DecisionTreeClassifier(max_depth=self._max_depth, epsilon=self._epsilon, feature_domains=self._feature_domains)
             estimator.set_cat_features(self._cat_features)
-            estimator.set_feature_domains(self._feature_domains)
             estimator.set_classes(self._classes)
             estimators.append(estimator)
             datasets.append(Dataset(X=X[i*subset_size:(i+1)*subset_size], y=y[i*subset_size:(i+1)*subset_size]))
@@ -231,7 +265,7 @@ class RandomForestClassifier:
         return np.apply_along_axis(lambda x: Counter(list(x)).most_common(1)[0][0], arr=y, axis=1)
 
 
-class DecisionTreeClassifier:
+class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
     r"""Decision Tree Classifier with differential privacy.
 
     This class implements the base differentially private decision tree classifier
@@ -252,9 +286,28 @@ class DecisionTreeClassifier:
     random_state: float, optional
         Sets the numpy random seed.
 
+    feature_domains: dict, optional
+        A dictionary of domain values for all features where keys are the feature indexes in the training data and
+        the values are an array of domain values for categorical features and an array of min and max values for
+        continuous features. For example, if the training data is [[2, 'dog'], [5, 'cat'], [7, 'dog']], then
+        the feature_domains would be {'0': [2, 7], '1': ['dog', 'cat']}. If not provided, feature domains will
+        be constructed from the data, but this will result in :class:`.PrivacyLeakWarning`.
     """
-    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None):
-        self._feature_domains = None
+    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None, feature_domains=None):
+        super().__init__(
+            criterion=None,
+            splitter=None,
+            max_depth=max_depth,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            min_weight_fraction_leaf=None,
+            max_features=None,
+            random_state=random_state,
+            max_leaf_nodes=None,
+            min_impurity_decrease=None,
+            min_impurity_split=None
+        )
+        self._feature_domains = feature_domains
         self._cat_features = None
         self._classes = None
         self._cat_feature_threshold = cat_feature_threshold
@@ -265,9 +318,6 @@ class DecisionTreeClassifier:
 
         if random_state is not None:
             np.random.seed(random_state)
-
-    def set_feature_domains(self, feature_domains):
-        self._feature_domains = feature_domains
 
     def set_cat_features(self, cat_features):
         self._cat_features = cat_features
@@ -315,6 +365,11 @@ class DecisionTreeClassifier:
             self._cat_features = get_cat_features(X, self._cat_feature_threshold)
 
         if self._feature_domains is None:
+            warnings.warn(
+                "feature_domains parameter hasn't been specified, so falling back to determining domains from the data.\n"
+                "This may result in additional privacy leakage. To ensure differential privacy with no "
+                "additional privacy loss, specify `feature_domains` according to the documentation",
+                PrivacyLeakWarning)
             self._feature_domains = get_feature_domains(X, self._cat_features)
 
         if self._classes is None:

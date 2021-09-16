@@ -2,7 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.tree import RandomForestClassifier, DecisionTreeClassifier, get_cat_features, get_feature_domains, calc_tree_depth
-from diffprivlib.utils import global_seed, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
 
 
 class TestRandomForestClassifier(TestCase):
@@ -43,6 +43,26 @@ class TestRandomForestClassifier(TestCase):
         y = np.array([1, 1, 1, 0, 0, 0, 1])
         model = RandomForestClassifier(epsilon=2, n_estimators=5, random_state=2021, cat_feature_threshold=2)
         self.assertFalse(model.check_is_fitted())
+        # when `feature_domains` is not provided, we should get a privacy leakage warning
+        with self.assertWarns(PrivacyLeakWarning):
+            model.fit(X, y)
+        self.assertTrue(model.check_is_fitted())
+        self.assertEqual(model.n_features, 3)
+        self.assertEqual(model.n_classes, 2)
+        self.assertEqual(set(model.classes_), set([0, 1]))
+        self.assertEqual(model.cat_features, [])
+        self.assertEqual(model.max_depth, 3)
+        self.assertTrue(model.estimators)
+        self.assertEqual(len(model._estimators), 5)
+        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
+        self.assertEqual(model.feature_domains, {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
+
+    def test_with_feature_domains(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([1, 1, 1, 0, 0, 0, 1])
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, random_state=2021, cat_feature_threshold=2,
+                                       feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
+        self.assertFalse(model.check_is_fitted())
         model.fit(X, y)
         self.assertTrue(model.check_is_fitted())
         self.assertEqual(model.n_features, 3)
@@ -53,7 +73,15 @@ class TestRandomForestClassifier(TestCase):
         self.assertTrue(model.estimators)
         self.assertEqual(len(model._estimators), 5)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
-    
+
+    def test_with_not_enough_feature_domains(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([1, 1, 1, 0, 0, 0, 1])
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, random_state=2021, feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0]})
+        self.assertFalse(model.check_is_fitted())
+        with self.assertRaises(ValueError):
+            model.fit(X, y)
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant()
@@ -104,6 +132,17 @@ class TestDecisionTreeClassifier(TestCase):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
         model = DecisionTreeClassifier(epsilon=2, cat_feature_threshold=2)
+        self.assertFalse(model.check_is_fitted())
+        # when `feature_domains` is not provided, we should get a privacy leakage warning
+        with self.assertWarns(PrivacyLeakWarning):
+            model.fit(X, y)
+        self.assertTrue(model.check_is_fitted())
+        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
+
+    def test_with_feature_domains(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([1, 1, 1, 0, 0, 0, 1])
+        model = DecisionTreeClassifier(epsilon=2, cat_feature_threshold=2, feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
         self.assertFalse(model.check_is_fitted())
         model.fit(X, y)
         self.assertTrue(model.check_is_fitted())
