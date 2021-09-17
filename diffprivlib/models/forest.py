@@ -5,7 +5,8 @@ from joblib import Parallel, delayed
 from collections import defaultdict, Counter, namedtuple
 
 from scipy import stats
-from sklearn.utils import check_X_y, check_array
+from sklearn.utils import check_array
+from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import BaseDecisionTree
@@ -63,25 +64,25 @@ class RandomForestClassifier(ForestClassifier):
 
     Attributes
     ----------
-    n_features: int
+    n_features_in_: int
         The number of features when fit is performed.
 
-    n_classes: int
+    n_classes_: int
         The number of classes.
 
     classes_: array of shape (n_classes, )
         The classes labels.
 
-    cat_features: array of categorical feature indexes
+    cat_features_: array of categorical feature indexes
         Categorical feature indexes.
 
-    max_depth: int
+    max_depth_: int
         Final max depth used for constructing decision trees.
 
-    estimators: list of DecisionTreeClassifier
+    estimators_: list of DecisionTreeClassifier
         The collection of fitted sub-estimators.
 
-    feature_domains: dictionary of domain values mapped to feature
+    feature_domains_: dictionary of domain values mapped to feature
         indexes in the training data
 
     Examples
@@ -104,7 +105,8 @@ class RandomForestClassifier(ForestClassifier):
     """
 
     def __init__(self, n_estimators=10, epsilon=1.0, cat_feature_threshold=10,
-                 n_jobs=1, verbose=0, accountant=None, max_depth=15, random_state=None, feature_domains=None, **unused_args):
+                 n_jobs=1, verbose=0, accountant=None, max_depth=15, random_state=None,
+                 feature_domains=None, **unused_args):
         super().__init__(
             base_estimator=DecisionTreeClassifier(),
             n_estimators=n_estimators,
@@ -112,52 +114,17 @@ class RandomForestClassifier(ForestClassifier):
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose)
-        self._n_estimators = n_estimators
-        self._n_jobs = n_jobs
-        self._epsilon = epsilon
-        self._cat_feature_threshold = cat_feature_threshold
-        self._random_state = random_state
-        self._estimators = []
-        self._verbose = verbose
-        self._max_depth = max_depth
-        self._accountant = BudgetAccountant.load_default(accountant)
-        self._n_features = None
-        self._classes = None
-        self._cat_features = None
-        self._feature_domains = feature_domains
+        self.n_estimators = n_estimators
+        self.epsilon = epsilon
+        self.cat_feature_threshold = cat_feature_threshold
+        self.max_depth = max_depth
+        self.accountant = BudgetAccountant.load_default(accountant)
+        self.feature_domains = feature_domains
 
         if random_state is not None:
             np.random.seed(random_state)
 
         warn_unused_args(unused_args)
-
-    @property
-    def n_features(self):
-        return self._n_features
-
-    @property
-    def n_classes(self):
-        return self._n_classes
-
-    @property
-    def classes_(self):
-        return self._classes
-
-    @property
-    def cat_features(self):
-        return self._cat_features
-
-    @property
-    def max_depth(self):
-        return self._max_depth
-
-    @property
-    def estimators(self):
-        return self._estimators
-
-    @property
-    def feature_domains(self):
-        return self._feature_domains
 
     def fit(self, X, y):
         """Fit the model to the given training data.
@@ -172,72 +139,64 @@ class RandomForestClassifier(ForestClassifier):
         Returns:
             self: class object
         """
-        if not isinstance(self._n_estimators, numbers.Integral) or self._n_estimators < 0:
-            raise ValueError(f'Number of estimators should be a positive integer; got {self._n_estimators}')
+        if not isinstance(self.n_estimators, numbers.Integral) or self.n_estimators < 0:
+            raise ValueError(f'Number of estimators should be a positive integer; got {self.n_estimators}')
 
-        if not isinstance(self._cat_feature_threshold, numbers.Integral) or self._cat_feature_threshold < 0:
+        if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
             raise ValueError('Categorical feature threshold should be a positive integer;'
-                             f'got {self._cat_feature_threshold}')
+                             f'got {self.cat_feature_threshold}')
 
-        self._accountant.check(self._epsilon, 0)
+        self.accountant.check(self.epsilon, 0)
 
         X, y = np.array(X), np.array(y)
-        check_X_y(X, y)
+        self._validate_data(X, y)
 
-        self._n_features = X.shape[1]
-        self._cat_features = get_cat_features(X, self._cat_feature_threshold)
-        self._max_depth = calc_tree_depth(n_cont_features=self._n_features-len(self._cat_features),
-                                          n_cat_features=len(self._cat_features), max_depth=self._max_depth)
-        self._classes = np.unique(y)
-        self._n_classes = len(self._classes)
+        self.n_features_in_ = X.shape[1]
+        self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
+        self.max_depth_ = calc_tree_depth(n_cont_features=self.n_features_in_-len(self.cat_features_),
+                                          n_cat_features=len(self.cat_features_), max_depth=self.max_depth)
+        self.classes_ = np.unique(y)
+        self.n_classes_ = len(self.classes_)
+        self.feature_domains_ = self.feature_domains
 
-        if self._feature_domains is None:
+        if self.feature_domains_ is None:
             warnings.warn(
-                "`feature_domains` parameter hasn't been specified, so falling back to determining domains from the data.\n"
+                "`feature_domains` parameter hasn't been specified, "
+                "so falling back to determining domains from the data.\n"
                 "This may result in additional privacy leakage. To ensure differential privacy with no "
                 "additional privacy loss, specify `feature_domains` according to the documentation",
                 PrivacyLeakWarning)
-            self._feature_domains = get_feature_domains(X, self._cat_features)
+            self.feature_domains_ = get_feature_domains(X, self.cat_features_)
 
-        if len(self._feature_domains) != self._n_features:
+        if len(self.feature_domains_) != self.n_features_in_:
             raise ValueError("Missing domains for some features in `feature_domains`")
 
-        if self._n_estimators > len(X):
+        if self.n_estimators > len(X):
             raise ValueError('Number of estimators is more than the available samples')
 
-        subset_size = int(len(X) / self._n_estimators)
+        subset_size = int(len(X) / self.n_estimators)
         datasets = []
         estimators = []
 
-        for i in range(self._n_estimators):
-            estimator = DecisionTreeClassifier(max_depth=self._max_depth, epsilon=self._epsilon, feature_domains=self._feature_domains)
-            estimator.set_cat_features(self._cat_features)
-            estimator.set_classes(self._classes)
+        for i in range(self.n_estimators):
+            estimator = DecisionTreeClassifier(max_depth=self.max_depth_,
+                                               epsilon=self.epsilon,
+                                               feature_domains=self.feature_domains_,
+                                               cat_features=self.cat_features_,
+                                               classes=self.classes_)
             estimators.append(estimator)
             datasets.append(Dataset(X=X[i*subset_size:(i+1)*subset_size], y=y[i*subset_size:(i+1)*subset_size]))
 
-        estimators = Parallel(n_jobs=self._n_jobs, verbose=self._verbose, **_joblib_parallel_args(prefer='processes'))(
+        estimators = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
             delayed(lambda estimator, X, y: estimator.fit(X, y))(estimator, dataset.X, dataset.y)
             for estimator, dataset in zip(estimators, datasets)
         )
 
-        self._estimators = estimators
-        self._accountant.spend(self._epsilon, 0)
+        self.estimators_ = estimators
+        self.accountant.spend(self.epsilon, 0)
+        self.fitted_ = True
 
         return self
-
-    def check_is_fitted(self):
-        """Check if the model is fitted
-
-        Returns:
-            [bool]: True if the model is fitted, False otherwise.
-        """
-        if self._estimators:
-            for estimator in self._estimators:
-                if not estimator.check_is_fitted():
-                    return False
-            return True
-        return False
 
     def predict(self, X):
         """Predict on a given data.
@@ -252,12 +211,11 @@ class RandomForestClassifier(ForestClassifier):
         Returns:
             [nd.array]: Numpy array of predictions.
         """
-        if not self.check_is_fitted():
-            raise Exception('Model is not fitted yet')
+        check_is_fitted(self)
 
         preds = []
 
-        for estimator in self._estimators:
+        for estimator in self.estimators_:
             preds.append(np.array(estimator.predict(X)).reshape(-1, 1))
 
         y = np.hstack(preds)
@@ -286,14 +244,39 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
     random_state: float, optional
         Sets the numpy random seed.
 
+    cat_features: array, optional
+        Array of categorical feature indexes. If not provided, will be determined from the data based on the
+        cat_feature_threshold.
+
+    classes: array of shape (n_classes_, ), optional
+        Array of class labels. If not provided, will be determined from the data.
+
     feature_domains: dict, optional
         A dictionary of domain values for all features where keys are the feature indexes in the training data and
         the values are an array of domain values for categorical features and an array of min and max values for
         continuous features. For example, if the training data is [[2, 'dog'], [5, 'cat'], [7, 'dog']], then
         the feature_domains would be {'0': [2, 7], '1': ['dog', 'cat']}. If not provided, feature domains will
         be constructed from the data, but this will result in :class:`.PrivacyLeakWarning`.
+
+    Attributes
+    ----------
+    n_features_in_: int
+        The number of features when fit is performed.
+
+    n_classes_: int
+        The number of classes.
+
+    classes_: array of shape (n_classes, )
+        The class labels.
+
+    cat_features_: array of categorical feature indexes
+        Categorical feature indexes.
+
+    feature_domains_: dictionary of domain values mapped to feature
+        indexes in the training data
     """
-    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None, feature_domains=None):
+    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None,
+                 feature_domains=None, cat_features=None, classes=None):
         super().__init__(
             criterion=None,
             splitter=None,
@@ -307,32 +290,26 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
             min_impurity_decrease=None,
             min_impurity_split=None
         )
-        self._feature_domains = feature_domains
-        self._cat_features = None
-        self._classes = None
-        self._cat_feature_threshold = cat_feature_threshold
-        self._max_depth = max_depth
-        self._epsilon = epsilon
-        self._root = None
-        self._fitted = False
+        self.feature_domains = feature_domains
+        self.cat_feature_threshold = cat_feature_threshold
+        self.epsilon = epsilon
+        self.cat_features = cat_features
+        self.classes = classes
 
         if random_state is not None:
             np.random.seed(random_state)
 
-    def set_cat_features(self, cat_features):
-        self._cat_features = cat_features
-
-    def set_classes(self, classes):
-        self._classes = classes
+    def _more_tags(self):
+        return {}
 
     def _build(self, features, feature_domains, current_depth=1):
-        if not features or current_depth >= self._max_depth+1:
+        if not features or current_depth >= self.max_depth+1:
             return DecisionNode(level=current_depth)
 
         split_feature = np.random.choice(features)
         node = DecisionNode(level=current_depth, split_feature=split_feature)
 
-        if split_feature in self._cat_features:
+        if split_feature in self.cat_features_:
             node.set_split_type(DecisionNode.CAT_SPLIT)
             for value in feature_domains[str(split_feature)]:
                 child_node = self._build([f for f in features if f != split_feature], feature_domains, current_depth+1)
@@ -354,57 +331,61 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
         return node
 
     def fit(self, X, y):
-        if not isinstance(self._cat_feature_threshold, numbers.Integral) or self._cat_feature_threshold < 0:
+        if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
             raise ValueError('Categorical feature threshold should be a positive integer;'
-                             f'got {self._cat_feature_threshold}')
+                             f'got {self.cat_feature_threshold}')
 
         X, y = np.array(X), np.array(y)
-        check_X_y(X, y)
+        self._validate_data(X, y)
 
-        if self._cat_features is None:
-            self._cat_features = get_cat_features(X, self._cat_feature_threshold)
+        self.feature_domains_ = self.feature_domains
+        self.cat_features_ = self.cat_features
 
-        if self._feature_domains is None:
+        if self.cat_features_ is None:
+            self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
+
+        if self.feature_domains_ is None:
             warnings.warn(
-                "feature_domains parameter hasn't been specified, so falling back to determining domains from the data.\n"
+                "feature_domains parameter hasn't been specified, "
+                "so falling back to determining domains from the data.\n"
                 "This may result in additional privacy leakage. To ensure differential privacy with no "
                 "additional privacy loss, specify `feature_domains` according to the documentation",
                 PrivacyLeakWarning)
-            self._feature_domains = get_feature_domains(X, self._cat_features)
+            self.feature_domains_ = get_feature_domains(X, self.cat_features_)
 
-        if self._classes is None:
-            self._classes = np.unique(y)
+        self.classes_ = self.classes
 
-        n_features = X.shape[1]
-        features = list(range(n_features))
+        if self.classes_ is None:
+            self.classes_ = np.unique(y)
 
-        self._root = self._build(features, self._feature_domains)
+        self.n_classes_ = len(self.classes_)
+
+        self.n_features_in_ = X.shape[1]
+        features = list(range(self.n_features_in_))
+
+        self.tree_ = self._build(features, self.feature_domains_)
 
         for i in range(len(X)):
-            node = self._root.classify(X[i])
+            node = self.tree_.classify(X[i])
             node.update_class_count(y[i])
 
-        self._root.set_noisy_label(self._epsilon, self._classes)
-        self._fitted = True
+        self.tree_.set_noisy_label(self.epsilon, self.classes_)
+        self.fitted_ = True
 
         return self
 
     def predict(self, X):
-        if not self.check_is_fitted():
-            raise Exception('Model is not fitted yet')
+        check_is_fitted(self)
 
         y = []
         X = np.array(X)
         check_array(X)
 
         for x in X:
-            node = self._root.classify(x)
+            node = self.tree_.classify(x)
             y.append(node.noisy_label)
 
         return np.array(y)
-
-    def check_is_fitted(self):
-        return self._fitted
 
 
 class DecisionNode:
