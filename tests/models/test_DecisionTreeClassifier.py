@@ -55,6 +55,17 @@ class TestDecisionTreeClassifier(TestCase):
         check_is_fitted(model)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
 
+    def test_with_non_binary_labels(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([3, 3, 3, 3, 5, 5, 3])
+        model = DecisionTreeClassifier(epsilon=2, cat_feature_threshold=2, feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
+        with self.assertRaises(NotFittedError):
+            check_is_fitted(model)
+        model.fit(X, y)
+        check_is_fitted(model)
+        self.assertEqual(model.predict(np.array([[12, 3, 14]])), 3)
+
+
 class TestUtils(TestCase):
     def test_calc_tree_depth(self):
         self.assertEqual(calc_tree_depth(0, 4), 2)

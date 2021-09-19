@@ -9,8 +9,7 @@ from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
-from sklearn.tree import BaseDecisionTree
-from sklearn.base import ClassifierMixin
+from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
@@ -151,6 +150,14 @@ class RandomForestClassifier(ForestClassifier):
         X, y = np.array(X), np.array(y)
         self._validate_data(X, y)
 
+        y = np.atleast_1d(y)
+
+        if y.ndim == 1:
+            # reshape is necessary to preserve the data contiguity against vs
+            # [:, np.newaxis] that does not.
+            y = np.reshape(y, (-1, 1))
+
+        self.n_outputs_ = y.shape[1]
         self.n_features_in_ = X.shape[1]
         self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
         self.max_depth_ = calc_tree_depth(n_cont_features=self.n_features_in_-len(self.cat_features_),
@@ -198,32 +205,8 @@ class RandomForestClassifier(ForestClassifier):
 
         return self
 
-    def predict(self, X):
-        """Predict on a given data.
 
-        Parameters:
-            X : array-like, shape (n_samples, n_features)
-                Training vector, where n_samples is the number of samples and n_features is the number of features.
-
-        Raises:
-            Exception: If the model is not fitted before prediction.
-
-        Returns:
-            [nd.array]: Numpy array of predictions.
-        """
-        check_is_fitted(self)
-
-        preds = []
-
-        for estimator in self.estimators_:
-            preds.append(np.array(estimator.predict(X)).reshape(-1, 1))
-
-        y = np.hstack(preds)
-
-        return np.apply_along_axis(lambda x: Counter(list(x)).most_common(1)[0][0], arr=y, axis=1)
-
-
-class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
+class DecisionTreeClassifier(BaseDecisionTreeClassifier):
     r"""Decision Tree Classifier with differential privacy.
 
     This class implements the base differentially private decision tree classifier
@@ -319,10 +302,10 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
 
     def _build(self, features, feature_domains, current_depth=1):
         if not features or current_depth >= self.max_depth+1:
-            return DecisionNode(level=current_depth)
+            return DecisionNode(level=current_depth, classes=self.classes_)
 
         split_feature = np.random.choice(features)
-        node = DecisionNode(level=current_depth, split_feature=split_feature)
+        node = DecisionNode(level=current_depth, classes=self.classes_, split_feature=split_feature)
 
         if split_feature in self.cat_features_:
             node.set_split_type(DecisionNode.CAT_SPLIT)
@@ -377,30 +360,25 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
 
         self.n_features_in_ = X.shape[1]
         features = list(range(self.n_features_in_))
+        y = np.atleast_1d(y)
+
+        if y.ndim == 1:
+            # reshape is necessary to preserve the data contiguity against vs
+            # [:, np.newaxis] that does not.
+            y = np.reshape(y, (-1, 1))
+
+        self.n_outputs_ = y.shape[1]
 
         self.tree_ = self._build(features, self.feature_domains_)
 
         for i in range(len(X)):
             node = self.tree_.classify(X[i])
-            node.update_class_count(y[i])
+            node.update_class_count(y[i].item())
 
         self.tree_.set_noisy_label(self.epsilon, self.classes_)
         self.fitted_ = True
 
         return self
-
-    def predict(self, X):
-        check_is_fitted(self)
-
-        y = []
-        X = np.array(X)
-        check_array(X)
-
-        for x in X:
-            node = self.tree_.classify(x)
-            y.append(node.noisy_label)
-
-        return np.array(y)
 
 
 class DecisionNode:
@@ -409,8 +387,9 @@ class DecisionNode:
     CONT_SPLIT = 0
     CAT_SPLIT = 1
 
-    def __init__(self, level, split_feature=None, split_value=None, split_type=None):
+    def __init__(self, level, classes, split_feature=None, split_value=None, split_type=None):
         self._level = level
+        self._classes = classes
         self._split_type = split_type
         self._split_feature = split_feature
         self._split_value = split_value
@@ -518,6 +497,19 @@ class DecisionNode:
         best = custom_dist.rvs()
 
         return int(best)
+
+    def predict(self, X):
+        y = []
+        X = np.array(X)
+        check_array(X)
+
+        for x in X:
+            node = self.classify(x)
+            proba = np.zeros(len(self._classes))
+            proba[np.where(self._classes == node.noisy_label)[0].item()] = 1
+            y.append(proba)
+
+        return np.array(y)
 
 
 def get_feature_domains(X, cat_features):
