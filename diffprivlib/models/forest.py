@@ -13,6 +13,7 @@ from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.mechanisms import PermuteAndFlip
 
 Dataset = namedtuple('Dataset', ['X', 'y'])
 
@@ -398,7 +399,6 @@ class DecisionNode:
         self._cat_children = {}
         self._class_counts = defaultdict(int)
         self._noisy_label = None
-        self._sensitivity = -1.0
 
     @property
     def noisy_label(self):
@@ -456,10 +456,10 @@ class DecisionNode:
                 if max([v for k, v in self._class_counts.items()]) < 1:
                     self._noisy_label = np.random.choice([k for k, v in self._class_counts.items()])
                 else:
-                    all_counts = sorted([v for k, v in self._class_counts.items()], reverse=True)
-                    count_difference = all_counts[0] - all_counts[1]
-                    self._sensitivity = np.exp(-1 * count_difference * epsilon)
-                    self._noisy_label = self._calc_label_by_expo_mech(epsilon, self._sensitivity, self._class_counts)
+                    utility = list(self._class_counts.values())
+                    candidates = list(self._class_counts.keys())
+                    mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility, candidates=candidates)
+                    self._noisy_label = mech.randomise()
         else:
             if self._left_child:
                 self._left_child.set_noisy_label(epsilon, class_values)
@@ -467,36 +467,6 @@ class DecisionNode:
                 self._right_child.set_noisy_label(epsilon, class_values)
             for child_node in self._cat_children.values():
                 child_node.set_noisy_label(epsilon, class_values)
-
-    def _calc_label_by_expo_mech(self, epsilon, sensitivity, counts):
-        ''' For this implementation of the Exponetial Mechanism, we use a piecewise linear scoring function,
-        where the element with the maximum count has a score of 1, and all other elements have a score of 0. '''
-        weighted = []
-        max_count = max([v for k, v in counts.items()])
-
-        for label, count in counts.items():
-            ''' if the score is non-monotonic, sensitivity needs to be multiplied by 2 '''
-            if count == max_count:
-                if sensitivity < 1.0e-10:
-                    power = 50   # e^50 is already astronomical. sizes beyond that dont matter
-                else:
-                    power = min(50, (epsilon*1)/(2*sensitivity))   # score = 1
-            else:
-                power = 0   # score = 0
-            weighted.append([label, np.exp(power)])
-
-        count_sum = 0.
-        for label, count in weighted:
-            count_sum += count
-        for i in range(len(weighted)):
-            weighted[i][1] /= count_sum
-
-        custom_dist = stats.rv_discrete(name='customDist',
-                                        values=([label for label, count in weighted],
-                                                [count for label, count in weighted]))
-        best = custom_dist.rvs()
-
-        return int(best)
 
     def predict(self, X):
         y = []
