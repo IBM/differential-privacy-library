@@ -1,8 +1,11 @@
+"""
+Random Forest Classifier with Differential Privacy
+"""
+from collections import defaultdict, namedtuple
 import numbers
 import warnings
-import numpy as np
 from joblib import Parallel, delayed
-from collections import defaultdict, namedtuple
+import numpy as np
 
 from sklearn.utils import check_array
 from sklearn.utils.fixes import _joblib_parallel_args
@@ -52,7 +55,7 @@ class RandomForestClassifier(ForestClassifier):
 
     random_state: float, optional
         Sets the numpy random seed.
-    
+
     feature_domains: dict, optional
         A dictionary of domain values for all features where keys are the feature indexes in the training data and
         the values are an array of domain values for categorical features and an array of min and max values for
@@ -387,6 +390,16 @@ class DecisionNode:
     CAT_SPLIT = 1
 
     def __init__(self, level, classes, split_feature=None, split_value=None, split_type=None):
+        """
+        Initialize DecisionNode
+
+        Parameters:
+            level (int): Node level in the tree
+            classes (list): List of class labels
+            split_feature (int): Split feature index
+            split_value (Any): Feature value to split at
+            split_type (int): Type of split
+        """
         self._level = level
         self._classes = classes
         self._split_type = split_type
@@ -400,30 +413,39 @@ class DecisionNode:
 
     @property
     def noisy_label(self):
+        """Get noisy label"""
         return self._noisy_label
 
     def set_split_value(self, split_value):
+        """Set split value"""
         self._split_value = split_value
 
     def set_split_type(self, split_type):
+        """Set split type"""
         self._split_type = split_type
 
     def set_left_child(self, node):
+        """Set left child of the node"""
         self._left_child = node
 
     def set_right_child(self, node):
+        """Set right child of the node"""
         self._right_child = node
 
     def add_cat_child(self, cat_value, node):
+        """Add a categorical child node"""
         self._cat_children[str(cat_value)] = node
 
     def is_leaf(self):
+        """Check whether the node is leaf node"""
         return not self._left_child and not self._right_child and not self._cat_children
 
     def update_class_count(self, class_value):
+        """Update the class count for the given class"""
         self._class_counts[class_value] += 1
 
     def classify(self, x):
+        """Classify the given data"""
         if self.is_leaf():
             return self
 
@@ -445,6 +467,7 @@ class DecisionNode:
         return child.classify(x)
 
     def set_noisy_label(self, epsilon, class_values):
+        """Set the noisy label for this node"""
         if self.is_leaf():
             if not self._noisy_label:
                 for val in class_values:
@@ -456,7 +479,8 @@ class DecisionNode:
                 else:
                     utility = list(self._class_counts.values())
                     candidates = list(self._class_counts.keys())
-                    mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility, candidates=candidates)
+                    mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility,
+                                          candidates=candidates)
                     self._noisy_label = mech.randomise()
         else:
             if self._left_child:
@@ -467,6 +491,7 @@ class DecisionNode:
                 child_node.set_noisy_label(epsilon, class_values)
 
     def predict(self, X):
+        """Predict using this node"""
         y = []
         X = np.array(X)
         check_array(X)
@@ -545,14 +570,13 @@ def calc_tree_depth(n_cont_features, n_cat_features, max_depth=15):
     """
     if n_cont_features < 1:
         return min(max_depth, np.floor(n_cat_features / 2.))
-    else:
-        ''' Designed using balls-in-bins probability. See the paper for details. '''
-        m = float(n_cont_features)
-        depth = 0
-        expected_empty = m   # the number of unique attributes not selected so far
-        while expected_empty > m / 2.:   # repeat until we have less than half the attributes being empty
-            expected_empty = m * ((m - 1.) / m) ** depth
-            depth += 1
-        # the above was only for half the numerical attributes. now add half the categorical attributes
-        final_depth = np.floor(depth + (n_cat_features / 2.))
-        return min(max_depth, final_depth)
+    # Designed using balls-in-bins probability. See the paper for details.
+    m = float(n_cont_features)
+    depth = 0
+    expected_empty = m   # the number of unique attributes not selected so far
+    while expected_empty > m / 2.:   # repeat until we have less than half the attributes being empty
+        expected_empty = m * ((m - 1.) / m) ** depth
+        depth += 1
+    # the above was only for half the numerical attributes. now add half the categorical attributes
+    final_depth = np.floor(depth + (n_cat_features / 2.))
+    return min(max_depth, final_depth)
