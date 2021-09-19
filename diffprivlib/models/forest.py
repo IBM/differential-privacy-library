@@ -2,11 +2,9 @@ import numbers
 import warnings
 import numpy as np
 from joblib import Parallel, delayed
-from collections import defaultdict, Counter, namedtuple
+from collections import defaultdict, namedtuple
 
-from scipy import stats
 from sklearn.utils import check_array
-from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
