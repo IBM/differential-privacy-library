@@ -277,19 +277,34 @@ class DecisionTreeClassifier(ClassifierMixin, BaseDecisionTree):
     """
     def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None,
                  feature_domains=None, cat_features=None, classes=None):
-        super().__init__(
-            criterion=None,
-            splitter=None,
-            max_depth=max_depth,
-            min_samples_split=None,
-            min_samples_leaf=None,
-            min_weight_fraction_leaf=None,
-            max_features=None,
-            random_state=random_state,
-            max_leaf_nodes=None,
-            min_impurity_decrease=None,
-            min_impurity_split=None
-        )
+        # min_impurity_split is removed in sklearn v1.0
+        try:
+            super().__init__(
+                criterion=None,
+                splitter=None,
+                max_depth=max_depth,
+                min_samples_split=None,
+                min_samples_leaf=None,
+                min_weight_fraction_leaf=None,
+                max_features=None,
+                random_state=random_state,
+                max_leaf_nodes=None,
+                min_impurity_decrease=None,
+                min_impurity_split=None
+            )
+        except TypeError:
+            super().__init__(
+                criterion=None,
+                splitter=None,
+                max_depth=max_depth,
+                min_samples_split=None,
+                min_samples_leaf=None,
+                min_weight_fraction_leaf=None,
+                max_features=None,
+                random_state=random_state,
+                max_leaf_nodes=None,
+                min_impurity_decrease=None
+            )
         self.feature_domains = feature_domains
         self.cat_feature_threshold = cat_feature_threshold
         self.epsilon = epsilon
