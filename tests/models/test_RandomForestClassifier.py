@@ -62,8 +62,8 @@ class TestRandomForestClassifier(TestCase):
         self.assertEqual(model.feature_domains_, {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
 
     def test_with_feature_domains(self):
-        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
-        y = np.array([1, 1, 1, 0, 0, 0, 1])
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
+        y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
         model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021, cat_feature_threshold=2,
                                        feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
         with self.assertRaises(NotFittedError):
