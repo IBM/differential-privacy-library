@@ -13,13 +13,14 @@ from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.mechanisms import PermuteAndFlip
+from diffprivlib.validation import DiffprivlibMixin
 
 Dataset = namedtuple('Dataset', ['X', 'y'])
 
 
-class RandomForestClassifier(ForestClassifier):
+class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
     r"""Random Forest Classifier with differential privacy.
 
     This class implements Differentially Private Random Decision Forests using Smooth Sensitivity [1].
@@ -89,7 +90,7 @@ class RandomForestClassifier(ForestClassifier):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from diffprivlib.models.tree import RandomForestClassifier
+    >>> from diffprivlib.models import RandomForestClassifier
     >>> X, y = make_classification(n_samples=1000, n_features=4,
     ...                            n_informative=2, n_redundant=0,
     ...                            random_state=0, shuffle=False)
@@ -105,9 +106,8 @@ class RandomForestClassifier(ForestClassifier):
 
     """
 
-    def __init__(self, n_estimators=10, epsilon=1.0, cat_feature_threshold=10,
-                 n_jobs=1, verbose=0, accountant=None, max_depth=15, random_state=None,
-                 feature_domains=None, **unused_args):
+    def __init__(self, n_estimators=10, *, epsilon=1.0, cat_feature_threshold=10, n_jobs=1, verbose=0, accountant=None,
+                 max_depth=15, random_state=None, feature_domains=None, **unused_args):
         super().__init__(
             base_estimator=DecisionTreeClassifier(),
             n_estimators=n_estimators,
@@ -125,7 +125,7 @@ class RandomForestClassifier(ForestClassifier):
         if random_state is not None:
             np.random.seed(random_state)
 
-        warn_unused_args(unused_args)
+        self._warn_unused_args(unused_args)
 
     def fit(self, X, y):
         """Fit the model to the given training data.
@@ -149,14 +149,12 @@ class RandomForestClassifier(ForestClassifier):
 
         self.accountant.check(self.epsilon, 0)
 
-        X, y = np.array(X), np.array(y)
-        self._validate_data(X, y)
+        X, y = self._validate_data(X, y)
 
         y = np.atleast_1d(y)
 
         if y.ndim == 1:
-            # reshape is necessary to preserve the data contiguity against vs
-            # [:, np.newaxis] that does not.
+            # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
             y = np.reshape(y, (-1, 1))
 
         self.n_outputs_ = y.shape[1]
@@ -262,7 +260,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier):
     """
     def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None,
                  feature_domains=None, cat_features=None, classes=None):
-        # min_impurity_split is removed in sklearn v1.0
+        # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(
                 criterion=None,
@@ -335,8 +333,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier):
             raise ValueError('Categorical feature threshold should be a positive integer;'
                              f'got {self.cat_feature_threshold}')
 
-        X, y = np.array(X), np.array(y)
-        self._validate_data(X, y)
+        X, y = self._validate_data(X, y)
 
         self.feature_domains_ = self.feature_domains
         self.cat_features_ = self.cat_features
@@ -474,14 +471,11 @@ class DecisionNode:
                     if val not in self._class_counts:
                         self._class_counts[val] = 0
 
-                if max([v for k, v in self._class_counts.items()]) < 1:
-                    self._noisy_label = np.random.choice([k for k, v in self._class_counts.items()])
-                else:
-                    utility = list(self._class_counts.values())
-                    candidates = list(self._class_counts.keys())
-                    mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility,
-                                          candidates=candidates)
-                    self._noisy_label = mech.randomise()
+                utility = list(self._class_counts.values())
+                candidates = list(self._class_counts.keys())
+                mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility,
+                                      candidates=candidates)
+                self._noisy_label = mech.randomise()
         else:
             if self._left_child:
                 self._left_child.set_noisy_label(epsilon, class_values)
