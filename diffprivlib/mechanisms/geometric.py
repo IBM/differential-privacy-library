@@ -136,9 +136,9 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     @classmethod
     def _check_bounds(cls, lower, upper):
         if not isinstance(lower, Integral) and abs(lower) != float("inf"):
-            raise TypeError("Lower bound must be integer-valued, got {}".format(lower))
+            raise TypeError(f"Lower bound must be integer-valued, got {lower}")
         if not isinstance(upper, Integral) and abs(upper) != float("inf"):
-            raise TypeError("Upper bound must be integer-valued, got {}".format(upper))
+            raise TypeError(f"Upper bound must be integer-valued, got {upper}")
 
         return super()._check_bounds(lower, upper)
 

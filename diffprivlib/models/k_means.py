@@ -120,7 +120,7 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
         n_samples, n_dims = X.shape
 
         if n_samples < self.n_clusters:
-            raise ValueError("n_samples=%d should be >= n_clusters=%d" % (n_samples, self.n_clusters))
+            raise ValueError(f"n_samples={n_samples} should be >= n_clusters={self.n_clusters}")
 
         iters = self._calc_iters(n_dims, n_samples)
 

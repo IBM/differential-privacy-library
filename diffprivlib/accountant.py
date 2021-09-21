@@ -153,19 +153,19 @@ class BudgetAccountant:
     def __repr__(self, n_budget_max=5):
         params = []
         if self.epsilon != float("inf"):
-            params.append("epsilon=%g" % self.epsilon)
+            params.append(f"epsilon={self.epsilon}")
 
         if self.delta != 1:
-            params.append("delta=%g" % self.delta)
+            params.append(f"delta={self.delta}")
 
         if self.slack > 0:
-            params.append("slack=%g" % self.slack)
+            params.append(f"slack={self.slack}")
 
         if self.spent_budget:
             if len(self.spent_budget) > n_budget_max:
-                params.append("spent_budget=%s" % str(self.spent_budget[:n_budget_max] + ["..."]).replace("'", ""))
+                params.append("spent_budget=" + str(self.spent_budget[:n_budget_max] + ["..."]).replace("'", ""))
             else:
-                params.append("spent_budget=%s" % str(self.spent_budget))
+                params.append("spent_budget=" + str(self.spent_budget))
 
         return "BudgetAccountant(" + ", ".join(params) + ")"
 
@@ -193,12 +193,12 @@ class BudgetAccountant:
     @slack.setter
     def slack(self, slack):
         if not 0 <= slack <= self.delta:
-            raise ValueError("Slack must be between 0 and delta ({}), inclusive. Got {}.".format(self.delta, slack))
+            raise ValueError(f"Slack must be between 0 and delta ({self.delta}), inclusive. Got {slack}.")
 
         epsilon_spent, delta_spent = self.total(slack=slack)
 
         if self.epsilon < epsilon_spent or self.delta < delta_spent:
-            raise BudgetError("Privacy budget will be exceeded by changing slack to {}.".format(slack))
+            raise BudgetError(f"Privacy budget will be exceeded by changing slack to {slack}.")
 
         self.__slack = slack
 
@@ -251,7 +251,7 @@ class BudgetAccountant:
         if slack is None:
             slack = self.slack
         elif not 0 <= slack <= self.delta:
-            raise ValueError("Slack must be between 0 and delta ({}), inclusive. Got {}.".format(self.delta, slack))
+            raise ValueError(f"Slack must be between 0 and delta ({self.delta}), inclusive. Got {slack}.")
 
         epsilon_sum, epsilon_exp_sum, epsilon_sq_sum = 0, 0, 0
 
@@ -299,16 +299,15 @@ class BudgetAccountant:
             return True
 
         if 0 < epsilon < self.__min_epsilon:
-            raise ValueError("Epsilon must be at least {} if non-zero, got {}.".format(self.__min_epsilon, epsilon))
+            raise ValueError(f"Epsilon must be at least {self.__min_epsilon} if non-zero, got {epsilon}.")
 
         spent_budget = self.spent_budget + [(epsilon, delta)]
 
         if Budget(self.epsilon, self.delta) >= self.total(spent_budget=spent_budget):
             return True
 
-        raise BudgetError("Privacy spend of ({},{}) not permissible; will exceed remaining privacy budget. "
-                          "Use {}.{}() to check remaining budget.".format(epsilon, delta, self.__class__.__name__,
-                                                                          self.remaining.__name__))
+        raise BudgetError(f"Privacy spend of ({epsilon},{delta}) not permissible; will exceed remaining privacy budget."
+                          f"Use {self.__class__.__name__}.{self.remaining.__name__}() to check remaining budget.")
 
     def remaining(self, k=1):
         """Calculates the budget that remains to be spent.
@@ -331,9 +330,9 @@ class BudgetAccountant:
 
         """
         if not isinstance(k, Integral):
-            raise TypeError("k must be integer-valued, got {}.".format(type(k)))
+            raise TypeError(f"k must be integer-valued, got {type(k)}.")
         if k < 1:
-            raise ValueError("k must be at least 1, got {}.".format(k))
+            raise ValueError(f"k must be at least 1, got {k}.")
 
         _, spent_delta = self.total()
         delta = 1 - ((1 - self.delta) / (1 - spent_delta)) ** (1 / k) if spent_delta < 1.0 else 1.0
@@ -440,7 +439,7 @@ class BudgetAccountant:
             return BudgetAccountant._default
 
         if not isinstance(accountant, BudgetAccountant):
-            raise TypeError("Accountant must be of type BudgetAccountant, got {}".format(type(accountant)))
+            raise TypeError(f"Accountant must be of type BudgetAccountant, got {type(accountant)}")
 
         return accountant
 

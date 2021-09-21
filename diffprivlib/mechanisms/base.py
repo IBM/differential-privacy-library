@@ -245,7 +245,7 @@ def bernoulli_neg_exp(gamma, rng=None):
 
     """
     if gamma < 0:
-        raise ValueError("Gamma must be non-negative, got {}.".format(gamma))
+        raise ValueError(f"Gamma must be non-negative, got {gamma}.")
 
     if rng is None:
         rng = secrets.SystemRandom()

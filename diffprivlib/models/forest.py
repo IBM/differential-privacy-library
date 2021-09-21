@@ -115,7 +115,6 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose)
-        self.n_estimators = n_estimators
         self.epsilon = epsilon
         self.cat_feature_threshold = cat_feature_threshold
         self.max_depth = max_depth
@@ -152,12 +151,6 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         self.accountant.check(self.epsilon, 0)
 
         X, y = self._validate_data(X, y, multi_output=False)
-
-        # y = np.atleast_1d(y)
-        #
-        # if y.ndim == 1:
-        #     # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
-        #     y = np.reshape(y, (-1, 1))
 
         self.n_outputs_ = 1
         self.n_features_in_ = X.shape[1]
@@ -299,9 +292,6 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         if random_state is not None:
             np.random.seed(random_state)
 
-    def _more_tags(self):
-        return {}
-
     def _build(self, features, feature_domains, current_depth=1):
         if not features or current_depth >= self.max_depth+1:
             return DecisionNode(level=current_depth, classes=self.classes_)
@@ -375,6 +365,13 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         self.fitted_ = True
 
         return self
+
+    @property
+    def n_features_(self):
+        return self.n_features_in_
+
+    def _more_tags(self):
+        return {}
 
 
 class DecisionNode:

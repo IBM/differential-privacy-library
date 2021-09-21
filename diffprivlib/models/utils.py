@@ -70,9 +70,9 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     n_features = array.shape[1]
     dims = n_features if dims is None else min(dims, n_features)
     if not isinstance(dims, Integral):
-        raise TypeError("Number of requested dimensions must be integer-valued, got %s" % type(dims))
+        raise TypeError(f"Number of requested dimensions must be integer-valued, got {type(dims)}")
     if dims < 0:
-        raise ValueError("Number of requested dimensions must be non-negative, got %d" % dims)
+        raise ValueError(f"Number of requested dimensions must be non-negative, got {dims}")
 
     max_norm = np.linalg.norm(array, axis=1).max()
     if norm is None:
@@ -81,7 +81,7 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
                       "leakage, specify `data_norm` at initialisation.", PrivacyLeakWarning)
         norm = max_norm
     elif max_norm > norm and not np.isclose(max_norm, norm):
-        raise ValueError("Rows of input array must have l2 norm of at most %f, got %f" % (norm, max_norm))
+        raise ValueError(f"Rows of input array must have l2 norm of at most {norm}, got {max_norm}")
 
     cov = array.T.dot(array) / (norm ** 2)
     eigvals = np.sort(np.linalg.eigvalsh(cov))[::-1]

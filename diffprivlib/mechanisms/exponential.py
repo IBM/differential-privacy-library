@@ -88,7 +88,7 @@ class Exponential(DPMechanism):
     @classmethod
     def _check_utility_candidates_measure(cls, utility, candidates, measure):
         if not isinstance(utility, list):
-            raise TypeError("Utility must be a list, got a {}.".format(utility))
+            raise TypeError(f"Utility must be a list, got a {utility}.")
 
         if not all(isinstance(u, Real) for u in utility):
             raise TypeError("Utility must be a list of real-valued numbers.")
@@ -101,14 +101,14 @@ class Exponential(DPMechanism):
 
         if candidates is not None:
             if not isinstance(candidates, list):
-                raise TypeError("Candidates must be a list, got a {}.".format(type(candidates)))
+                raise TypeError(f"Candidates must be a list, got a {type(candidates)}.")
 
             if len(candidates) != len(utility):
                 raise ValueError("List of candidates must be the same length as the list of utility values.")
 
         if measure is not None:
             if not isinstance(measure, list):
-                raise TypeError("Measure must be a list, got a {}.".format(type(measure)))
+                raise TypeError(f"Measure must be a list, got a {type(measure)}.")
 
             if not all(isinstance(m, Real) for m in measure):
                 raise TypeError("Measure must be a list of real-valued numbers.")
@@ -144,7 +144,7 @@ class Exponential(DPMechanism):
         self._check_utility_candidates_measure(self.utility, self.candidates, self.measure)
 
         if value is not None:
-            raise ValueError("Value to be randomised must be None. Got: {}.".format(value))
+            raise ValueError(f"Value to be randomised must be None. Got: {value}.")
 
         return True
 
@@ -180,7 +180,7 @@ class Exponential(DPMechanism):
             idx = len(self._probabilities) - 1
         else:
             raise RuntimeError("Can't find a candidate to return. "
-                               "Debugging info: Rand: {}, Probabilities: {}".format(rand, self._probabilities))
+                               f"Debugging info: Rand: {rand}, Probabilities: {self._probabilities}")
 
         return self.candidates[idx] if self.candidates else idx
 
@@ -267,7 +267,7 @@ class PermuteAndFlip(Exponential):
             if bernoulli_neg_exp(-self._probabilities[idx], self._rng):
                 return self.candidates[idx] if self.candidates else idx
 
-        raise RuntimeError("No value to return.  Probabilities: {}.".format(self._probabilities))
+        raise RuntimeError(f"No value to return.  Probabilities: {self._probabilities}.")
 
 
 class ExponentialCategorical(DPMechanism):
@@ -350,7 +350,7 @@ class ExponentialCategorical(DPMechanism):
                     missing.append((val1, val2))
 
         if missing:
-            raise ValueError("Utility values missing: %s" % (str(missing)))
+            raise ValueError(f"Utility values missing: {missing}")
 
         return True
 
@@ -421,7 +421,7 @@ class ExponentialCategorical(DPMechanism):
             raise TypeError("Value to be randomised must be a string")
 
         if value not in self._domain_values:
-            raise ValueError("Value \"%s\" not in domain" % value)
+            raise ValueError(f"Value \"{value}\" not in domain")
 
         return True
 
@@ -514,9 +514,10 @@ class ExponentialHierarchical(ExponentialCategorical):
             if hierarchy_height is None:
                 hierarchy_height = len(_hierarchy_locator)
             elif len(_hierarchy_locator) != hierarchy_height:
-                raise ValueError("Leaves of the hierarchy must all be at the same level " +
-                                 "(node %s is at level %d instead of hierarchy height %d)" %
-                                 (_hierarchy_locator.__str__(), len(_hierarchy_locator), hierarchy_height))
+                raise ValueError(
+                    f"Leaves of the hierarchy must all be at the same level (node {_hierarchy_locator.__str__()} is at "
+                    f"level {len(_hierarchy_locator)} instead of hierarchy height {hierarchy_height})"
+                )
 
     @staticmethod
     def _build_utility_list(hierarchy):
