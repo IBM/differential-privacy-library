@@ -127,7 +127,7 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
 
         self._warn_unused_args(unused_args)
 
-    def fit(self, X, y):
+    def fit(self, X, y, **unused_args):
         """Fit the model to the given training data.
 
         Parameters:
@@ -140,6 +140,8 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         Returns:
             self: class object
         """
+        self._warn_unused_args(unused_args)
+
         if not isinstance(self.n_estimators, numbers.Integral) or self.n_estimators < 0:
             raise ValueError(f'Number of estimators should be a positive integer; got {self.n_estimators}')
 
@@ -149,15 +151,15 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
 
         self.accountant.check(self.epsilon, 0)
 
-        X, y = self._validate_data(X, y)
+        X, y = self._validate_data(X, y, multi_output=False)
 
-        y = np.atleast_1d(y)
+        # y = np.atleast_1d(y)
+        #
+        # if y.ndim == 1:
+        #     # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
+        #     y = np.reshape(y, (-1, 1))
 
-        if y.ndim == 1:
-            # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
-            y = np.reshape(y, (-1, 1))
-
-        self.n_outputs_ = y.shape[1]
+        self.n_outputs_ = 1
         self.n_features_in_ = X.shape[1]
         self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
         self.max_depth_ = calc_tree_depth(n_cont_features=self.n_features_in_-len(self.cat_features_),
@@ -206,7 +208,7 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         return self
 
 
-class DecisionTreeClassifier(BaseDecisionTreeClassifier):
+class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     r"""Decision Tree Classifier with differential privacy.
 
     This class implements the base differentially private decision tree classifier
@@ -258,8 +260,8 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier):
     feature_domains_: dictionary of domain values mapped to feature
         indexes in the training data
     """
-    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None,
-                 feature_domains=None, cat_features=None, classes=None):
+    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None, feature_domains=None,
+                 cat_features=None, classes=None):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(
@@ -328,12 +330,15 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier):
 
         return node
 
-    def fit(self, X, y):
+    def fit(self, X, y, **unused_args):
+        self._warn_unused_args(unused_args)
+
         if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
             raise ValueError('Categorical feature threshold should be a positive integer;'
                              f'got {self.cat_feature_threshold}')
 
-        X, y = self._validate_data(X, y)
+        X, y = self._validate_data(X, y, multi_output=False)
+        self.n_outputs_ = 1
 
         self.feature_domains_ = self.feature_domains
         self.cat_features_ = self.cat_features
@@ -359,14 +364,6 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier):
 
         self.n_features_in_ = X.shape[1]
         features = list(range(self.n_features_in_))
-        y = np.atleast_1d(y)
-
-        if y.ndim == 1:
-            # reshape is necessary to preserve the data contiguity against vs
-            # [:, np.newaxis] that does not.
-            y = np.reshape(y, (-1, 1))
-
-        self.n_outputs_ = y.shape[1]
 
         self.tree_ = self._build(features, self.feature_domains_)
 

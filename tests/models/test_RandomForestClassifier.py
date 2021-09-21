@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from unittest import TestCase
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
@@ -8,8 +7,6 @@ from diffprivlib.models.forest import RandomForestClassifier
 from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
 
 
-@pytest.mark.filterwarnings('ignore::diffprivlib.utils.PrivacyLeakWarning',
-                            'ignore::sklearn.utils.validation.DataConversionWarning')
 class TestRandomForestClassifier(TestCase):
     def setUp(self):
         global_seed(2718281828)
@@ -29,16 +26,24 @@ class TestRandomForestClassifier(TestCase):
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):
-            RandomForestClassifier().fit([[1]], None)
+            RandomForestClassifier(feature_domains={'0': [0, 1]}).fit([[1]], None)
 
         with self.assertRaises(ValueError):
-            RandomForestClassifier().fit([[1], [2]], [1])
+            RandomForestClassifier(feature_domains={'0': [0, 2]}).fit([[1], [2]], [1])
 
         with self.assertRaises(ValueError):
-            RandomForestClassifier().fit([[1], [2]], [[1, 2], [2, 4]])
+            RandomForestClassifier(feature_domains={'0': [0, 2]}).fit([[1], [2]], [[1, 2], [2, 4]])
 
         with self.assertRaises(ValueError):
-            RandomForestClassifier().fit([[1, 2], [3, 4]], [1, 0])
+            RandomForestClassifier(feature_domains={'0': [0, 2], '1': [0, 6]}).fit([[1, 2], [3, 4]], [1, 0])
+
+    def test_multi_output(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
+        y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
+
+        clf = RandomForestClassifier()
+        with self.assertRaises(ValueError):
+            clf.fit(X, [y, y])
 
     def test_simple(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
@@ -95,12 +100,14 @@ class TestRandomForestClassifier(TestCase):
 
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
-        model = RandomForestClassifier(epsilon=2, n_estimators=5, accountant=acc)
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, accountant=acc,
+                                       feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [3.0, 16.0]})
         model.fit(X, y)
         self.assertEqual((2, 0), acc.total())
         
         with BudgetAccountant(3, 0) as acc2:
-            model = RandomForestClassifier(epsilon=2, n_estimators=5)
+            model = RandomForestClassifier(epsilon=2, n_estimators=5,
+                                           feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [3.0, 16.0]})
             model.fit(X, y)
             self.assertEqual((2, 0), acc2.total())
 
