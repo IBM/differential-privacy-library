@@ -204,11 +204,11 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
             self._warn_unused_args("sample_weight")
 
         if not isinstance(self.C, numbers.Real) or self.C < 0:
-            raise ValueError("Penalty term must be positive; got (C=%r)" % self.C)
+            raise ValueError(f"Penalty term must be positive; got (C={self.C})")
         if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:
-            raise ValueError("Maximum number of iteration must be positive; got (max_iter=%r)" % self.max_iter)
+            raise ValueError(f"Maximum number of iteration must be positive; got (max_iter={self.max_iter})")
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
-            raise ValueError("Tolerance for stopping criteria must be positive; got (tol=%r)" % self.tol)
+            raise ValueError(f"Tolerance for stopping criteria must be positive; got (tol={self.tol})")
 
         solver = _check_solver(self.solver, self.penalty, self.dual)
         X, y = self._validate_data(X, y, accept_sparse='csr', dtype=float, order="C",
@@ -231,7 +231,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         classes_ = self.classes_
         if n_classes < 2:
             raise ValueError("This solver needs samples of at least 2 classes in the data, but the data contains only "
-                             "one class: %r" % classes_[0])
+                             f"one class: {classes_[0]}")
 
         if len(self.classes_) == 2:
             n_classes = 1
@@ -244,7 +244,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         if warm_start_coef is not None and self.fit_intercept:
             warm_start_coef = np.append(warm_start_coef, self.intercept_[:, np.newaxis], axis=1)
 
-        self.coef_ = list()
+        self.coef_ = []
         self.intercept_ = np.zeros(n_classes)
 
         if warm_start_coef is None:
@@ -373,13 +373,13 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     if coef is not None:
         # it must work both giving the bias term and not
         if coef.size not in (n_features, output_vec.size):
-            raise ValueError('Initialization coef is of shape %d, expected shape %d or %d' % (coef.size, n_features,
-                                                                                              output_vec.size))
+            raise ValueError(f"Initialization coef is of shape {coef.size}, expected shape {n_features} or "
+                             f"{output_vec.size}")
         output_vec[:coef.size] = coef
 
     target = y_bin
 
-    coefs = list()
+    coefs = []
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
         vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1. / C,
@@ -406,9 +406,9 @@ def _check_solver(solver, penalty, dual):
         solver = 'lbfgs'
 
     if penalty != 'l2':
-        raise ValueError("Solver %s supports only l2 penalties, got %s penalty." % (solver, penalty))
+        raise ValueError(f"Solver {solver} supports only l2 penalties, got {penalty} penalty.")
     if dual:
-        raise ValueError("Solver %s supports only dual=False, got dual=%s" % (solver, dual))
+        raise ValueError(f"Solver {solver} supports only dual=False, got dual={dual}")
     return solver
 
 
@@ -416,7 +416,8 @@ def _check_multi_class(multi_class, solver, n_classes):
     del solver, n_classes
 
     if multi_class != 'ovr':
-        warnings.warn("For diffprivlib, multi_class must be 'ovr'.", DiffprivlibCompatibilityWarning)
+        warnings.warn(f"For diffprivlib, multi_class must be 'ovr', got {multi_class}.",
+                      DiffprivlibCompatibilityWarning)
         multi_class = 'ovr'
 
     return multi_class

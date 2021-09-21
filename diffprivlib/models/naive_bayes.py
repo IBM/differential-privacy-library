@@ -132,8 +132,8 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
                 self.class_prior_ = np.zeros(len(self.classes_), dtype=np.float64)
         else:
             if X.shape[1] != self.theta_.shape[1]:
-                raise ValueError("Number of features %d does not match previous data %d." %
-                                 (X.shape[1], self.theta_.shape[1]))
+                raise ValueError(f"Number of features {X.shape[1]} does not match previous "
+                                 f"data {self.theta_.shape[1]}.")
             # Put epsilon back in each time
             self.var_[:, :] -= self.epsilon_
 
@@ -143,8 +143,8 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
         unique_y_in_classes = np.in1d(unique_y, classes)
 
         if not np.all(unique_y_in_classes):
-            raise ValueError("The target label(s) %s in y do not exist in the initial classes %s" %
-                             (unique_y[~unique_y_in_classes], classes))
+            raise ValueError(f"The target label(s) {unique_y[~unique_y_in_classes]} in y do not exist in the initial "
+                             f"classes {classes}")
 
         noisy_class_counts = self._noisy_class_counts(y)
 
@@ -287,5 +287,6 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
 
     @property
     def sigma_(self):
+        """Variance of each feature per class."""
         # Todo: Consider removing when sklearn v1.0 is required
         return self.var_

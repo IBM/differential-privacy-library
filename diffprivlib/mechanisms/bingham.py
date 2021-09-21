@@ -71,11 +71,11 @@ class Bingham(DPMechanism):
         self._check_sensitivity(self.sensitivity)
 
         if not isinstance(value, np.ndarray):
-            raise TypeError("Value to be randomised must be a numpy array, got %s" % type(value))
+            raise TypeError(f"Value to be randomised must be a numpy array, got {type(value)}")
         if value.ndim != 2:
-            raise ValueError("Array must be 2-dimensional, got %d dimensions" % value.ndim)
+            raise ValueError(f"Array must be 2-dimensional, got {value.ndim} dimensions")
         if value.shape[0] != value.shape[1]:
-            raise ValueError("Array must be square, got %d x %d" % (value.shape[0], value.shape[1]))
+            raise ValueError(f"Array must be square, got {value.shape[0]} x {value.shape[1]}")
         if not np.allclose(value, value.T):
             raise ValueError("Array must be symmetric, supplied array is not.")
 

@@ -85,9 +85,9 @@ def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
 
     """
     if not isinstance(bounds, tuple):
-        raise TypeError("Bounds must be specified as a tuple of (min, max), got {}.".format(type(bounds)))
+        raise TypeError(f"Bounds must be specified as a tuple of (min, max), got {type(bounds)}.")
     if not isinstance(shape, Integral):
-        raise TypeError("shape parameter must be integer-valued, got {}.".format(type(shape)))
+        raise TypeError(f"shape parameter must be integer-valued, got {type(shape)}.")
 
     lower, upper = bounds
 
@@ -102,8 +102,8 @@ def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
         raise ValueError("lower and upper bounds must be the same shape array")
     if lower.ndim > 1:
         raise ValueError("lower and upper bounds must be scalar or a 1-dimensional array")
-    if lower.size != shape and lower.size != 1:
-        raise ValueError("lower and upper bounds must have {} element(s), got {}.".format(shape or 1, lower.size))
+    if lower.size not in (1, shape):
+        raise ValueError(f"lower and upper bounds must have {shape or 1} element(s), got {lower.size}.")
 
     n_bounds = lower.shape[0]
 
@@ -112,12 +112,10 @@ def check_bounds(bounds, shape=0, min_separation=0.0, dtype=float):
         _upper = upper[i]
 
         if not isinstance(_lower, Real) or not isinstance(_upper, Real):
-            raise TypeError("Each bound must be numeric, got {} ({}) and {} ({}).".format(_lower, type(_lower),
-                                                                                          _upper, type(_upper)))
+            raise TypeError(f"Each bound must be numeric, got {_lower} ({type(_lower)}) and {_upper} ({type(_upper)}).")
 
         if _lower > _upper:
-            raise ValueError("For each bound, lower bound must be smaller than upper bound, got {}, {})".format(
-                lower, upper))
+            raise ValueError(f"For each bound, lower bound must be smaller than upper bound, got {lower}, {upper})")
 
         if _upper - _lower < min_separation:
             mid = (_upper + _lower) / 2
@@ -152,13 +150,13 @@ def clip_to_norm(array, clip):
 
     """
     if not isinstance(array, np.ndarray):
-        raise TypeError("Input array must be a numpy array, got {}.".format(type(array)))
+        raise TypeError(f"Input array must be a numpy array, got {type(array)}.")
     if array.ndim != 2:
-        raise ValueError("input array must be 2-dimensional, got {} dimensions.".format(array.ndim))
+        raise ValueError(f"input array must be 2-dimensional, got {array.ndim} dimensions.")
     if not isinstance(clip, Real):
-        raise TypeError("Clip value must be numeric, got {}.".format(type(clip)))
+        raise TypeError(f"Clip value must be numeric, got {type(clip)}.")
     if clip <= 0:
-        raise ValueError("Clip value must be strictly positive, got {}.".format(clip))
+        raise ValueError(f"Clip value must be strictly positive, got {clip}.")
 
     norms = np.linalg.norm(array, axis=1) / clip
     norms[norms < 1] = 1
@@ -185,7 +183,7 @@ def clip_to_bounds(array, bounds):
 
     """
     if not isinstance(array, np.ndarray):
-        raise TypeError("Input array must be a numpy array, got {}.".format(type(array)))
+        raise TypeError(f"Input array must be a numpy array, got {type(array)}.")
 
     lower, upper = check_bounds(bounds, np.size(bounds[0]), min_separation=0)
     clipped_array = array.copy()
@@ -194,8 +192,7 @@ def clip_to_bounds(array, bounds):
         clipped_array = np.clip(clipped_array, np.min(lower), np.max(upper))
     else:
         if array.ndim != 2:
-            raise ValueError("For non-scalar bounds, input array must be 2-dimensional. Got %d dimensions." %
-                             array.ndim)
+            raise ValueError(f"For non-scalar bounds, input array must be 2-dimensional. Got {array.ndim} dimensions.")
 
         for feature in range(array.shape[1]):
             clipped_array[:, feature] = np.clip(array[:, feature], lower[feature], upper[feature])
@@ -204,6 +201,7 @@ def clip_to_bounds(array, bounds):
 
 
 class DiffprivlibMixin:
+    """Mixin for Diffprivlib models."""
     _check_bounds = staticmethod(check_bounds)
     _clip_to_norm = staticmethod(clip_to_norm)
     _clip_to_bounds = staticmethod(clip_to_bounds)

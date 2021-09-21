@@ -82,8 +82,8 @@ def warn_unused_args(args):
         args = [args]
 
     for arg in args:
-        warnings.warn("Parameter '%s' is not functional in diffprivlib.  Remove this parameter to suppress this "
-                      "warning." % arg, DiffprivlibCompatibilityWarning)
+        warnings.warn(f"Parameter '{arg}' is not functional in diffprivlib.  Remove this parameter to suppress this "
+                      "warning.", DiffprivlibCompatibilityWarning)
 
 
 class Budget(tuple):
@@ -132,7 +132,7 @@ class Budget(tuple):
         return False
 
     def __repr__(self):
-        return "(epsilon=%r, delta=%r)" % self
+        return f"(epsilon={self[0]}, delta={self[1]})"
 
 
 class BudgetError(ValueError):

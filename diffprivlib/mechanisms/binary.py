@@ -76,8 +76,8 @@ class Binary(DPMechanism):
             raise TypeError("Value to be randomised must be a string")
 
         if value not in [self.value0, self.value1]:
-            raise ValueError("Value to be randomised is not in the domain {\"%s\", \"%s\"}, got \"%s\"" %
-                             (self.value0, self.value1, value))
+            raise ValueError(f"Value to be randomised is not in the domain {{\"{self.value0}\", \"{self.value1}\"}}, "
+                             f"got \"{value}\".")
 
         return True
 
