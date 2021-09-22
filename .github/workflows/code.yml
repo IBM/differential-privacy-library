@@ -1,0 +1,36 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Style and coverage tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pylint==2.11.1 pycodestyle==2.7.0 pytest-cov
+        python -m pip install .
+        python -m pip list
+    - name: Codecov test
+      run: |
+        pytest --cov-report=xml --cov=diffprivlib --cov-append
+    - name: Codecov upload
+      run: echo "Codecov still being uploaded by Travis!"
+#      uses: codecov/codecov-action@v2.1.0
+    - name: pycodestyle
+      run: pycodestyle --max-line-length=120 diffprivlib
+    - name: pylint
+      run: pylint --fail-under=9.5 -rn diffprivlib
