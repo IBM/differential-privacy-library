@@ -6,7 +6,7 @@ name: Style and coverage tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main, gh-actions ]
+    branches: ['**']
   pull_request:
     branches: [ main ]
 
@@ -27,7 +27,8 @@ jobs:
     - name: Codecov test
       run: |
         pytest --cov-report=xml --cov=diffprivlib --cov-append
-#    - name: Codecov upload
+    - name: Codecov upload
+      run: echo "Codecov still being uploaded by Travis!"
 #      uses: codecov/codecov-action@v2.1.0
     - name: pycodestyle
       run: pycodestyle --max-line-length=120 diffprivlib

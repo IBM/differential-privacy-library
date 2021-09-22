@@ -6,7 +6,7 @@ name: Library tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main, gh-actions ]
+    branches: ['**']
   pull_request:
     branches: [ main ]
 
@@ -51,20 +51,24 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pytest
         python -m pip install .
+
     - name: Pre-install numpy
       if: ${{ matrix.library == 'numpy' }}
       run: |
         python -m pip install numpy==${{ matrix.version }}
-        python -m pip list
+
     - name: Pre-install scikit-learn
       if: ${{ matrix.library == 'scikit-learn' }}
       run: |
         python -m pip install scikit-learn==${{ matrix.version }}
-        python -m pip list
+
     - name: Pre-install scipy
       if: ${{ matrix.library == 'scipy' }}
       run: |
         python -m pip install scipy==${{ matrix.version }}
+
+    - name: List installed packages
+      run: |
         python -m pip list
     - name: Test with pytest
       run: |
