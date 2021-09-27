@@ -100,6 +100,9 @@ def _wrap_axis(func, array, *, axis, keepdims, epsilon, bounds, **kwargs):
 def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
     r"""Counts the number of non-zero values in the array ``array`` with differential privacy.
 
+    It is typical to use this function on the result of binary operations, such as ``count_nonzero(array >= 0)``.  If
+    you wish to count the number of elements of an array, use ``count_nonzero(np.ones_like(array))``.
+
     The word "non-zero" is in reference to the Python 2.x built-in method ``__nonzero__()`` (renamed ``__bool__()`` in
     Python 3.x) of Python objects that tests an object's "truthfulness".  For example, any number is considered truthful
     if it is nonzero, whereas any string is considered truthful if it is not the empty string.  Thus, this function
