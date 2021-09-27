@@ -32,6 +32,9 @@ jobs:
           - library: scikit-learn
             version: 0.23.2
             python-version: 3.8
+          - library: scikit-learn
+            version: 0.24.2
+            python-version: 3.9
 
           - library: scipy
             version: 1.5.4
