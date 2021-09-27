@@ -111,3 +111,18 @@ The library comes with a basic set of unit tests for `pytest`. To check your ins
 ```bash
 pytest
 ```
+
+## Citing diffprivlib
+If you use diffprivlib for research, please consider citing the following reference paper:
+```
+@article{HBML19,
+  title={Diffprivlib: the {IBM} differential privacy library},
+  author={Holohan, Naoise and Braghin, Stefano and Mac Aonghusa, P{\'o}l and Levacher, Killian},
+  year={2019},
+  journal = {ArXiv e-prints},
+  archivePrefix = "arXiv",
+  volume = {1907.02444 [cs.CR]},
+  primaryClass = "cs.CR",
+  month = jul
+}
+```
