@@ -115,7 +115,7 @@ pytest
 ## Citing diffprivlib
 If you use diffprivlib for research, please consider citing the following reference paper:
 ```
-@article{HBML19,
+@article{diffprivlib,
   title={Diffprivlib: the {IBM} differential privacy library},
   author={Holohan, Naoise and Braghin, Stefano and Mac Aonghusa, P{\'o}l and Levacher, Killian},
   year={2019},
