@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug in DiffPrivLib
+about: Report a bug in diffprivlib
 
 ---
 
@@ -23,5 +23,5 @@ If applicable, add screenshots to help explain your problem.
 **System information (please complete the following information):**
  - OS
  - Python version
- - DiffPrivLib version or commit number
+ - diffprivlib version or commit number
  - numpy / scikit-learn version

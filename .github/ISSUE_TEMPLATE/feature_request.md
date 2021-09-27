@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for improving DiffPrivLib
+about: Suggest an idea for improving diffprivlib
 
 ---
 
