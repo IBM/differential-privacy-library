@@ -142,22 +142,22 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha):
     del coefs
     noisy_coefs = (mono_coef_0, mono_coef_1, mono_coef_2)
 
-    output = []
-
-    for i in range(n_targets):
-        def obj(omega):
-            func = noisy_coefs[0][i]
-            func -= 2 * np.dot(noisy_coefs[1][:, i], omega)
+    def obj(idx):
+        def inner_obj(omega):
+            func = noisy_coefs[0][idx]
+            func -= 2 * np.dot(noisy_coefs[1][:, idx], omega)
             func += np.multiply(noisy_coefs[2], np.tensordot(omega, omega, axes=0)).sum()
             func += alpha * (omega ** 2).sum()
 
-            grad = - 2 * noisy_coefs[1][:, i] + 2 * np.matmul(noisy_coefs[2], omega) + 2 * omega * alpha
+            grad = - 2 * noisy_coefs[1][:, idx] + 2 * np.matmul(noisy_coefs[2], omega) + 2 * omega * alpha
 
             return func, grad
 
-        output += [obj]
+        return inner_obj
 
-    return tuple(output), noisy_coefs
+    output = tuple(obj(i) for i in range(n_targets))
+
+    return output, noisy_coefs
 
 
 # noinspection PyPep8Naming,PyAttributeOutsideInit
