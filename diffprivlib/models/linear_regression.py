@@ -240,6 +240,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         Returns
         -------
         self : returns an instance of self.
+        
         """
         self.accountant.check(self.epsilon, 0)
 

@@ -126,20 +126,27 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
 
         self._warn_unused_args(unused_args)
 
-    def fit(self, X, y, **unused_args):
+    def fit(self, X, y, sample_weight=None):
         """Fit the model to the given training data.
 
-        Parameters:
-            X : array-like, shape (n_samples, n_features)
-                Training vector, where n_samples is the number of samples and n_features is the number of features.
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples is the number of samples and n_features is the number of features.
 
-            y : array-like, shape (n_samples,)
-                Target vector relative to X.
+        y : array-like, shape (n_samples,)
+            Target vector relative to X.
 
-        Returns:
-            self: class object
+        sample_weight : ignored
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
+
+        Returns
+        -------
+        self: class
+
         """
-        self._warn_unused_args(unused_args)
+        if sample_weight is not None:
+            self._warn_unused_args("sample_weight")
 
         if not isinstance(self.n_estimators, numbers.Integral) or self.n_estimators < 0:
             raise ValueError(f'Number of estimators should be a positive integer; got {self.n_estimators}')
@@ -252,6 +259,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
     feature_domains_: dictionary of domain values mapped to feature
         indexes in the training data
+
     """
     def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None, feature_domains=None,
                  cat_features=None, classes=None):
@@ -320,14 +328,16 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
         return node
 
-    def fit(self, X, y, **unused_args):
-        self._warn_unused_args(unused_args)
+    def fit(self, X, y, sample_weight=None, check_input=True, X_idx_sorted="deprecated"):
+        if sample_weight is not None:
+            self._warn_unused_args("sample_weight")
 
         if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
             raise ValueError('Categorical feature threshold should be a positive integer;'
                              f'got {self.cat_feature_threshold}')
 
-        X, y = self._validate_data(X, y, multi_output=False)
+        if check_input:
+            X, y = self._validate_data(X, y, multi_output=False)
         self.n_outputs_ = 1
 
         self.feature_domains_ = self.feature_domains
@@ -357,12 +367,11 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
         self.tree_ = self._build(features, self.feature_domains_)
 
-        for i in range(len(X)):
+        for i, _ in enumerate(X):
             node = self.tree_.classify(X[i])
             node.update_class_count(y[i].item())
 
         self.tree_.set_noisy_label(self.epsilon, self.classes_)
-        self.fitted_ = True
 
         return self
 
@@ -384,12 +393,23 @@ class DecisionNode:
         """
         Initialize DecisionNode
 
-        Parameters:
-            level (int): Node level in the tree
-            classes (list): List of class labels
-            split_feature (int): Split feature index
-            split_value (Any): Feature value to split at
-            split_type (int): Type of split
+        Parameters
+        ----------
+        level: int
+            Node level in the tree
+
+        classes: list
+            List of class labels
+
+        split_feature: int
+            Split feature index
+
+        split_value: Any
+            Feature value to split at
+
+        split_type: int
+            Type of split
+
         """
         self._level = level
         self._classes = classes
