@@ -1,4 +1,4 @@
-# Diffprivlib v0.4
+# Diffprivlib v0.5
 
 [![Python versions](https://img.shields.io/pypi/pyversions/diffprivlib.svg)](https://pypi.org/project/diffprivlib/)
 [![Downloads](https://pepy.tech/badge/diffprivlib)](https://pepy.tech/project/diffprivlib)
