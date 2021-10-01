@@ -4,7 +4,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import RandomForestClassifier
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError, DiffprivlibCompatibilityWarning
 
 
 class TestRandomForestClassifier(TestCase):
@@ -23,6 +23,9 @@ class TestRandomForestClassifier(TestCase):
         
         with self.assertRaises(ValueError):
             RandomForestClassifier(cat_feature_threshold="5").fit(X, y)
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            RandomForestClassifier(n_estimators=1, feature_domains={'0': [0, 1]}).fit(X, y, sample_weight=1)
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):
@@ -49,12 +52,15 @@ class TestRandomForestClassifier(TestCase):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
         model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021, cat_feature_threshold=2)
+
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         # when `feature_domains` is not provided, we should get a privacy leakage warning
+
         with self.assertWarns(PrivacyLeakWarning):
             model.fit(X, y)
         check_is_fitted(model)
+
         self.assertEqual(model.n_features_in_, 3)
         self.assertEqual(model.n_classes_, 2)
         self.assertEqual(set(model.classes_), set([0, 1]))
