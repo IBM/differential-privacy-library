@@ -4,7 +4,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import DecisionTreeClassifier, get_cat_features, get_feature_domains, calc_tree_depth
-from diffprivlib.utils import PrivacyLeakWarning, global_seed
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning
 
 
 class TestDecisionTreeClassifier(TestCase):
@@ -20,6 +20,9 @@ class TestDecisionTreeClassifier(TestCase):
         
         with self.assertRaises(ValueError):
             DecisionTreeClassifier(cat_feature_threshold="5").fit(X, y)
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            DecisionTreeClassifier(cat_feature_threshold=2, feature_domains={'0': [0, 1]}).fit(X, y, sample_weight=1)
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):
