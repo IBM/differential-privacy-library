@@ -76,6 +76,18 @@ class TestSnapping(TestCase):
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
 
+    def test_within_bounds(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
+        vals = []
+
+        for i in range(1000):
+            vals.append(mech.randomise(0.5))
+
+        vals = np.array(vals)
+
+        self.assertTrue(np.all(vals >= 0))
+        self.assertTrue(np.all(vals <= 1))
+
     def test_neighbours_prob(self):
         epsilon = 1
         runs = 10000
