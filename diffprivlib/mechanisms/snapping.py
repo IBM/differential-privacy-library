@@ -103,7 +103,7 @@ class Snapping(DPMechanism, TruncationAndFoldingMixin):
     def effective_epsilon(self):
         r"""
         Computes the effective value of :math:`\epsilon` that the Snapping mechanism guarantees compared to an
-        equivalent Laplace mechanims based on the bounds and the machine epsilon.
+        equivalent Laplace mechanisms based on the bounds and the machine epsilon.
         Defined in section 5.2 of [Mir12]_.
 
         Returns
