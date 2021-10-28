@@ -76,6 +76,19 @@ class TestSnapping(TestCase):
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
 
+    def test_effective_epsilon_high_sensitivity(self):
+        mech = self.mech(epsilon=1, sensitivity=100, lower=0, upper=1)
+        self.assertLess(mech.effective_epsilon(), 1.0)
+
+    def test_effective_epsilon_one_sensitivity(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
+        self.assertGreater(mech.effective_epsilon(), 1.0)
+
+    def test_effective_epsilon_zero_sensitivity(self):
+        mech = self.mech(epsilon=1, sensitivity=0, lower=0, upper=1)
+
+        self.assertTrue(mech.effective_epsilon(), float('inf'))
+
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
         vals = []

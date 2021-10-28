@@ -111,8 +111,11 @@ class Snapping(DPMechanism, TruncationAndFoldingMixin):
         float
             The effective value of :math:`\epsilon`
         """
-        machine_epsilon = np.finfo(float).epsneg
-        return self.epsilon + 12.0 * self._bound * self.epsilon + 2.0 * machine_epsilon
+        if self.sensitivity > 0:
+            machine_epsilon = np.finfo(float).epsneg
+            return (self.epsilon + 12.0 * self._bound * self.epsilon + 2.0 * machine_epsilon) / self.sensitivity
+        else:
+            return float('inf')
 
     def _scale_and_offset_value(self, value):
         """
