@@ -78,16 +78,28 @@ class TestSnapping(TestCase):
 
     def test_effective_epsilon_high_sensitivity(self):
         mech = self.mech(epsilon=1, sensitivity=100, lower=0, upper=1)
+
         self.assertLess(mech.effective_epsilon(), 1.0)
 
     def test_effective_epsilon_one_sensitivity(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
+
         self.assertGreater(mech.effective_epsilon(), 1.0)
 
     def test_effective_epsilon_zero_sensitivity(self):
         mech = self.mech(epsilon=1, sensitivity=0, lower=0, upper=1)
 
         self.assertTrue(mech.effective_epsilon(), float('inf'))
+
+    def test_rounding_power_of_two(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
+
+        self.assertEqual(mech._lambda, 1)
+
+    def test_rounding_not_power_of_two(self):
+        mech = self.mech(epsilon=3, sensitivity=1, lower=0, upper=1)
+
+        self.assertEqual(mech._lambda, 0.5)
 
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
