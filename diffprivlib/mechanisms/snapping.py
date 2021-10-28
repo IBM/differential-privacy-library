@@ -45,6 +45,7 @@ class Snapping(LaplaceTruncated):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity, delta=0.0, lower=lower, upper=upper)
         self.scale = 1.0 / self.epsilon
         self._bound = self._scale_bound()
+        self._lambda = self._get_nearest_power_of_2(self.scale)
 
     def _scale_bound(self):
         """
@@ -143,11 +144,10 @@ class Snapping(LaplaceTruncated):
         """
         if self.epsilon == float('inf'):  # infinitely small rounding
             return value
-        base = self._get_nearest_power_of_2(1.0 / self.epsilon)
-        remainder = value % base
-        if remainder > base / 2:
-            return value - remainder + base
-        if remainder == base / 2:
+        remainder = value % self._lambda
+        if remainder > self._lambda / 2:
+            return value - remainder + self._lambda
+        if remainder == self._lambda / 2:
             return value + remainder
         return value - remainder
 
