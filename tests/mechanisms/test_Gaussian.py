@@ -81,6 +81,18 @@ class TestGaussian(TestCase):
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
 
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=42)
+        mech2 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=np.random.RandomState(42))
+        self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=rng)
+        mech2 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=rng)
+        self.assertNotEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=0.5, delta=0.1, sensitivity=1))
         self.assertIn(".Gaussian(", repr_)

@@ -18,6 +18,7 @@
 """
 The staircase mechanism in differential privacy.
 """
+import secrets
 from numbers import Real
 
 import numpy as np
@@ -45,12 +46,17 @@ class Staircase(Laplace):
     gamma : float, default: 1 / (1 + exp(epsilon/2))
         Value of the tuning parameter gamma for the mechanism.  Must be in [0, 1].
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity, gamma=None):
-        super().__init__(epsilon=epsilon, delta=0, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, sensitivity, gamma=None, random_state=None):
+        super().__init__(epsilon=epsilon, delta=0, sensitivity=sensitivity, random_state=random_state)
         self.gamma = self._check_gamma(gamma, epsilon=self.epsilon)
 
-        self._rng = np.random.default_rng()
+        if isinstance(self._rng, secrets.SystemRandom):
+            self._rng = np.random.default_rng()
 
     @classmethod
     def _check_gamma(cls, gamma, epsilon=None):

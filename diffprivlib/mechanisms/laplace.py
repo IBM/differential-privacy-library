@@ -18,6 +18,7 @@
 """
 The classic Laplace mechanism in differential privacy, and its derivatives.
 """
+import secrets
 from numbers import Real
 
 import numpy as np
@@ -48,6 +49,10 @@ class Laplace(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [DMNS16] Dwork, Cynthia, Frank McSherry, Kobbi Nissim, and Adam Smith. "Calibrating noise to sensitivity in
@@ -60,8 +65,8 @@ class Laplace(DPMechanism):
         arXiv:2107.10138 (2021).
 
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = None
 
@@ -168,9 +173,13 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @copy_docstring(Laplace.bias)
@@ -233,9 +242,13 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @copy_docstring(Laplace.bias)
@@ -290,15 +303,22 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [HABM20] Holohan, Naoise, Spiros Antonatos, Stefano Braghin, and Pól Mac Aonghusa. "The Bounded Laplace Mechanism
         in Differential Privacy." Journal of Privacy and Confidentiality 10, no. 1 (2020).
 
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, lower=lower, upper=upper)
-        self._rng = np.random.default_rng()
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, lower=lower, upper=upper,
+                         random_state=random_state)
+
+        if isinstance(self._rng, secrets.SystemRandom):
+            self._rng = np.random.default_rng()
 
     def _find_scale(self):
         eps = self.epsilon
@@ -424,16 +444,22 @@ class LaplaceBoundedNoise(Laplace):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [GDGK18] Geng, Quan, Wei Ding, Ruiqi Guo, and Sanjiv Kumar. "Truncated Laplacian Mechanism for Approximate
         Differential Privacy." arXiv preprint arXiv:1810.00877v1 (2018).
 
     """
-    def __init__(self, *, epsilon, delta, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         self._noise_bound = None
-        self._rng = np.random.default_rng()
+
+        if isinstance(self._rng, secrets.SystemRandom):
+            self._rng = np.random.default_rng()
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):

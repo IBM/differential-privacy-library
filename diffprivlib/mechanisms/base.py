@@ -24,6 +24,8 @@ import inspect
 from numbers import Real
 import secrets
 
+from sklearn.utils import check_random_state
+
 
 class DPMachine(abc.ABC):
     """
@@ -70,11 +72,16 @@ class DPMechanism(DPMachine, abc.ABC):
         Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
         ``epsilon``.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta):
+    def __init__(self, *, epsilon, delta, random_state=None):
         self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
 
-        self._rng = secrets.SystemRandom()
+        self.random_state = random_state
+        self._rng = check_random_state(random_state) if random_state else secrets.SystemRandom()
 
     def __repr__(self):
         attrs = inspect.getfullargspec(self.__class__).kwonlyargs
@@ -225,7 +232,7 @@ class TruncationAndFoldingMixin:
         return value
 
 
-def bernoulli_neg_exp(gamma, rng=None):
+def bernoulli_neg_exp(gamma, random_state=None):
     """Sample from Bernoulli(exp(-gamma)).
 
     Adapted from "The Discrete Gaussian for Differential Privacy", Canonne, Kamath, Steinke, 2020.
@@ -236,8 +243,9 @@ def bernoulli_neg_exp(gamma, rng=None):
     gamma : float
         Parameter to sample from Bernoulli(exp(-gamma)).  Must be non-negative.
 
-    rng : Random number generator, optional
-        Random number generator to use.  If not provided, uses SystemRandom from secrets by default.
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
 
     Returns
     -------
@@ -247,8 +255,12 @@ def bernoulli_neg_exp(gamma, rng=None):
     if gamma < 0:
         raise ValueError(f"Gamma must be non-negative, got {gamma}.")
 
-    if rng is None:
+    if isinstance(random_state, secrets.SystemRandom):
+        rng = random_state
+    elif random_state is None:
         rng = secrets.SystemRandom()
+    else:
+        rng = check_random_state(random_state)
 
     while gamma > 1:
         gamma -= 1

@@ -69,6 +69,16 @@ class TestBinary(TestCase):
         # print("%d / %d = %f" % (count[0], count[1], count[0] / count[1]))
         self.assertAlmostEqual(count[0] / count[1], np.exp(epsilon), delta=0.1)
 
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, value0="0", value1="1", random_state=42)
+        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=np.random.RandomState(42))
+        self.assertEqual([mech1.randomise("1") for _ in range(100)], [mech2.randomise("1") for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise("1")] * 100, [mech1.randomise("1") for _ in range(100)])
+
+        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=np.random.RandomState(0))
+        self.assertNotEqual([mech1.randomise("1") for _ in range(100)], [mech2.randomise("1") for _ in range(100)])
+
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, value0="0", value1="1"))
         self.assertIn(".Binary(", repr_)

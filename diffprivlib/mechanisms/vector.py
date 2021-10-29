@@ -18,6 +18,7 @@
 """
 The vector mechanism in differential privacy, for producing perturbed objectives
 """
+import secrets
 from numbers import Real
 
 import numpy as np
@@ -52,15 +53,21 @@ class Vector(DPMechanism):
     alpha : float, default: 0.01
         Regularisation parameter.  Must be in (0, ∞).
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01,
+                 random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
                                                                                    data_sensitivity)
         self.dimension = self._check_dimension(dimension)
         self.alpha = self._check_alpha(alpha)
 
-        self._rng = np.random.default_rng()
+        if isinstance(self._rng, secrets.SystemRandom):
+            self._rng = np.random.default_rng()
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):

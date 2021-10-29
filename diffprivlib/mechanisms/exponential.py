@@ -58,9 +58,14 @@ class Exponential(DPMechanism):
     measure : list, optional
         An optional list of measures for each candidate.  If omitted, a uniform measure is used.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None, measure=None):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None, measure=None,
+                 random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self.utility, self.candidates, self.measure = self._check_utility_candidates_measure(utility, candidates,
                                                                                              measure)
@@ -214,10 +219,14 @@ class PermuteAndFlip(Exponential):
     candidates : list, optional
         An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None):
+    def __init__(self, *, epsilon, sensitivity, utility, monotonic=False, candidates=None, random_state=None):
         super().__init__(epsilon=epsilon, sensitivity=sensitivity, utility=utility, monotonic=monotonic,
-                         candidates=candidates, measure=None)
+                         candidates=candidates, measure=None, random_state=random_state)
 
     @copy_docstring(DPMechanism.bias)
     def bias(self, value):
@@ -290,9 +299,13 @@ class ExponentialCategorical(DPMechanism):
         utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
         specified for every pair of values given in the `utility_list`.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, utility_list):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, utility_list, random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
 
         self._balanced_tree = False
         self._utility_values, self._sensitivity, self._domain_values = self._build_utility(utility_list)
@@ -471,6 +484,10 @@ class ExponentialHierarchical(ExponentialCategorical):
         The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node
         must lie at the same depth in the hierarchy.
 
+    random_state : int, RandomState instance or None, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     Examples
     --------
     Example hierarchies:
@@ -479,10 +496,10 @@ class ExponentialHierarchical(ExponentialCategorical):
     >>> nested_hierarchy = [["A"], ["B"], ["C"], ["D", "E"]]
 
     """
-    def __init__(self, *, epsilon, hierarchy):
+    def __init__(self, *, epsilon, hierarchy, random_state=None):
         self.hierarchy = hierarchy
         utility_list = self._build_utility_list(self._build_hierarchy(hierarchy))
-        super().__init__(epsilon=epsilon, utility_list=utility_list)
+        super().__init__(epsilon=epsilon, utility_list=utility_list, random_state=random_state)
         self._list_hierarchy = None
 
     def _build_hierarchy(self, nested_list, parent_node=None):
