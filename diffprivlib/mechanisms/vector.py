@@ -53,7 +53,7 @@ class Vector(DPMechanism):
     alpha : float, default: 0.01
         Regularisation parameter.  Must be in (0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

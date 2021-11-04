@@ -72,7 +72,7 @@ class DPMechanism(DPMachine, abc.ABC):
         Privacy parameter :math:`\delta` for the mechanism.  Must be in [0, 1].  Cannot be simultaneously zero with
         ``epsilon``.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -243,7 +243,7 @@ def bernoulli_neg_exp(gamma, random_state=None):
     gamma : float
         Parameter to sample from Bernoulli(exp(-gamma)).  Must be non-negative.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

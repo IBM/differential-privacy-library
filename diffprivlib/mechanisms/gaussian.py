@@ -48,7 +48,7 @@ class Gaussian(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -136,7 +136,7 @@ class GaussianAnalytic(Gaussian):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -228,7 +228,7 @@ class GaussianDiscrete(DPMechanism):
     sensitivity : int, default: 1
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

@@ -44,7 +44,7 @@ class Binary(DPMechanism):
     value1 : str
         1st binary label.  Cannot be the same as ``value0``.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

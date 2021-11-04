@@ -49,7 +49,7 @@ class Laplace(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -173,7 +173,7 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -242,7 +242,7 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -303,7 +303,7 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     upper : float
         The upper bound of the mechanism.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -444,7 +444,7 @@ class LaplaceBoundedNoise(Laplace):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

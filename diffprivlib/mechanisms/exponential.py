@@ -58,7 +58,7 @@ class Exponential(DPMechanism):
     measure : list, optional
         An optional list of measures for each candidate.  If omitted, a uniform measure is used.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -219,7 +219,7 @@ class PermuteAndFlip(Exponential):
     candidates : list, optional
         An optional list of candidate labels.  If omitted, the zero-indexed list [0, 1, ..., n] is used.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -299,7 +299,7 @@ class ExponentialCategorical(DPMechanism):
         utility), where each `value` is a string and `utility` is a strictly positive float.  A `utility` must be
         specified for every pair of values given in the `utility_list`.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -484,7 +484,7 @@ class ExponentialHierarchical(ExponentialCategorical):
         The hierarchy as specified as a nested list of string.  Each string must be a leaf node, and each leaf node
         must lie at the same depth in the hierarchy.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

@@ -46,7 +46,7 @@ class Staircase(Laplace):
     gamma : float, default: 1 / (1 + exp(epsilon/2))
         Value of the tuning parameter gamma for the mechanism.  Must be in [0, 1].
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 

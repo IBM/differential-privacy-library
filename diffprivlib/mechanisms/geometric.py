@@ -41,7 +41,7 @@ class Geometric(DPMechanism):
     sensitivity : float, default: 1
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -132,7 +132,7 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     upper : int
         The upper bound of the mechanism.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
@@ -192,7 +192,7 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
     upper : int or float
         The upper bound of the mechanism.  Must be integer or half-integer -valued.
 
-    random_state : int, RandomState instance or None, optional
+    random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
