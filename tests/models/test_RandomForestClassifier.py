@@ -4,13 +4,10 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import RandomForestClassifier
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, DiffprivlibCompatibilityWarning
 
 
 class TestRandomForestClassifier(TestCase):
-    def setUp(self):
-        global_seed(2718281828)
-    
     def test_not_none(self):
         self.assertIsNotNone(RandomForestClassifier)
 

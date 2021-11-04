@@ -162,8 +162,9 @@ class TestPermuteAndFlip(TestCase):
     def test_distrib_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=False)
-        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=False)
+        rng = np.random.RandomState(42)
+        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=False, random_state=rng)
+        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=False, random_state=rng)
         counts = np.zeros((2, 3))
 
         for i in range(runs):
@@ -188,6 +189,16 @@ class TestPermuteAndFlip(TestCase):
         for vec in counts.T:
             # print(vec.max() / vec.min())
             self.assertLessEqual(vec.max() / vec.min(), np.exp(epsilon) + 0.1)
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, utility=[2, 1, 0], sensitivity=1, random_state=42)
+        mech2 = self.mech(epsilon=1, utility=[2, 1, 0], sensitivity=1, random_state=42)
+        self.assertEqual([mech1.randomise() for _ in range(100)], [mech2.randomise() for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise()] * 100, [mech1.randomise() for _ in range(100)])
+
+        mech2 = self.mech(epsilon=1, utility=[2, 1, 0], sensitivity=1, random_state=np.random.RandomState(0))
+        self.assertNotEqual([mech1.randomise() for _ in range(100)], [mech2.randomise() for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility=[1], sensitivity=1))

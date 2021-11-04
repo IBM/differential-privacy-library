@@ -5,13 +5,10 @@ import pytest
 
 from diffprivlib.models.linear_regression import LinearRegression
 from diffprivlib.models.logistic_regression import _check_solver, _check_multi_class
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestLinearRegression(TestCase):
-    def setup_method(self, method):
-        global_seed(3141592653)
-
     def test_not_none(self):
         self.assertIsNotNone(LinearRegression)
 

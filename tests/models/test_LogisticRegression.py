@@ -2,13 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.models.logistic_regression import LogisticRegression
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestLogisticRegression(TestCase):
-    def setup_method(self, method):
-        global_seed(3141592653)
-
     def test_not_none(self):
         self.assertIsNotNone(LogisticRegression)
 

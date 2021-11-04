@@ -287,7 +287,7 @@ class GaussianDiscrete(DPMechanism):
             while bernoulli_neg_exp(tau, self._rng):
                 geom_x += 1
 
-            bern_b = np.random.binomial(1, 0.5)
+            bern_b = self._rng.random() < 0.5
             if bern_b and not geom_x:
                 continue
 

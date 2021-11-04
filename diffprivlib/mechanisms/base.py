@@ -81,7 +81,7 @@ class DPMechanism(DPMachine, abc.ABC):
         self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
 
         self.random_state = random_state
-        self._rng = check_random_state(random_state) if random_state else secrets.SystemRandom()
+        self._rng = check_random_state(random_state) if random_state is not None else secrets.SystemRandom()
 
     def __repr__(self):
         attrs = inspect.getfullargspec(self.__class__).kwonlyargs

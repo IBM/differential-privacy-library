@@ -4,7 +4,7 @@ import numpy as np
 import sklearn.preprocessing as sk_pp
 
 from diffprivlib.models.standard_scaler import StandardScaler
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, global_seed, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestStandardScaler(TestCase):
@@ -88,8 +88,6 @@ class TestStandardScaler(TestCase):
         self.assertIsNotNone(ss.fit_transform(X))
 
     def test_similar_results(self):
-        global_seed(314159)
-
         X = np.random.rand(100000, 5)
 
         dp_ss = StandardScaler(bounds=(0, 1), epsilon=float("inf"))

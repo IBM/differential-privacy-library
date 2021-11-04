@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Gaussian
-from diffprivlib.utils import global_seed
 
 
 class TestGaussian(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Gaussian
 
     def teardown_method(self, method):
@@ -54,7 +50,7 @@ class TestGaussian(TestCase):
             mech.randomise("Hello")
 
     def test_zero_median_prob(self):
-        mech = self.mech(epsilon=0.75, delta=0.1, sensitivity=1)
+        mech = self.mech(epsilon=0.75, delta=0.1, sensitivity=1, random_state=0)
         vals = []
 
         for i in range(20000):
@@ -66,7 +62,7 @@ class TestGaussian(TestCase):
     def test_neighbors_prob(self):
         epsilon = 1
         runs = 10000
-        mech = self.mech(epsilon=0.5, delta=0.1, sensitivity=1)
+        mech = self.mech(epsilon=0.5, delta=0.1, sensitivity=1, random_state=0)
         count = [0, 0]
 
         for i in range(runs):
@@ -83,7 +79,7 @@ class TestGaussian(TestCase):
 
     def test_random_state(self):
         mech1 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=42)
-        mech2 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=np.random.RandomState(42))
+        mech2 = self.mech(epsilon=1, delta=1e-5, sensitivity=1, random_state=42)
         self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
 
         self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])

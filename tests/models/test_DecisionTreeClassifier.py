@@ -4,13 +4,10 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import DecisionTreeClassifier, get_cat_features, get_feature_domains, calc_tree_depth
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning
 
 
 class TestDecisionTreeClassifier(TestCase):
-    def setUp(self):
-        global_seed(2718281828)
-
     def test_not_none(self):
         self.assertIsNotNone(DecisionTreeClassifier)
 

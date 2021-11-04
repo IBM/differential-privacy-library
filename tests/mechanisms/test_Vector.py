@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Vector
-from diffprivlib.utils import global_seed
 
 
 class TestVector(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Vector
 
     def teardown_method(self, method):
@@ -108,6 +104,22 @@ class TestVector(TestCase):
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), 3)
             self.assertNotAlmostEqual(noisy_func(np.ones(3)), old_noisy_func(np.ones(3)))
             # print(noisy_func(np.ones(3)))
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, dimension=3, function_sensitivity=1, random_state=0)
+        mech2 = self.mech(epsilon=1, dimension=3, function_sensitivity=1, random_state=0)
+        func1, func2 = mech1.randomise(self.func), mech2.randomise(self.func)
+        self.assertTrue(np.allclose(func1(np.ones(3)), func1(np.ones(3))))
+
+        mech1 = self.mech(epsilon=1, dimension=3, function_sensitivity=1, random_state=0)
+        func1, func2 = mech1.randomise(self.func), mech2.randomise(self.func)
+        self.assertFalse(np.allclose(func1(np.ones(3)), func2(np.ones(3))))
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, dimension=3, function_sensitivity=1, random_state=rng)
+        mech2 = self.mech(epsilon=1, dimension=3, function_sensitivity=1, random_state=rng)
+        func1, func2 = mech1.randomise(self.func), mech2.randomise(self.func)
+        self.assertFalse(np.allclose(func1(np.ones(3)), func2(np.ones(3))))
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, dimension=4, function_sensitivity=1))

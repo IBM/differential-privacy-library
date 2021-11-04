@@ -20,24 +20,6 @@ Basic functions and other utilities for the differential privacy library
 """
 import warnings
 
-import numpy as np
-
-
-def global_seed(seed):
-    """Sets the seed for all random number generators, to guarantee reproducibility in experiments.
-
-    Parameters
-    ----------
-    seed : int
-        The seed value for the random number generators.
-
-    Returns
-    -------
-    None
-
-    """
-    np.random.seed(seed)
-
 
 def copy_docstring(source):
     """Decorator function to copy a docstring from a `source` function to a `target` function.

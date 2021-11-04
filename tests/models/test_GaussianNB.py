@@ -5,7 +5,7 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestGaussianNB(TestCase):
@@ -85,7 +85,6 @@ class TestGaussianNB(TestCase):
         from sklearn.naive_bayes import GaussianNB as sk_nb
         from sklearn import datasets
 
-        global_seed(12345)
         dataset = datasets.load_iris()
 
         x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2)
@@ -112,7 +111,6 @@ class TestGaussianNB(TestCase):
 
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_with_iris(self):
-        global_seed(12345)
         from sklearn import datasets
         dataset = datasets.load_iris()
 

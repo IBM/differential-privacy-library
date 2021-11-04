@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Binary
-from diffprivlib.utils import global_seed
 
 
 class TestBinary(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Binary
 
     def teardown_method(self, method):
@@ -59,7 +55,7 @@ class TestBinary(TestCase):
     def test_distrib_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        mech = self.mech(epsilon=epsilon, value0="0", value1="1")
+        mech = self.mech(epsilon=epsilon, value0="0", value1="1", random_state=0)
         count = [0, 0]
 
         for i in range(runs):
@@ -71,12 +67,12 @@ class TestBinary(TestCase):
 
     def test_random_state(self):
         mech1 = self.mech(epsilon=1, value0="0", value1="1", random_state=42)
-        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=np.random.RandomState(42))
+        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=42)
         self.assertEqual([mech1.randomise("1") for _ in range(100)], [mech2.randomise("1") for _ in range(100)])
 
         self.assertNotEqual([mech1.randomise("1")] * 100, [mech1.randomise("1") for _ in range(100)])
 
-        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=np.random.RandomState(0))
+        mech2 = self.mech(epsilon=1, value0="0", value1="1", random_state=np.random.RandomState(42))
         self.assertNotEqual([mech1.randomise("1") for _ in range(100)], [mech2.randomise("1") for _ in range(100)])
 
     def test_repr(self):

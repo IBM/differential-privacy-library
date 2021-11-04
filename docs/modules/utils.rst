@@ -18,5 +18,4 @@ General functions
 -----------------
 
 .. autofunction:: copy_docstring
-.. autofunction:: global_seed
 .. autofunction:: warn_unused_args

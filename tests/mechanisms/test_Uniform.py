@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Uniform
-from diffprivlib.utils import global_seed
 
 
 class TestUniform(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Uniform
 
     def teardown_method(self, method):
@@ -60,7 +56,7 @@ class TestUniform(TestCase):
             mech.randomise("Hello")
 
     def test_zero_median_prob(self):
-        mech = self.mech(delta=0.2, sensitivity=1)
+        mech = self.mech(delta=0.2, sensitivity=1, random_state=0)
         vals = []
 
         for i in range(10000):
@@ -68,6 +64,18 @@ class TestUniform(TestCase):
 
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
+
+    def test_random_state(self):
+        mech1 = self.mech(delta=0.2, sensitivity=1, random_state=42)
+        mech2 = self.mech(delta=0.2, sensitivity=1, random_state=42)
+        self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(delta=0.2, sensitivity=1, random_state=rng)
+        mech2 = self.mech(delta=0.2, sensitivity=1, random_state=rng)
+        self.assertNotEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(delta=0.1, sensitivity=1))
