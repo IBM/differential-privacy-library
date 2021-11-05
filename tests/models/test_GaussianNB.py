@@ -71,12 +71,12 @@ class TestGaussianNB(TestCase):
         actual_counts = np.array([(y == y_i).sum() for y_i in np.unique(y)])
 
         clf = GaussianNB(epsilon=3)
-        noisy_counts = clf._noisy_class_counts(y)
+        noisy_counts = clf._noisy_class_counts(y, random_state=None)
         self.assertEqual(y.shape[0], noisy_counts.sum())
         self.assertFalse(np.all(noisy_counts == actual_counts))
 
         clf = GaussianNB(epsilon=float("inf"))
-        noisy_counts = clf._noisy_class_counts(y)
+        noisy_counts = clf._noisy_class_counts(y, random_state=None)
         self.assertEqual(y.shape[0], noisy_counts.sum())
         self.assertTrue(np.all(noisy_counts == actual_counts))
 
@@ -91,7 +91,7 @@ class TestGaussianNB(TestCase):
 
         bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
-        clf_dp = GaussianNB(epsilon=1.0, bounds=bounds)
+        clf_dp = GaussianNB(epsilon=1.0, bounds=bounds, random_state=0)
         clf_non_private = sk_nb()
 
         for clf in [clf_dp, clf_non_private]:
@@ -118,7 +118,7 @@ class TestGaussianNB(TestCase):
 
         bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
-        clf = GaussianNB(epsilon=5.0, bounds=bounds)
+        clf = GaussianNB(epsilon=5.0, bounds=bounds, random_state=0)
         clf.fit(x_train, y_train)
 
         accuracy = clf.score(x_test, y_test)
@@ -198,10 +198,10 @@ class TestGaussianNB(TestCase):
         y = np.random.randint(2, size=10)
 
         clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
-        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, n_noisy=5))
-        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, n_noisy=0))
-        self.assertWarns(PrivacyLeakWarning, clf._update_mean_variance, 0, 0, 0, X)
-        self.assertWarns(DiffprivlibCompatibilityWarning, clf._update_mean_variance, 0, 0, 0, X, n_noisy=1,
+        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, None, n_noisy=5))
+        self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, None, n_noisy=0))
+        self.assertWarns(PrivacyLeakWarning, clf._update_mean_variance, 0, 0, 0, X, None)
+        self.assertWarns(DiffprivlibCompatibilityWarning, clf._update_mean_variance, 0, 0, 0, X, None, n_noisy=1,
                          sample_weight=1)
 
     def test_sigma(self):
@@ -211,3 +211,20 @@ class TestGaussianNB(TestCase):
         clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
         clf.fit(X, y)
         self.assertIsInstance(clf.sigma_, np.ndarray)
+
+    def test_random_state(self):
+        rng = np.random.RandomState(0)
+        X = rng.random((20, 2))
+        y = rng.randint(2, size=20)
+
+        clf0 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=0)
+        clf1 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=1)
+        clf0.fit(X, y)
+        clf1.fit(X, y)
+        self.assertFalse(np.any(clf0.theta_ == clf1.theta_))
+        self.assertFalse(np.any(clf0.var_ == clf1.var_))
+
+        clf1 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=0)
+        clf1.fit(X, y)
+        self.assertTrue(np.all(clf0.theta_ == clf1.theta_))
+        self.assertTrue(np.all(clf0.var_ == clf1.var_))

@@ -47,6 +47,7 @@ from numbers import Integral
 import numpy as np
 from numpy.core import multiarray as mu
 from numpy.core import umath as um
+from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
@@ -97,7 +98,7 @@ def _wrap_axis(func, array, *, axis, keepdims, epsilon, bounds, **kwargs):
     return func(array, bounds=bounds, epsilon=epsilon, **kwargs)
 
 
-def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False):
+def count_nonzero(array, epsilon=1.0, axis=None, keepdims=False, random_state=None, accountant=None):
     r"""Counts the number of non-zero values in the array ``array`` with differential privacy.
 
     It is typical to use this function on the result of binary operations, such as ``count_nonzero(array >= 0)``.  If
@@ -117,9 +118,6 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    accountant : BudgetAccountant, optional
-        Accountant to keep track of privacy budget.
-
     axis : int or tuple, optional
         Axis or tuple of axes along which to count non-zeros.  Default is None, meaning that non-zeros will be counted
         along a flattened version of ``array``.
@@ -127,6 +125,13 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
     keepdims : bool, default: False
         If this is set to True, the axes that are counted are left in the result as dimensions with size one. With this
         option, the result will broadcast correctly against the input array.
+
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     Returns
     -------
@@ -142,11 +147,12 @@ def count_nonzero(array, epsilon=1.0, accountant=None, axis=None, keepdims=False
     else:
         array_bool = array.astype(np.bool_, copy=False)
 
-    return sum(array_bool, axis=axis, dtype=np.intp, bounds=(0, 1), epsilon=epsilon, accountant=accountant,
-               keepdims=keepdims)
+    return sum(array_bool, axis=axis, dtype=np.intp, bounds=(0, 1), epsilon=epsilon, keepdims=keepdims,
+               random_state=random_state, accountant=accountant)
 
 
-def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+         **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis.
 
@@ -180,6 +186,10 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -196,10 +206,11 @@ def mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     warn_unused_args(unused_args)
 
     return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
-                 accountant=accountant, nan=False)
+                 random_state=random_state, accountant=accountant, nan=False)
 
 
-def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+            **unused_args):
     r"""
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
@@ -235,6 +246,10 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fal
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -251,10 +266,13 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fal
     warn_unused_args(unused_args)
 
     return _mean(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
-                 accountant=accountant, nan=True)
+                 random_state=random_state, accountant=accountant, nan=True)
 
 
-def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
+def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None,
+          accountant=None, nan=False):
+    random_state = check_random_state(random_state)
+
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
@@ -263,7 +281,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False
 
     if axis is not None or keepdims:
         return _wrap_axis(_mean, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
-                          accountant=accountant, nan=nan)
+                          random_state=random_state, accountant=accountant, nan=nan)
 
     lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
 
@@ -276,7 +294,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False
     actual_mean = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
     mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=(upper - lower) / array.size, lower=lower,
-                            upper=upper)
+                            upper=upper, random_state=random_state)
     output = mech.randomise(actual_mean)
 
     accountant.spend(epsilon, 0)
@@ -284,7 +302,8 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False
     return output
 
 
-def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+        **unused_args):
     r"""
     Compute the differentially private variance along the specified axis.
 
@@ -320,6 +339,10 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, 
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -335,11 +358,12 @@ def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, 
     """
     warn_unused_args(unused_args)
 
-    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
-                nan=False)
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                random_state=random_state, accountant=accountant, nan=False)
 
 
-def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+           **unused_args):
     r"""
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
@@ -377,6 +401,10 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -393,11 +421,14 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
     """
     warn_unused_args(unused_args)
 
-    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
-                nan=True)
+    return _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                random_state=random_state, accountant=accountant, nan=True)
 
 
-def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
+def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+         nan=False):
+    random_state = check_random_state(random_state)
+
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
@@ -406,7 +437,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
 
     if axis is not None or keepdims:
         return _wrap_axis(_var, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
-                          accountant=accountant, nan=nan)
+                          random_state=random_state, accountant=accountant, nan=nan)
 
     lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
 
@@ -421,7 +452,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
 
     dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
                                    sensitivity=((upper - lower) / array.size) ** 2 * (array.size - 1), lower=0,
-                                   upper=((upper - lower) ** 2) / 4)
+                                   upper=((upper - lower) ** 2) / 4, random_state=random_state)
     output = dp_mech.randomise(actual_var)
 
     accountant.spend(epsilon, 0)
@@ -429,7 +460,8 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     return output
 
 
-def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+        **unused_args):
     r"""
     Compute the standard deviation along the specified axis.
 
@@ -465,6 +497,10 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, 
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -481,10 +517,11 @@ def std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, 
     warn_unused_args(unused_args)
 
     return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
-                accountant=accountant, nan=False)
+                random_state=random_state, accountant=accountant, nan=False)
 
 
-def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, **unused_args):
+def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+           **unused_args):
     r"""
     Compute the standard deviation along the specified axis, ignoring NaNs.
 
@@ -522,6 +559,10 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -537,13 +578,14 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
     """
     warn_unused_args(unused_args)
 
-    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
-                nan=True)
+    return _std(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                random_state=random_state, accountant=accountant, nan=True)
 
 
-def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, accountant=None, nan=False):
-    ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims, accountant=accountant,
-               nan=nan)
+def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+         nan=False):
+    ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+               random_state=random_state, accountant=accountant, nan=nan)
 
     if isinstance(ret, mu.ndarray):
         ret = um.sqrt(ret)
@@ -555,7 +597,8 @@ def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     return ret
 
 
-def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, **unused_args):
+def sum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+        **unused_args):
     r"""Sum of array elements over a given axis with differential privacy.
 
     Parameters
@@ -568,9 +611,6 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
 
     bounds : tuple, optional
         Bounds of the values of the array, of the form (min, max).
-
-    accountant : BudgetAccountant, optional
-        Accountant to keep track of privacy budget.
 
     axis : None or int or tuple of ints, optional
         Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
@@ -588,6 +628,13 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
     keepdims : bool, default: False
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
+
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
 
     Returns
     -------
@@ -604,11 +651,12 @@ def sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None,
     """
     warn_unused_args(unused_args)
 
-    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype, keepdims=keepdims,
-                nan=False)
+    return _sum(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                random_state=random_state, accountant=accountant, nan=False)
 
 
-def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, **unused_args):
+def nansum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+           **unused_args):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
     Parameters
@@ -621,9 +669,6 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
 
     bounds : tuple, optional
         Bounds of the values of the array, of the form (min, max).
-
-    accountant : BudgetAccountant, optional
-        Accountant to keep track of privacy budget.
 
     axis : None or int or tuple of ints, optional
         Axis or axes along which a sum is performed.  The default, axis=None, will sum all of the elements of the input
@@ -642,6 +687,13 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
         If this is set to True, the axes which are reduced are left in the result as dimensions with size one.  With
         this option, the result will broadcast correctly against the input array.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Returns
     -------
     sum_along_axis : ndarray
@@ -657,11 +709,14 @@ def nansum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=No
     """
     warn_unused_args(unused_args)
 
-    return _sum(array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype,
-                keepdims=keepdims, nan=True)
+    return _sum(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                random_state=random_state, accountant=accountant, nan=True)
 
 
-def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None, keepdims=False, nan=False):
+def _sum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
+         nan=False):
+    random_state = check_random_state(random_state)
+
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
@@ -669,8 +724,8 @@ def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None
         bounds = (np.min(array), np.max(array))
 
     if axis is not None or keepdims:
-        return _wrap_axis(_sum, array, epsilon=epsilon, bounds=bounds, accountant=accountant, axis=axis, dtype=dtype,
-                          keepdims=keepdims, nan=nan)
+        return _wrap_axis(_sum, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
+                          random_state=random_state, accountant=accountant, nan=nan)
 
     lower, upper = check_bounds(bounds, shape=0, dtype=dtype)
 
@@ -684,7 +739,8 @@ def _sum(array, epsilon=1.0, bounds=None, accountant=None, axis=None, dtype=None
     actual_sum = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
     mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
-    mech = mech(epsilon=epsilon, sensitivity=upper - lower, lower=lower * array.size, upper=upper * array.size)
+    mech = mech(epsilon=epsilon, sensitivity=upper - lower, lower=lower * array.size, upper=upper * array.size,
+                random_state=random_state)
     output = mech.randomise(actual_sum)
 
     accountant.spend(epsilon, 0)

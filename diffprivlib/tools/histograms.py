@@ -47,6 +47,7 @@ import warnings
 from sys import maxsize
 
 import numpy as np
+from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import GeometricTruncated
@@ -54,7 +55,8 @@ from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
 
 
 # noinspection PyShadowingBuiltins
-def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None, **unused_args):
+def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, random_state=None, accountant=None,
+              **unused_args):
     r"""
     Compute the differentially private histogram of a set of data.
 
@@ -95,6 +97,10 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
         Note that the sum of the histogram values will not be equal to 1 unless bins of unity width are chosen; it is
         not a probability *mass* function.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -123,6 +129,8 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
     """
     warn_unused_args(unused_args)
 
+    random_state = check_random_state(random_state)
+
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -133,7 +141,7 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
 
     hist, bin_edges = np.histogram(sample, bins=bins, range=range, weights=weights, density=None)
 
-    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize)
+    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize, random_state=random_state)
 
     dp_hist = np.zeros_like(hist)
 
@@ -152,7 +160,8 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
 
 
 # noinspection PyShadowingBuiltins
-def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None, **unused_args):
+def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=None, random_state=None,
+                accountant=None, **unused_args):
     r"""
     Compute the differentially private multidimensional histogram of some data.
 
@@ -200,6 +209,10 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
         True.  If normed is False, the values of the returned histogram are equal to the sum of the weights belonging to
         the samples falling into each bin.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -218,6 +231,8 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
     """
     warn_unused_args(unused_args)
 
+    random_state = check_random_state(random_state)
+
     accountant = BudgetAccountant.load_default(accountant)
     accountant.check(epsilon, 0)
 
@@ -232,7 +247,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
 
     hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
 
-    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize)
+    dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize, random_state=random_state)
 
     dp_hist = np.zeros_like(hist)
     iterator = np.nditer(hist, flags=['multi_index'])
@@ -262,8 +277,8 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
 
 
 # noinspection PyShadowingBuiltins
-def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None, density=None, accountant=None,
-                **unused_args):
+def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None, density=None, random_state=None,
+                accountant=None, **unused_args):
     r"""
     Compute the differentially private bi-dimensional histogram of two data samples.
 
@@ -300,6 +315,10 @@ def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None
         An array of values ``w_i`` weighing each sample ``(x_i, y_i)``.  Weights are normalized to 1 if `normed` is
         True.  If `normed` is False, the values of the returned histogram are equal to the sum of the weights belonging
         to the samples falling into each bin.
+
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -343,5 +362,5 @@ def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None
         bins = [xedges, yedges]
 
     hist, edges = histogramdd([array_x, array_y], epsilon=epsilon, bins=bins, range=range, weights=weights,
-                              density=density, accountant=accountant)
+                              density=density, random_state=random_state, accountant=accountant)
     return hist, edges[0], edges[1]

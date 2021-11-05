@@ -10,11 +10,11 @@ class TestKMeans(TestCase):
         self.assertIsNotNone(KMeans)
 
     def test_simple(self):
-        clf = KMeans(3, epsilon=10, bounds=(0, 1))
+        clf = KMeans(3, epsilon=5, bounds=(0, 1), random_state=0)
 
-        X = np.zeros(6000) + 0.1
-        X[:4000] = 0.5
-        X[:2000] = 0.9
+        X = np.zeros(600) + 0.1
+        X[:400] = 0.5
+        X[:200] = 0.9
         X = X.reshape(-1, 1)
 
         clf.fit(X)
@@ -45,7 +45,7 @@ class TestKMeans(TestCase):
             clf.fit(X)
 
     def test_predict(self):
-        clf = KMeans(3, epsilon=1, bounds=(0, 1))
+        clf = KMeans(3, epsilon=1, bounds=(0, 1), random_state=0)
 
         X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
         clf.fit(X)
@@ -71,24 +71,23 @@ class TestKMeans(TestCase):
         X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
         self.assertRaises(ValueError, clf.fit, X)
 
-    # def test_inf_epsilon(self):
-    #     clf = KMeans(3, epsilon=float("inf"), bounds=(0, 1))
-    #
-    #     X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9] * 3).reshape(-1, 1)
-    #     clf.fit(X)
-    #     centers = clf.cluster_centers_.flatten()
-    #
-    #     print(centers)
-    #
-    #     self.assertTrue(np.isclose(0.1, centers).any())
-    #     self.assertTrue(np.isclose(0.5, centers).any())
-    #     self.assertTrue(np.isclose(0.9, centers).any())
+    def test_inf_epsilon(self):
+        clf = KMeans(3, epsilon=float("inf"), bounds=(0, 1), random_state=0)
+
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9] * 3).reshape(-1, 1)
+        clf.fit(X)
+        centers = clf.cluster_centers_.flatten()
+
+        self.assertTrue(np.isclose(0.1, centers).any())
+        self.assertTrue(np.isclose(0.5, centers).any())
+        self.assertTrue(np.isclose(0.9, centers).any())
 
     def test_many_features(self):
-        X = np.random.random(size=(500, 3))
+        rng = np.random.RandomState(0)
+        X = rng.random(size=(500, 3))
         bounds = (0, 1)
 
-        clf = KMeans(4, bounds=bounds)
+        clf = KMeans(4, bounds=bounds, random_state=rng)
 
         clf.fit(X)
         centers = clf.cluster_centers_
@@ -97,6 +96,21 @@ class TestKMeans(TestCase):
         self.assertEqual(centers.shape[1], 3)
 
         self.assertTrue(np.all(clf.transform(X).argmin(axis=1) == clf.predict(X)))
+
+    def test_random_state(self):
+        rng = np.random.RandomState(0)
+        X = rng.random(size=(500, 3))
+        bounds = (0, 1)
+
+        clf0 = KMeans(4, bounds=bounds, random_state=0)
+        clf1 = KMeans(4, bounds=bounds, random_state=1)
+        clf0.fit(X)
+        clf1.fit(X)
+        self.assertFalse(np.any(clf0.cluster_centers_ == clf1.cluster_centers_))
+
+        clf1 = KMeans(4, bounds=bounds, random_state=0)
+        clf1.fit(X)
+        self.assertTrue(np.all(clf0.cluster_centers_ == clf1.cluster_centers_))
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant

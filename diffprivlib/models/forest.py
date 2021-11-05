@@ -24,7 +24,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_random_state
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
@@ -71,8 +71,9 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         and categorical features, but it wont be more than this number.
         Note: The depth translates to an exponential increase in memory usage.
 
-    random_state: float, optional
-        Sets the numpy random seed.
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
 
     feature_domains: dict, optional
         A dictionary of domain values for all features where keys are the feature indexes in the training data and
@@ -138,9 +139,6 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         self.accountant = BudgetAccountant.load_default(accountant)
         self.feature_domains = feature_domains
 
-        if random_state is not None:
-            np.random.seed(random_state)
-
         self._warn_unused_args(unused_args)
 
     def fit(self, X, y, sample_weight=None):
@@ -171,6 +169,8 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
             raise ValueError('Categorical feature threshold should be a positive integer;'
                              f'got {self.cat_feature_threshold}')
+
+        random_state = check_random_state(self.random_state)
 
         self.accountant.check(self.epsilon, 0)
 
@@ -205,8 +205,10 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         estimators = []
 
         for i in range(self.n_estimators):
+            seed = random_state.randint(np.iinfo(np.int32).max)
             estimator = DecisionTreeClassifier(max_depth=self.max_depth_,
                                                epsilon=self.epsilon,
+                                               random_state=seed,
                                                feature_domains=self.feature_domains_,
                                                cat_features=self.cat_features_,
                                                classes=self.classes_)
@@ -243,8 +245,9 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     max_depth: int, default: 15
         The maximum depth of the tree.
 
-    random_state: float, optional
-        Sets the numpy random seed.
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
 
     cat_features: array, optional
         Array of categorical feature indexes. If not provided, will be determined from the data based on the
@@ -314,14 +317,13 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         self.cat_features = cat_features
         self.classes = classes
 
-        if random_state is not None:
-            np.random.seed(random_state)
+        self._rng = check_random_state(random_state)
 
     def _build(self, features, feature_domains, current_depth=1):
         if not features or current_depth >= self.max_depth+1:
             return DecisionNode(level=current_depth, classes=self.classes_)
 
-        split_feature = np.random.choice(features)
+        split_feature = self._rng.choice(features)
         node = DecisionNode(level=current_depth, classes=self.classes_, split_feature=split_feature)
 
         if split_feature in self.cat_features_:
@@ -331,7 +333,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
                 node.add_cat_child(value, child_node)
         else:
             node.set_split_type(DecisionNode.CONT_SPLIT)
-            split_value = np.random.uniform(feature_domains[str(split_feature)][0],
+            split_value = self._rng.uniform(feature_domains[str(split_feature)][0],
                                             feature_domains[str(split_feature)][1])
             node.set_split_value(split_value)
             left_domain = {k: v if k != str(split_feature) else [v[0], split_value]
@@ -388,7 +390,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
             node = self.tree_.classify(X[i])
             node.update_class_count(y[i].item())
 
-        self.tree_.set_noisy_label(self.epsilon, self.classes_)
+        self.tree_.set_noisy_label(self.epsilon, self.classes_, self._rng)
 
         return self
 
@@ -494,7 +496,7 @@ class DecisionNode:
 
         return child.classify(x)
 
-    def set_noisy_label(self, epsilon, class_values):
+    def set_noisy_label(self, epsilon, class_values, rng):
         """Set the noisy label for this node"""
         if self.is_leaf():
             if not self._noisy_label:
@@ -505,15 +507,15 @@ class DecisionNode:
                 utility = list(self._class_counts.values())
                 candidates = list(self._class_counts.keys())
                 mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility,
-                                      candidates=candidates)
+                                      candidates=candidates, random_state=rng)
                 self._noisy_label = mech.randomise()
         else:
             if self._left_child:
-                self._left_child.set_noisy_label(epsilon, class_values)
+                self._left_child.set_noisy_label(epsilon, class_values, rng)
             if self._right_child:
-                self._right_child.set_noisy_label(epsilon, class_values)
+                self._right_child.set_noisy_label(epsilon, class_values, rng)
             for child_node in self._cat_children.values():
-                child_node.set_noisy_label(epsilon, class_values)
+                child_node.set_noisy_label(epsilon, class_values, rng)
 
     def predict(self, X):
         """Predict using this node"""

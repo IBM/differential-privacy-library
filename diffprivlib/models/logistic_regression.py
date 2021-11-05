@@ -52,7 +52,7 @@ from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.linear_model._logistic import _logistic_loss_and_grad
-from sklearn.utils import check_array, check_consistent_length
+from sklearn.utils import check_array, check_consistent_length, check_random_state
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
@@ -117,6 +117,10 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         Number of CPU cores used when parallelising over classes.  ``None`` means 1 unless in a context. ``-1`` means
         using all processors.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -167,10 +171,10 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
     """
 
     def __init__(self, *, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
-                 warm_start=False, n_jobs=None, accountant=None, **unused_args):
+                 warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
-                         class_weight=None, random_state=None, solver='lbfgs', max_iter=max_iter, multi_class='ovr',
-                         verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
+                         class_weight=None, random_state=random_state, solver='lbfgs', max_iter=max_iter,
+                         multi_class='ovr', verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
         self.data_norm = data_norm
         self.classes_ = None
@@ -202,6 +206,8 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
         if sample_weight is not None:
             self._warn_unused_args("sample_weight")
+
+        random_state = check_random_state(self.random_state)
 
         if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError(f"Penalty term must be positive; got (C={self.C})")
@@ -255,7 +261,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
             path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
                       fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose,
-                      coef=warm_start_coef_, check_input=False)
+                      coef=warm_start_coef_, random_state=random_state, check_input=False)
             for class_, warm_start_coef_ in zip(classes_, warm_start_coef))
 
         fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
@@ -274,7 +280,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
 
 def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, fit_intercept=True, max_iter=100,
-                              tol=1e-4, verbose=0, coef=None, check_input=True, **unused_args):
+                              tol=1e-4, verbose=0, coef=None, random_state=None, check_input=True, **unused_args):
     """Compute a Logistic Regression model with differential privacy for a list of regularization parameters.  Takes
     inspiration from ``_logistic_regression_path`` in scikit-learn, specified to the LBFGS solver and one-vs-rest
     multi class fitting.
@@ -318,6 +324,10 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     coef : array-like, shape (n_features,), optional
         Initialization value for coefficients of logistic regression.  Useless for liblinear solver.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     check_input : bool, default: True
         If False, the input arrays X and y will not be checked.
 
@@ -336,6 +346,8 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
 
     """
     warn_unused_args(unused_args)
+
+    random_state = check_random_state(random_state)
 
     if isinstance(Cs, numbers.Integral):
         Cs = np.logspace(-4, 4, int(Cs))
@@ -383,7 +395,7 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
         vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1. / C,
-                             function_sensitivity=0.25, data_sensitivity=data_norm)
+                             function_sensitivity=0.25, data_sensitivity=data_norm, random_state=random_state)
         noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]

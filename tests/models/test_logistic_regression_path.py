@@ -54,3 +54,10 @@ class TestLogisticRegressionPath(TestCase):
         self.assertEqual(len(Cs), 3)
         self.assertEqual(len(n_iter), 3)
 
+    def test_random_state(self):
+        out0, _, _ = _logistic_regression_path(self.X, self.y, epsilon=1, data_norm=1, Cs=[1e5], random_state=0)
+        out1, _, _ = _logistic_regression_path(self.X, self.y, epsilon=1, data_norm=1, Cs=[1e5], random_state=1)
+        self.assertFalse(np.any(out0 == out1))
+
+        out1, _, _ = _logistic_regression_path(self.X, self.y, epsilon=1, data_norm=1, Cs=[1e5], random_state=0)
+        self.assertTrue(np.all(out0 == out1))

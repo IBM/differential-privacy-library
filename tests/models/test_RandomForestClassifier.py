@@ -45,19 +45,20 @@ class TestRandomForestClassifier(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, [y, y])
 
-    def test_simple(self):
+    def test_simple_prob(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021, cat_feature_threshold=2)
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=0, cat_feature_threshold=2)
 
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
-        # when `feature_domains` is not provided, we should get a privacy leakage warning
 
+        # when `feature_domains` is not provided, we should get a privacy leakage warning
         with self.assertWarns(PrivacyLeakWarning):
             model.fit(X, y)
         check_is_fitted(model)
 
+        # Test parameters and attributes
         self.assertEqual(model.n_features_in_, 3)
         self.assertEqual(model.n_classes_, 2)
         self.assertEqual(set(model.classes_), set([0, 1]))
@@ -65,19 +66,24 @@ class TestRandomForestClassifier(TestCase):
         self.assertEqual(model.max_depth_, 3)
         self.assertTrue(model.estimators_)
         self.assertEqual(len(model.estimators_), 5)
-        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
         self.assertIsNone(model.feature_domains)
         self.assertEqual(model.feature_domains_, {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
 
-    def test_with_feature_domains(self):
+        # Test prediction
+        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
+
+    def test_with_feature_domains_prob(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021, cat_feature_threshold=2,
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=0, cat_feature_threshold=2,
                                        feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
+
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
         check_is_fitted(model)
+
+        # Test parameters and attributes
         self.assertEqual(model.n_features_in_, 3)
         self.assertEqual(model.n_classes_, 2)
         self.assertEqual(set(model.classes_), set([0, 1]))
@@ -85,17 +91,43 @@ class TestRandomForestClassifier(TestCase):
         self.assertEqual(model.max_depth_, 3)
         self.assertTrue(model.estimators_)
         self.assertEqual(len(model.estimators_), 5)
-        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
         self.assertEqual(model.feature_domains_, {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
+
+        # Test prediction
+        self.assertTrue(model.predict(np.array([[12, 3, 14]])))
 
     def test_with_not_enough_feature_domains(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
-        model = RandomForestClassifier(epsilon=2, n_estimators=5, random_state=2021, feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0]})
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0]})
+
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
+
         with self.assertRaises(ValueError):
             model.fit(X, y)
+
+    def test_random_state(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
+        y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
+        feature_domains = {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]}
+        model0 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=0, cat_feature_threshold=2,
+                                        feature_domains=feature_domains)
+        model1 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=1, cat_feature_threshold=2,
+                                        feature_domains=feature_domains)
+        model0.fit(X, y)
+        model1.fit(X, y)
+
+        self.assertFalse(np.isclose(model0.predict_proba(np.array([[12, 3, 14]])),
+                                    model1.predict_proba(np.array([[12, 3, 14]]))).any(),
+                         (model0.predict_proba(np.array([[12, 3, 14]])), model1.predict_proba(np.array([[12, 3, 14]]))))
+
+        model1 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=0, cat_feature_threshold=2,
+                                        feature_domains=feature_domains)
+        model1.fit(X, y)
+        self.assertTrue(np.isclose(model0.predict_proba(np.array([[12, 3, 14]])),
+                                    model1.predict_proba(np.array([[12, 3, 14]]))).any(),
+                         (model0.predict_proba(np.array([[12, 3, 14]])), model1.predict_proba(np.array([[12, 3, 14]]))))
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant

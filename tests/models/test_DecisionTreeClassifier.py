@@ -31,10 +31,10 @@ class TestDecisionTreeClassifier(TestCase):
         with self.assertRaises(ValueError):
             DecisionTreeClassifier(feature_domains={'0': [0, 2]}).fit([[1], [2]], [[1, 2], [2, 4]])
 
-    def test_simple(self):
+    def test_simple_prob(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=25)
+        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=0)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         # when `feature_domains` is not provided, we should get a privacy leakage warning
@@ -43,10 +43,10 @@ class TestDecisionTreeClassifier(TestCase):
         check_is_fitted(model)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
 
-    def test_with_feature_domains(self):
+    def test_with_feature_domains_prob(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=25,
+        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=0,
                                        feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
@@ -54,16 +54,33 @@ class TestDecisionTreeClassifier(TestCase):
         check_is_fitted(model)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
 
-    def test_with_non_binary_labels(self):
+    def test_with_non_binary_labels_prob(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([3, 3, 3, 3, 5, 5, 3] * 3)
-        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=25,
+        model = DecisionTreeClassifier(epsilon=5, cat_feature_threshold=2, max_depth=5, random_state=0,
                                        feature_domains={'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]})
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
         check_is_fitted(model)
         self.assertEqual(model.predict(np.array([[12, 3, 14]])), 3)
+
+    def test_random_state(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([3, 3, 3, 3, 5, 5, 3])
+        feature_domains = {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]}
+        model0 = DecisionTreeClassifier(epsilon=0.01, cat_feature_threshold=2, max_depth=5, random_state=0,
+                                        feature_domains=feature_domains)
+        model1 = DecisionTreeClassifier(epsilon=0.01, cat_feature_threshold=2, max_depth=5, random_state=1,
+                                        feature_domains=feature_domains)
+        model0.fit(X, y)
+        model1.fit(X, y)
+        self.assertNotEqual(model0.predict(np.array([[12, 3, 14]])), model1.predict(np.array([[12, 3, 14]])))
+
+        model1 = DecisionTreeClassifier(epsilon=0.01, cat_feature_threshold=2, max_depth=5, random_state=0,
+                                        feature_domains=feature_domains)
+        model1.fit(X, y)
+        self.assertEqual(model0.predict(np.array([[12, 3, 14]])), model1.predict(np.array([[12, 3, 14]])))
 
 
 class TestUtils(TestCase):

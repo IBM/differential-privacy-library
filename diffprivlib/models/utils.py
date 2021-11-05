@@ -23,12 +23,13 @@ from numbers import Integral
 
 import numpy as np
 from scipy.linalg import null_space
+from sklearn.utils import check_random_state
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, Bingham
 from diffprivlib.utils import PrivacyLeakWarning
 
 
-def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False):
+def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False, random_state=None):
     r"""
     Return the eigenvalues and eigenvectors of the covariance matrix of `array`, satisfying differential privacy.
 
@@ -56,6 +57,10 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     eigvals_only : bool, default: False
         Only return the eigenvalue estimates.  If True, all the privacy budget is spent on estimating the eigenvalues.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     Returns
     -------
     w : (n_features) array
@@ -66,6 +71,8 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
         the eigenvalue ``w[i]``.
 
     """
+
+    random_state = check_random_state(random_state)
 
     n_features = array.shape[1]
     dims = n_features if dims is None else min(dims, n_features)
@@ -87,7 +94,8 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     eigvals = np.sort(np.linalg.eigvalsh(cov))[::-1]
     epsilon_0 = epsilon if eigvals_only else epsilon / (dims + (dims != n_features))
 
-    mech_eigvals = LaplaceBoundedDomain(epsilon=epsilon_0, lower=0, upper=float("inf"), sensitivity=2)
+    mech_eigvals = LaplaceBoundedDomain(epsilon=epsilon_0, lower=0, upper=float("inf"), sensitivity=2,
+                                        random_state=random_state)
     noisy_eigvals = np.array([mech_eigvals.randomise(eigval) for eigval in eigvals]) * (norm ** 2)
 
     if eigvals_only:
@@ -99,7 +107,7 @@ def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False)
     proj_i = np.eye(n_features)
 
     theta = np.zeros((0, n_features))
-    mech_cov = Bingham(epsilon=epsilon_i)
+    mech_cov = Bingham(epsilon=epsilon_i, random_state=random_state)
 
     for _ in range(dims):
         if cov_i.size > 1:
