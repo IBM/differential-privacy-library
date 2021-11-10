@@ -52,13 +52,13 @@ from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.linear_model._logistic import _logistic_loss_and_grad
-from sklearn.utils import check_array, check_consistent_length, check_random_state
+from sklearn.utils import check_array, check_consistent_length
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.utils.multiclass import check_classification_targets
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 

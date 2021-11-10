@@ -47,11 +47,10 @@ import warnings
 from sys import maxsize
 
 import numpy as np
-from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import GeometricTruncated
-from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
 
 
 # noinspection PyShadowingBuiltins

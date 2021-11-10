@@ -22,9 +22,8 @@ import abc
 from copy import copy
 import inspect
 from numbers import Real
-import secrets
 
-from sklearn.utils import check_random_state
+from diffprivlib.utils import check_random_state
 
 
 class DPMachine(abc.ABC):
@@ -79,9 +78,9 @@ class DPMechanism(DPMachine, abc.ABC):
     """
     def __init__(self, *, epsilon, delta, random_state=None):
         self.epsilon, self.delta = self._check_epsilon_delta(epsilon, delta)
-
         self.random_state = random_state
-        self._rng = check_random_state(random_state) if random_state is not None else secrets.SystemRandom()
+
+        self._rng = check_random_state(random_state, True)
 
     def __repr__(self):
         attrs = inspect.getfullargspec(self.__class__).kwonlyargs
@@ -255,12 +254,7 @@ def bernoulli_neg_exp(gamma, random_state=None):
     if gamma < 0:
         raise ValueError(f"Gamma must be non-negative, got {gamma}.")
 
-    if isinstance(random_state, secrets.SystemRandom):
-        rng = random_state
-    elif random_state is None:
-        rng = secrets.SystemRandom()
-    else:
-        rng = check_random_state(random_state)
+    rng = check_random_state(random_state, True)
 
     while gamma > 1:
         gamma -= 1

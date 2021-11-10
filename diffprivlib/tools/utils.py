@@ -47,11 +47,10 @@ from numbers import Integral
 import numpy as np
 from numpy.core import multiarray as mu
 from numpy.core import umath as um
-from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
-from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
 from diffprivlib.validation import check_bounds, clip_to_bounds
 
 _sum_ = sum

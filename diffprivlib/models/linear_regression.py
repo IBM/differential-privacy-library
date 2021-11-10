@@ -49,12 +49,12 @@ import numpy as np
 import sklearn.linear_model as sk_lr
 from scipy.optimize import minimize
 from sklearn.utils import check_array
-from sklearn.utils.validation import FLOAT_DTYPES, check_random_state
+from sklearn.utils.validation import FLOAT_DTYPES
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceFolded
 from diffprivlib.tools import mean
-from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import check_bounds, clip_to_bounds, DiffprivlibMixin
 
 

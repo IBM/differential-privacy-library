@@ -48,13 +48,12 @@ from numbers import Integral
 
 import numpy as np
 import sklearn.decomposition._pca as sk_pca
-from sklearn.utils import check_random_state
 from sklearn.utils.extmath import stable_cumsum, svd_flip
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
-from diffprivlib.utils import copy_docstring, PrivacyLeakWarning
+from diffprivlib.utils import copy_docstring, PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 

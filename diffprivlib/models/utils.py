@@ -23,10 +23,9 @@ from numbers import Integral
 
 import numpy as np
 from scipy.linalg import null_space
-from sklearn.utils import check_random_state
 
 from diffprivlib.mechanisms import LaplaceBoundedDomain, Bingham
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 
 
 def covariance_eig(array, epsilon=1.0, norm=None, dims=None, eigvals_only=False, random_state=None):

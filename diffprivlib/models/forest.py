@@ -24,13 +24,13 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 
-from sklearn.utils import check_array, check_random_state
+from sklearn.utils import check_array
 from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.mechanisms import PermuteAndFlip
 from diffprivlib.validation import DiffprivlibMixin
 

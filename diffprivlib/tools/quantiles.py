@@ -21,11 +21,10 @@ Quantile functions with differential privacy
 import warnings
 
 import numpy as np
-from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Exponential
-from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import clip_to_bounds, check_bounds
 from diffprivlib.tools.utils import _wrap_axis
 

@@ -111,7 +111,7 @@ class Gaussian(DPMechanism):
 
         try:
             standard_normal = (self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)) / np.sqrt(2)
-        except AttributeError:
+        except AttributeError:  # random_state is a np.random.RandomState
             standard_normal = (self._rng.standard_normal() + self._rng.standard_normal()) / np.sqrt(2)
 
         return value + standard_normal * self._scale

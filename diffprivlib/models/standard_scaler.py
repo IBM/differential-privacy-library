@@ -48,10 +48,9 @@ import warnings
 import numpy as np
 import sklearn.preprocessing as sk_pp
 from sklearn.preprocessing._data import _handle_zeros_in_scale
-from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.tools import nanvar, nanmean
 from diffprivlib.validation import DiffprivlibMixin
 

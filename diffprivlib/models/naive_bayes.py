@@ -22,12 +22,11 @@ import warnings
 
 import numpy as np
 import sklearn.naive_bayes as sk_nb
-from sklearn.utils import check_random_state
 from sklearn.utils.multiclass import _check_partial_fit_first_call
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
-from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 

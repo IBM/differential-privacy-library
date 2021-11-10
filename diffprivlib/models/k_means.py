@@ -22,11 +22,10 @@ import warnings
 
 import numpy as np
 import sklearn.cluster as sk_cluster
-from sklearn.utils import check_random_state
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 
