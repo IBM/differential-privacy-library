@@ -200,7 +200,7 @@ def clip_to_bounds(array, bounds):
     return clipped_array
 
 
-class DiffprivlibMixin:
+class DiffprivlibMixin:  # pylint: disable=R0903
     """Mixin for Diffprivlib models."""
     _check_bounds = staticmethod(check_bounds)
     _clip_to_norm = staticmethod(clip_to_norm)

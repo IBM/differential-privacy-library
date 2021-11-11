@@ -469,7 +469,7 @@ class LaplaceBoundedNoise(Laplace):
         if isinstance(delta, Real) and not 0 < delta < 0.5:
             raise ValueError("Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`.")
 
-        return super(Laplace, cls)._check_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
     @copy_docstring(Laplace.bias)
     def bias(self, value):

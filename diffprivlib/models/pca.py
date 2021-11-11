@@ -245,7 +245,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
         # Post-process the number of components required
         if n_components == 'mle':
-            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
+            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)  # pylint: disable=W0212
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold

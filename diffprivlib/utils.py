@@ -93,7 +93,8 @@ def check_random_state(seed, secure=False):
     if secure:
         if isinstance(seed, secrets.SystemRandom):
             return seed
-        elif seed is None or seed is np.random.mtrand._rand:
+
+        if seed is None or seed is np.random.mtrand._rand:  # pylint: disable=W0212
             return secrets.SystemRandom()
     elif isinstance(seed, secrets.SystemRandom):
         raise ValueError("secrets.SystemRandom instance cannot be passed when secure is False.")
@@ -121,9 +122,12 @@ class Budget(tuple):
 
     """
     def __new__(cls, epsilon, delta):
-        from diffprivlib.validation import check_epsilon_delta
+        if epsilon < 0:
+            raise ValueError("Epsilon must be non-negative")
 
-        check_epsilon_delta(epsilon, delta, allow_zero=True)
+        if not 0 <= delta <= 1:
+            raise ValueError("Delta must be in [0, 1]")
+
         return tuple.__new__(cls, (epsilon, delta))
 
     def __gt__(self, other):
