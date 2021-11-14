@@ -1,4 +1,5 @@
 import math
+import sys
 
 import numpy as np
 from unittest import TestCase
@@ -61,10 +62,10 @@ class TestSnapping(TestCase):
 
     def test_neg_effective_epsilon(self):
         with self.assertRaises(ValueError):
-            self.mech(epsilon=math.nextafter((2*np.finfo(float).epsneg), 0), sensitivity=1, lower=0, upper=1000)
+            self.mech(epsilon=np.nextafter((2*np.finfo(float).epsneg), 0), sensitivity=1, lower=0, upper=1000)
 
     def test_zero_effective_epsilon(self):
-        mech = self.mech(epsilon=2*np.finfo(float).epsneg, sensitivity=1, lower=0, upper=1000)
+        mech = self.mech(epsilon=2 * np.finfo(float).epsneg, sensitivity=1, lower=0, upper=1000)
         self.assertIsNotNone(mech.randomise(1))
 
     def test_repr(self):
@@ -150,15 +151,16 @@ class TestSnapping(TestCase):
         self.assertAlmostEqual(mech._reverse_scale_and_offset_value(5), 10)
 
     def test_get_nearest_power_of_2_exact(self):
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**2), 4)
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**0), 1)
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**-2), 0.25)
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(0), 0)
+        self.assertEqual(Snapping._get_nearest_power_of_2(2 ** 2), 4)
+        self.assertEqual(Snapping._get_nearest_power_of_2(2 ** 0), 1)
+        self.assertEqual(Snapping._get_nearest_power_of_2(2 ** -2), 0.25)
+        self.assertEqual(Snapping._get_nearest_power_of_2(0), 0)
 
     def test_get_nearest_power_of_2(self):
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(2.0, math.inf)), 4)
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(2.0, -math.inf)), 2)
-        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(0, math.inf)), 2**-1022)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(np.nextafter(2.0, math.inf)), 4)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(np.nextafter(2.0, -math.inf)), 2)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(np.nextafter(sys.float_info.min, -math.inf)),
+                               sys.float_info.min)
 
     def test_non_numeric(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
@@ -209,4 +211,3 @@ class TestSnapping(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
-
