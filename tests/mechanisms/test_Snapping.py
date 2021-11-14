@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from unittest import TestCase
 
@@ -53,13 +55,110 @@ class TestSnapping(TestCase):
         with self.assertRaises(TypeError):
             self.mech(epsilon="Two", sensitivity=1, lower=0, upper=1000)
 
+    def test_epsilon(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertIsNotNone(mech.randomise(1))
+
+    def test_neg_effective_epsilon(self):
+        with self.assertRaises(ValueError):
+            self.mech(epsilon=math.nextafter((2*np.finfo(float).epsneg), 0), sensitivity=1, lower=0, upper=1000)
+
+    def test_zero_effective_epsilon(self):
+        mech = self.mech(epsilon=2*np.finfo(float).epsneg, sensitivity=1, lower=0, upper=1000)
+        self.assertIsNotNone(mech.randomise(1))
+
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000))
         self.assertIn(".Snapping(", repr_)
 
-    def test_epsilon(self):
+    def test_bias(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
-        self.assertIsNotNone(mech.randomise(1))
+        with self.assertRaises(NotImplementedError):
+            mech.bias(1)
+
+    def test_variance(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        with self.assertRaises(NotImplementedError):
+            mech.variance(1)
+
+    def test_scale_bound_symmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._scale_bound(), 10)
+
+    def test_scale_bound_nonsymmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_bound(), 20)
+
+    def test_scale_bound_nonsymmetric_sensitivity_0(self):
+        mech = self.mech(epsilon=1, sensitivity=0, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_bound(), 20)
+
+    def test_scale_bound_nonsymmetric_sensitivity_subunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=0.1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_bound(), 200)
+
+    def test_scale_bound_nonsymmetric_sensitivity_supraunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=2, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_bound(), 10)
+
+    def test_scale_and_offset_value_symmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._scale_and_offset_value(10), 10)
+
+    def test_scale_and_offset_value_nonsymmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_and_offset_value(10), 0)
+
+    def test_scale_and_offset_value_nonsymmetric_sensitivity_1_lower_bound(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._scale_and_offset_value(-10), -20)
+
+    def test_scale_and_offset_value_nonsymmetric_sensitivity_1_upper_bound(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=10, upper=30)
+        self.assertAlmostEqual(mech._scale_and_offset_value(30), 10)
+
+    def test_scale_and_offset_value_symmetric_sensitivity_subunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=0.1, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._scale_and_offset_value(10), 100)
+
+    def test_scale_and_offset_value_symmetric_sensitivity_supraunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=2, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._scale_and_offset_value(10), 5)
+
+    def test_reverse_scale_and_offset_value_symmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(10), 10)
+
+    def test_reverse_scale_and_offset_value_nonsymmetric_sensitivity_1(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(0), 10)
+
+    def test_reverse_scale_and_offset_value_nonsymmetric_sensitivity_1_lower_bound(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=-10, upper=30)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(-20), -10)
+
+    def test_reverse_scale_and_offset_value_nonsymmetric_sensitivity_1_upper_bound(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=10, upper=30)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(10), 30)
+
+    def test_reverse_scale_and_offset_value_symmetric_sensitivity_subunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=0.1, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(100), 10)
+
+    def test_reverse_scale_and_offset_value_symmetric_sensitivity_supraunitary(self):
+        mech = self.mech(epsilon=1, sensitivity=2, lower=-10, upper=10)
+        self.assertAlmostEqual(mech._reverse_scale_and_offset_value(5), 10)
+
+    def test_get_nearest_power_of_2_exact(self):
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**2), 4)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**0), 1)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(2**-2), 0.25)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(0), 0)
+
+    def test_get_nearest_power_of_2(self):
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(2.0, math.inf)), 4)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(2.0, -math.inf)), 2)
+        self.assertAlmostEqual(Snapping._get_nearest_power_of_2(math.nextafter(0, math.inf)), 2**-1022)
 
     def test_non_numeric(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
@@ -76,30 +175,10 @@ class TestSnapping(TestCase):
         median = float(np.median(vals))
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
 
-    def test_effective_epsilon_high_sensitivity(self):
-        mech = self.mech(epsilon=1, sensitivity=100, lower=0, upper=1)
+    def test_effective_epsilon(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
 
         self.assertLess(mech.effective_epsilon(), 1.0)
-
-    def test_effective_epsilon_one_sensitivity(self):
-        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
-
-        self.assertGreater(mech.effective_epsilon(), 1.0)
-
-    def test_effective_epsilon_zero_sensitivity(self):
-        mech = self.mech(epsilon=1, sensitivity=0, lower=0, upper=1)
-
-        self.assertTrue(mech.effective_epsilon(), float('inf'))
-
-    def test_rounding_power_of_two(self):
-        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
-
-        self.assertEqual(mech._lambda, 1)
-
-    def test_rounding_not_power_of_two(self):
-        mech = self.mech(epsilon=3, sensitivity=1, lower=0, upper=1)
-
-        self.assertEqual(mech._lambda, 0.5)
 
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1)
