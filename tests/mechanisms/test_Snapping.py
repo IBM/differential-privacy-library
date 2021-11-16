@@ -162,6 +162,30 @@ class TestSnapping(TestCase):
         self.assertEqual(Snapping._get_nearest_power_of_2(np.nextafter(sys.float_info.min, -math.inf)),
                                sys.float_info.min)
 
+    def test_round_to_nearest_power_of_2_exact(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(2.0), 2)
+
+    def test_round_to_nearest_power_of_2_below_exact(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(2.0, -math.inf)), 2)
+
+    def test_round_to_nearest_power_of_2_above_exact(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(2.0, math.inf)), 2.0)
+
+    def test_round_to_nearest_power_of_2_middle(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(3.0), 4)
+
+    def test_round_to_nearest_power_of_2_below_middle(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(3.0, -math.inf)), 2)
+
+    def test_round_to_nearest_power_of_2_above_middle(self):
+        mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
+        self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(3.0, math.inf)), 4.0)
+
     def test_non_numeric(self):
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000)
         with self.assertRaises(TypeError):
