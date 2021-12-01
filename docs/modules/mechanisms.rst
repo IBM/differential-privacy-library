@@ -118,7 +118,7 @@ Snapping mechanism
 .. autoclass:: Snapping
    :members:
    :inherited-members:
-   :exclude-members: copy,mse,variance
+   :exclude-members: copy,mse,bias,variance
 
 Staircase mechanism
 -----------------------------
