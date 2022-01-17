@@ -113,6 +113,13 @@ Laplace mechanisms
    :inherited-members:
    :exclude-members: copy,mse,variance
 
+Snapping mechanism
+-----------------------------
+.. autoclass:: Snapping
+   :members:
+   :inherited-members:
+   :exclude-members: copy,mse,bias,variance
+
 Staircase mechanism
 -----------------------------
 .. autoclass:: Staircase
