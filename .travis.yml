@@ -1,9 +1,10 @@
 language: python
-dist: xenial
+dist: focal
 python:
 - '3.7'
 - '3.8'
 - '3.9'
+- '3.10.0'
 matrix:
   include:
   - python: 3.9
