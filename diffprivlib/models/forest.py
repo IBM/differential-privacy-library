@@ -123,8 +123,8 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
 
     """
 
-    def __init__(self, n_estimators=10, *, epsilon=1.0, cat_feature_threshold=10, n_jobs=1, verbose=0, accountant=None,
-                 max_depth=15, random_state=None, feature_domains=None, **unused_args):
+    def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, n_jobs=1, verbose=0, accountant=None,
+                 max_depth=15, random_state=None, **unused_args):
         super().__init__(
             base_estimator=DecisionTreeClassifier(),
             n_estimators=n_estimators,
@@ -133,10 +133,9 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
             random_state=random_state,
             verbose=verbose)
         self.epsilon = epsilon
-        self.cat_feature_threshold = cat_feature_threshold
+        self.bounds = bounds
         self.max_depth = max_depth
         self.accountant = BudgetAccountant.load_default(accountant)
-        self.feature_domains = feature_domains
 
         if random_state is not None:
             np.random.seed(random_state)
@@ -162,40 +161,29 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         self: class
 
         """
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             self._warn_unused_args("sample_weight")
 
-        if not isinstance(self.n_estimators, numbers.Integral) or self.n_estimators < 0:
+        X, y = self._validate_data(X, y)
+
+        if not float(self.n_estimators).is_integer() or self.n_estimators < 0:
             raise ValueError(f'Number of estimators should be a positive integer; got {self.n_estimators}')
 
-        if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
-            raise ValueError('Categorical feature threshold should be a positive integer;'
-                             f'got {self.cat_feature_threshold}')
-
-        self.accountant.check(self.epsilon, 0)
-
-        X, y = self._validate_data(X, y, multi_output=False)
+        if self.bounds is None:
+            warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
+        self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
+        X = self._clip_to_bounds(X, self.bounds)
 
         self.n_outputs_ = 1
         self.n_features_in_ = X.shape[1]
-        self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
-        self.max_depth_ = calc_tree_depth(n_cont_features=self.n_features_in_-len(self.cat_features_),
-                                          n_cat_features=len(self.cat_features_), max_depth=self.max_depth)
+        self.max_depth_ = calc_tree_depth(n_features=self.n_features_in_, max_depth=self.max_depth)
         self.classes_ = np.unique(y)
         self.n_classes_ = len(self.classes_)
-        self.feature_domains_ = self.feature_domains
-
-        if self.feature_domains_ is None:
-            warnings.warn(
-                "`feature_domains` parameter hasn't been specified, "
-                "so falling back to determining domains from the data.\n"
-                "This may result in additional privacy leakage. To ensure differential privacy with no "
-                "additional privacy loss, specify `feature_domains` according to the documentation",
-                PrivacyLeakWarning)
-            self.feature_domains_ = get_feature_domains(X, self.cat_features_)
-
-        if len(self.feature_domains_) != self.n_features_in_:
-            raise ValueError("Missing domains for some features in `feature_domains`")
 
         if self.n_estimators > len(X):
             raise ValueError('Number of estimators is more than the available samples')
@@ -207,8 +195,7 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         for i in range(self.n_estimators):
             estimator = DecisionTreeClassifier(max_depth=self.max_depth_,
                                                epsilon=self.epsilon,
-                                               feature_domains=self.feature_domains_,
-                                               cat_features=self.cat_features_,
+                                               bounds=self.bounds,
                                                classes=self.classes_)
             estimators.append(estimator)
             datasets.append(Dataset(X=X[i*subset_size:(i+1)*subset_size], y=y[i*subset_size:(i+1)*subset_size]))
@@ -233,32 +220,22 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
     Parameters
     ----------
-    epsilon: float, default: 1.0
-        Privacy parameter :math:`\epsilon`.
-
-    cat_feature_threshold: int, default: 10
-        Threshold value used to determine categorical features. For example, value of ``10`` means
-        any feature that has less than or equal to 10 unique values will be treated as a categorical feature.
-
     max_depth: int, default: 15
         The maximum depth of the tree.
 
-    random_state: float, optional
-        Sets the numpy random seed.
+    epsilon: float, default: 1.0
+        Privacy parameter :math:`\epsilon`.
 
-    cat_features: array, optional
-        Array of categorical feature indexes. If not provided, will be determined from the data based on the
-        cat_feature_threshold.
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     classes: array of shape (n_classes_, ), optional
         Array of class labels. If not provided, will be determined from the data.
 
-    feature_domains: dict, optional
-        A dictionary of domain values for all features where keys are the feature indexes in the training data and
-        the values are an array of domain values for categorical features and an array of min and max values for
-        continuous features. For example, if the training data is [[2, 'dog'], [5, 'cat'], [7, 'dog']], then
-        the feature_domains would be {'0': [2, 7], '1': ['dog', 'cat']}. If not provided, feature domains will
-        be constructed from the data, but this will result in :class:`.PrivacyLeakWarning`.
+    random_state: float, optional
+        Sets the numpy random seed.
 
     Attributes
     ----------
@@ -271,15 +248,8 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     classes_: array of shape (n_classes, )
         The class labels.
 
-    cat_features_: array of categorical feature indexes
-        Categorical feature indexes.
-
-    feature_domains_: dictionary of domain values mapped to feature
-        indexes in the training data
-
     """
-    def __init__(self, cat_feature_threshold=10, max_depth=15, epsilon=1, random_state=None, feature_domains=None,
-                 cat_features=None, classes=None):
+    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(
@@ -308,40 +278,34 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
                 max_leaf_nodes=None,
                 min_impurity_decrease=None
             )
-        self.feature_domains = feature_domains
-        self.cat_feature_threshold = cat_feature_threshold
         self.epsilon = epsilon
-        self.cat_features = cat_features
+        self.bounds = bounds
         self.classes = classes
 
         if random_state is not None:
             np.random.seed(random_state)
 
-    def _build(self, features, feature_domains, current_depth=1):
+    def _build(self, features, bounds, current_depth=1):
         if not features or current_depth >= self.max_depth+1:
             return DecisionNode(level=current_depth, classes=self.classes_)
+
+        bounds_lower, bounds_upper = self._check_bounds(bounds, shape=len(features))
 
         split_feature = np.random.choice(features)
         node = DecisionNode(level=current_depth, classes=self.classes_, split_feature=split_feature)
 
-        if split_feature in self.cat_features_:
-            node.set_split_type(DecisionNode.CAT_SPLIT)
-            for value in feature_domains[str(split_feature)]:
-                child_node = self._build([f for f in features if f != split_feature], feature_domains, current_depth+1)
-                node.add_cat_child(value, child_node)
-        else:
-            node.set_split_type(DecisionNode.CONT_SPLIT)
-            split_value = np.random.uniform(feature_domains[str(split_feature)][0],
-                                            feature_domains[str(split_feature)][1])
-            node.set_split_value(split_value)
-            left_domain = {k: v if k != str(split_feature) else [v[0], split_value]
-                           for k, v in feature_domains.items()}
-            right_domain = {k: v if k != str(split_feature) else [split_value, v[1]]
-                            for k, v in feature_domains.items()}
-            left_child = self._build(features, left_domain, current_depth+1)
-            right_child = self._build(features, right_domain, current_depth+1)
-            node.set_left_child(left_child)
-            node.set_right_child(right_child)
+        split_value = np.random.uniform(bounds_lower[split_feature], bounds_upper[split_feature])
+        node.set_split_value(split_value)
+
+        left_bounds_upper = bounds_upper.copy()
+        left_bounds_upper[split_feature] = split_value
+        right_bounds_lower = bounds_lower.copy()
+        right_bounds_lower[split_feature] = split_value
+
+        left_child = self._build(features, (bounds_lower, left_bounds_upper), current_depth + 1)
+        right_child = self._build(features, (right_bounds_lower, bounds_upper), current_depth + 1)
+        node.set_left_child(left_child)
+        node.set_right_child(right_child)
 
         return node
 
@@ -349,28 +313,16 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         if sample_weight is not None:
             self._warn_unused_args("sample_weight")
 
-        if not isinstance(self.cat_feature_threshold, numbers.Integral) or self.cat_feature_threshold < 0:
-            raise ValueError('Categorical feature threshold should be a positive integer;'
-                             f'got {self.cat_feature_threshold}')
-
         if check_input:
             X, y = self._validate_data(X, y, multi_output=False)
         self.n_outputs_ = 1
 
-        self.feature_domains_ = self.feature_domains
-        self.cat_features_ = self.cat_features
-
-        if self.cat_features_ is None:
-            self.cat_features_ = get_cat_features(X, self.cat_feature_threshold)
-
-        if self.feature_domains_ is None:
-            warnings.warn(
-                "feature_domains parameter hasn't been specified, "
-                "so falling back to determining domains from the data.\n"
-                "This may result in additional privacy leakage. To ensure differential privacy with no "
-                "additional privacy loss, specify `feature_domains` according to the documentation",
-                PrivacyLeakWarning)
-            self.feature_domains_ = get_feature_domains(X, self.cat_features_)
+        if self.bounds is None:
+            warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
+            self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
+        self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
 
         self.classes_ = self.classes
 
@@ -382,7 +334,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         self.n_features_in_ = X.shape[1]
         features = list(range(self.n_features_in_))
 
-        self.tree_ = self._build(features, self.feature_domains_)
+        self.tree_ = self._build(features, self.bounds)
 
         for i, _ in enumerate(X):
             node = self.tree_.classify(X[i])
@@ -403,10 +355,8 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 class DecisionNode:
     """Base Decision Node
     """
-    CONT_SPLIT = 0
-    CAT_SPLIT = 1
 
-    def __init__(self, level, classes, split_feature=None, split_value=None, split_type=None):
+    def __init__(self, level, classes, split_feature=None, split_value=None):
         """
         Initialize DecisionNode
 
@@ -424,18 +374,13 @@ class DecisionNode:
         split_value: Any
             Feature value to split at
 
-        split_type: int
-            Type of split
-
         """
         self._level = level
         self._classes = classes
-        self._split_type = split_type
         self._split_feature = split_feature
         self._split_value = split_value
         self._left_child = None
         self._right_child = None
-        self._cat_children = {}
         self._class_counts = defaultdict(int)
         self._noisy_label = None
 
@@ -448,10 +393,6 @@ class DecisionNode:
         """Set split value"""
         self._split_value = split_value
 
-    def set_split_type(self, split_type):
-        """Set split type"""
-        self._split_type = split_type
-
     def set_left_child(self, node):
         """Set left child of the node"""
         self._left_child = node
@@ -460,13 +401,9 @@ class DecisionNode:
         """Set right child of the node"""
         self._right_child = node
 
-    def add_cat_child(self, cat_value, node):
-        """Add a categorical child node"""
-        self._cat_children[str(cat_value)] = node
-
     def is_leaf(self):
         """Check whether the node is leaf node"""
-        return not self._left_child and not self._right_child and not self._cat_children
+        return not self._left_child and not self._right_child
 
     def update_class_count(self, class_value):
         """Update the class count for the given class"""
@@ -477,27 +414,18 @@ class DecisionNode:
         if self.is_leaf():
             return self
 
-        child = None
-
-        if self._split_type == self.CAT_SPLIT:
-            x_val = str(x[self._split_feature])
-            child = self._cat_children.get(x_val)
+        x_val = x[self._split_feature]
+        if x_val < self._split_value:
+            child = self._left_child
         else:
-            x_val = x[self._split_feature]
-            if x_val < self._split_value:
-                child = self._left_child
-            else:
-                child = self._right_child
-
-        if child is None:
-            return self
+            child = self._right_child
 
         return child.classify(x)
 
     def set_noisy_label(self, epsilon, class_values):
         """Set the noisy label for this node"""
         if self.is_leaf():
-            if not self._noisy_label:
+            if self._noisy_label is None:
                 for val in class_values:
                     if val not in self._class_counts:
                         self._class_counts[val] = 0
@@ -512,8 +440,6 @@ class DecisionNode:
                 self._left_child.set_noisy_label(epsilon, class_values)
             if self._right_child:
                 self._right_child.set_noisy_label(epsilon, class_values)
-            for child_node in self._cat_children.values():
-                child_node.set_noisy_label(epsilon, class_values)
 
     def predict(self, X):
         """Predict using this node"""
@@ -530,78 +456,22 @@ class DecisionNode:
         return np.array(y)
 
 
-def get_feature_domains(X, cat_features):
-    """Calculate feature domains from the data.
-
-    Parameters:
-        X : array-like, shape (n_samples, n_features)
-            Training vector, where n_samples is the number of samples and n_features is the number of features.
-
-        cat_features : array of integers
-            List of categorical feature indexes
-
-    Returns:
-        [dict]: Dictionary with keys as feature indexes and values as feature domains.
-    """
-    feature_domains = {}
-    X_t = np.transpose(X)
-    cont_features = list(set(range(X.shape[1])) - set(cat_features))
-
-    for i in cat_features:
-        feature_domains[str(i)] = [str(x) for x in set(X_t[i])]
-
-    for i in cont_features:
-        vals = [float(x) for x in X_t[i]]
-        feature_domains[str(i)] = [min(vals), max(vals)]
-
-    return feature_domains
-
-
-def get_cat_features(X, feature_threshold=2):
-    """Determine categorical features
-
-    Parameters:
-        X : array-like, shape (n_samples, n_features)
-            Training vector, where n_samples is the number of samples and n_features is the number of features.
-
-        feature_threshold: int, defaults to 2.
-            Threshold value used to determine categorical features. For example, value of ``10`` means
-            any feature that has less than or equal to 10 unique values will be treated as a categorical feature.
-
-    Returns:
-        [list]: List of categorical feature indexes
-    """
-    n_features = X.shape[1]
-    cat_features = []
-
-    for i in range(n_features):
-        values = set(X[:, i])
-        if len(values) <= feature_threshold:
-            cat_features.append(i)
-
-    return cat_features
-
-
-def calc_tree_depth(n_cont_features, n_cat_features, max_depth=15):
+def calc_tree_depth(n_features, max_depth=5):
     """Calculate tree depth
 
     Args:
-        n_cont_features (int): Number of continuous features
-        n_cat_features ([type]): Number of categorical features
+        n_features (int): Number of features
         max_depth (int, optional): Max depth tree. Defaults to 15.
 
     Returns:
         [int]: Final depth tree
     """
-    if n_cont_features < 1:
-        return min(max_depth, np.floor(n_cat_features / 2.))
     # Designed using balls-in-bins probability. See the paper for details.
-    m = float(n_cont_features)
+    m = float(n_features)
     depth = 0
     expected_empty = m   # the number of unique attributes not selected so far
-    while expected_empty > m / 2.:   # repeat until we have less than half the attributes being empty
-        expected_empty = m * ((m - 1.) / m) ** depth
+    while expected_empty > m / 2:   # repeat until we have less than half the attributes being empty
+        expected_empty = m * ((m - 1) / m) ** depth
         depth += 1
     # the above was only for half the numerical attributes. now add half the categorical attributes
-    final_depth = np.floor(depth + (n_cat_features / 2.))
-    return min(max_depth, final_depth)
+    return min(max_depth, depth)
