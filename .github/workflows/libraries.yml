@@ -42,6 +42,9 @@ jobs:
           - library: scipy
             version: 1.6.3
             python-version: 3.8
+          - library: scipy
+            version: 1.7.3
+            python-version: '3.10'
 
     steps:
     - uses: actions/checkout@v2
