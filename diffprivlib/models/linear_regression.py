@@ -279,20 +279,16 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         objs, obj_coefs = _construct_regression_obj(
             X, y, bounds_X, bounds_y, epsilon=self.epsilon * (1 - epsilon_intercept_scale), alpha=0)
         coef = np.zeros((n_features, n_targets))
-        residues = []
 
         for i, obj in enumerate(objs):
             opt_result = minimize(obj, np.zeros(n_features), jac=True)
             coef[:, i] = opt_result.x
-            residues += [opt_result.fun]
 
         self.coef_ = coef.T
-        self._residues = residues
         self._obj_coefs = obj_coefs
 
         if y.ndim == 1:
             self.coef_ = np.ravel(self.coef_)
-            self._residues = self._residues[0]
         self._set_intercept(X_offset, y_offset, X_scale)
 
         self.accountant.spend(self.epsilon, 0)
