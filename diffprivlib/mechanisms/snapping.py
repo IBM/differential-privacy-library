@@ -193,7 +193,7 @@ class Snapping(LaplaceTruncated):
     def _laplace_sampler(unif_bit, unif):
         r"""
         Laplace inverse CDF random sampling implementation which uses full domain uniform sampling and exact log
-        implementation from crlibm, as mentioned in [Mir12]_.
+        implementation from crlibm (if installed), as mentioned in [Mir12]_.
         Outputs a random value scaled according to privacy budget and sensitivity 1, as bounds and input are scaled to
         sensitivity 1 before Laplacian noise is added.
 
