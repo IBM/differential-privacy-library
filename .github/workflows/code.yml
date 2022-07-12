@@ -28,8 +28,7 @@ jobs:
       run: |
         pytest --cov-report=xml --cov=diffprivlib --cov-append
     - name: Codecov upload
-      run: echo "Codecov still being uploaded by Travis!"
-#      uses: codecov/codecov-action@v2.1.0
+      uses: codecov/codecov-action@v2.1.0
     - name: pycodestyle
       run: pycodestyle --max-line-length=120 diffprivlib
     - name: pylint

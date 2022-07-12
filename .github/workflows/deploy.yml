@@ -14,8 +14,6 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - name: Still deploying on Travis
-        run: echo "Deployment is still on Travis!"
 
       - name: Update pip
         run: python -m pip install --upgrade pip
