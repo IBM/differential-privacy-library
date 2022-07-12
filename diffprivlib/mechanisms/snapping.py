@@ -4,7 +4,10 @@ Laplace mechanism with standard Laplace sampling.
 """
 import struct
 
-import crlibm
+try:
+    from crlibm import log_rn
+except ModuleNotFoundError:
+    from numpy import log as log_rn
 import numpy as np
 
 from diffprivlib.mechanisms import LaplaceTruncated
@@ -19,6 +22,8 @@ class Snapping(LaplaceTruncated):
     It eliminates a vulnerability stemming from the representation of reals as floating-point numbers in implementations
     of the classic Laplace mechanism and its variants which use the inverse CDF of the Laplace distribution to sample
     it. It causes a high degree of reduction in the granularity of the output.
+
+    For the most faithful implementation of the mechanism, the ``crlibm`` package should be installed.
 
     Parameters
     ----------
@@ -197,7 +202,7 @@ class Snapping(LaplaceTruncated):
         float
             Random value from Laplace distribution scaled according to :math:`\epsilon`
         """
-        laplace = (-1) ** unif_bit * crlibm.log_rn(unif)
+        laplace = (-1) ** unif_bit * log_rn(unif)
         return laplace
 
     def randomise(self, value):

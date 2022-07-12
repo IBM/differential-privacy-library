@@ -42,7 +42,8 @@ setuptools.setup(name='diffprivlib',
                  license='MIT',
                  install_requires=install_requires,
                  extras_require={
-                     'docs': docs_require
+                     'docs': docs_require,
+                     'crlibm': ['crlibm'],
                  },
                  python_requires='>=3.7',
                  classifiers=[
