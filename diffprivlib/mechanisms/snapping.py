@@ -4,11 +4,11 @@ Laplace mechanism with standard Laplace sampling.
 """
 import struct
 
+import numpy as np
 try:
     from crlibm import log_rn
 except ModuleNotFoundError:
-    from numpy import log as log_rn
-import numpy as np
+    log_rn = np.log
 
 from diffprivlib.mechanisms import LaplaceTruncated
 
