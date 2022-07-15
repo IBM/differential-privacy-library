@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from unittest import TestCase
 
@@ -96,7 +98,7 @@ class TestLaplaceBoundedDomain(TestCase):
     def test_semi_inf_domain_inf_epsilon(self):
         mech = self.mech(epsilon=float("inf"), delta=0, sensitivity=1, lower=0.0, upper=float("inf"))
 
-        with pytest.warns(None) as w:
+        with warnings.catch_warnings(record=True) as w:
             self.assertIsNotNone(mech.randomise(0))
 
         self.assertFalse(w, "Warning thrown for LaplaceBoundedDomain")

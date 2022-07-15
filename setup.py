@@ -25,7 +25,6 @@ install_requires = ['numpy >= 1.19.0',
                     'scikit-learn >= 0.23.0',
                     'scipy >= 1.5.0',
                     'joblib >= 0.16.0',
-                    'crlibm >= 1.0.3',
                     ]
 
 docs_require = ['sphinx >= 1.4',
@@ -42,7 +41,8 @@ setuptools.setup(name='diffprivlib',
                  license='MIT',
                  install_requires=install_requires,
                  extras_require={
-                     'docs': docs_require
+                     'docs': docs_require,
+                     'crlibm': ['crlibm'],
                  },
                  python_requires='>=3.7',
                  classifiers=[

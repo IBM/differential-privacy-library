@@ -25,7 +25,6 @@ from joblib import Parallel, delayed
 import numpy as np
 
 from sklearn.utils import check_array
-from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.ensemble._forest import ForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
@@ -200,7 +199,7 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
             estimators.append(estimator)
             datasets.append(Dataset(X=X[i*subset_size:(i+1)*subset_size], y=y[i*subset_size:(i+1)*subset_size]))
 
-        estimators = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, **_joblib_parallel_args(prefer='processes'))(
+        estimators = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer='processes')(
             delayed(lambda estimator, X, y: estimator.fit(X, y))(estimator, dataset.X, dataset.y)
             for estimator, dataset in zip(estimators, datasets)
         )
