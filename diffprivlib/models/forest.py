@@ -18,14 +18,13 @@
 """
 Random Forest Classifier with Differential Privacy
 """
-from collections import defaultdict, namedtuple
-import numbers
+from collections import namedtuple
 import warnings
+
 from joblib import Parallel, delayed
 import numpy as np
-
-from sklearn.utils import check_array
-from sklearn.ensemble._forest import ForestClassifier
+from sklearn.tree._tree import NODE_DTYPE, Tree
+from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
@@ -34,9 +33,11 @@ from diffprivlib.mechanisms import PermuteAndFlip
 from diffprivlib.validation import DiffprivlibMixin
 
 Dataset = namedtuple('Dataset', ['X', 'y'])
+StackNode = namedtuple("StackNode", ["parent", "is_left", "depth", "bounds"])
+MAX_INT = np.iinfo(np.int32).max
 
 
-class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
+class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
     r"""Random Forest Classifier with differential privacy.
 
     This class implements Differentially Private Random Decision Forests using Smooth Sensitivity [1].
@@ -69,9 +70,6 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
         The maximum depth of the tree. Final depth of the tree will be calculated based on the number of continuous
         and categorical features, but it wont be more than this number.
         Note: The depth translates to an exponential increase in memory usage.
-
-    random_state: float, optional
-        Sets the numpy random seed.
 
     feature_domains: dict, optional
         A dictionary of domain values for all features where keys are the feature indexes in the training data and
@@ -123,21 +121,21 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
     """
 
     def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, n_jobs=1, verbose=0, accountant=None,
-                 max_depth=15, random_state=None, **unused_args):
+                 max_depth=15, warm_start=False, **unused_args):
         super().__init__(
-            base_estimator=DecisionTreeClassifier(),
             n_estimators=n_estimators,
-            estimator_params=("cat_feature_threshold", "max_depth", "epsilon", "random_state"),
+            criterion=None,
             n_jobs=n_jobs,
-            random_state=random_state,
-            verbose=verbose)
+            random_state=None,
+            verbose=verbose,
+            warm_start=warm_start)
         self.epsilon = epsilon
         self.bounds = bounds
         self.max_depth = max_depth
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        if random_state is not None:
-            np.random.seed(random_state)
+        self.base_estimator = DecisionTreeClassifier()
+        self.estimator_params = ("cat_feature_threshold", "max_depth", "epsilon", "random_state")
 
         self._warn_unused_args(unused_args)
 
@@ -210,6 +208,146 @@ class RandomForestClassifier(ForestClassifier, DiffprivlibMixin):
 
         return self
 
+    # def tomhas(self, X, y, sample_weight=None):
+    #     """
+    #     Build a forest of trees from the training set (X, y).
+    #
+    #     Parameters
+    #     ----------
+    #     X : {array-like, sparse matrix} of shape (n_samples, n_features)
+    #         The training input samples. Internally, its dtype will be converted
+    #         to ``dtype=np.float32``. If a sparse matrix is provided, it will be
+    #         converted into a sparse ``csc_matrix``.
+    #
+    #     y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+    #         The target values (class labels in classification, real numbers in
+    #         regression).
+    #
+    #     sample_weight : array-like of shape (n_samples,), default=None
+    #         Sample weights. If None, then samples are equally weighted. Splits
+    #         that would create child nodes with net zero or negative weight are
+    #         ignored while searching for a split in each node. In the case of
+    #         classification, splits are also ignored if they would result in any
+    #         single class carrying a negative weight in either child node.
+    #
+    #     Returns
+    #     -------
+    #     self : object
+    #         Fitted estimator.
+    #     """
+    #     self.accountant.check(self.epsilon, 0)
+    #
+    #     if sample_weight is not None:
+    #         self._warn_unused_args("sample_weight")
+    #
+    #     # Validate or convert input data
+    #     X, y = self._validate_data(X, y, dtype=DTYPE)
+    #
+    #     y = np.atleast_1d(y)
+    #     if y.ndim == 2 and y.shape[1] == 1:
+    #         warn("A column-vector y was passed when a 1d array was expected. Please change the shape of y to "
+    #              "(n_samples,), for example using ravel().", DataConversionWarning, stacklevel=2)
+    #
+    #     if y.ndim == 1:
+    #         # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
+    #         y = np.reshape(y, (-1, 1))
+    #
+    #     self.n_outputs_ = y.shape[1]
+    #
+    #     y, expanded_class_weight = self._validate_y_class_weight(y)
+    #
+    #     if getattr(y, "dtype", None) != DOUBLE or not y.flags.contiguous:
+    #         y = np.ascontiguousarray(y, dtype=DOUBLE)
+    #
+    #     if expanded_class_weight is not None:
+    #         if sample_weight is not None:
+    #             sample_weight = sample_weight * expanded_class_weight
+    #         else:
+    #             sample_weight = expanded_class_weight
+    #
+    #     n_samples_bootstrap = _get_n_samples_bootstrap(n_samples=X.shape[0], max_samples=self.max_samples)
+    #
+    #     # Check parameters
+    #     self._validate_estimator()
+    #
+    #     if not self.bootstrap and self.oob_score:
+    #         raise ValueError("Out of bag estimation only available if bootstrap=True")
+    #
+    #     random_state = check_random_state(self.random_state)
+    #
+    #     if not self.warm_start or not hasattr(self, "estimators_"):
+    #         # Free allocated memory, if any
+    #         self.estimators_ = []
+    #
+    #     n_more_estimators = self.n_estimators - len(self.estimators_)
+    #
+    #     if n_more_estimators < 0:
+    #         raise ValueError("n_estimators=%d must be larger or equal to len(estimators_)=%d when warm_start==True"
+    #                          % (self.n_estimators, len(self.estimators_)))
+    #     elif n_more_estimators == 0:
+    #         warn("Warm-start fitting without increasing n_estimators does not fit new trees.")
+    #     else:
+    #         if self.warm_start and len(self.estimators_) > 0:
+    #             # We draw from the random state to get the random state we
+    #             # would have got if we hadn't used a warm_start.
+    #             random_state.randint(MAX_INT, size=len(self.estimators_))
+    #
+    #         trees = [
+    #             self._make_estimator(append=False, random_state=random_state)
+    #             for i in range(n_more_estimators)
+    #         ]
+    #
+    #         # Parallel loop: we prefer the threading backend as the Cython code
+    #         # for fitting the trees is internally releasing the Python GIL
+    #         # making threading more efficient than multiprocessing in
+    #         # that case. However, for joblib 0.12+ we respect any
+    #         # parallel_backend contexts set at a higher level,
+    #         # since correctness does not rely on using threads.
+    #         trees = Parallel(
+    #             n_jobs=self.n_jobs,
+    #             verbose=self.verbose,
+    #             **_joblib_parallel_args(prefer="threads"),
+    #         )(
+    #             delayed(_parallel_build_trees)(
+    #                 t,
+    #                 self,
+    #                 X,
+    #                 y,
+    #                 sample_weight,
+    #                 i,
+    #                 len(trees),
+    #                 verbose=self.verbose,
+    #                 class_weight=self.class_weight,
+    #                 n_samples_bootstrap=n_samples_bootstrap,
+    #             )
+    #             for i, t in enumerate(trees)
+    #         )
+    #
+    #         # Collect newly grown trees
+    #         self.estimators_.extend(trees)
+    #
+    #     if self.oob_score:
+    #         y_type = type_of_target(y)
+    #         if y_type in ("multiclass-multioutput", "unknown"):
+    #             # FIXME: we could consider to support multiclass-multioutput if
+    #             # we introduce or reuse a constructor parameter (e.g.
+    #             # oob_score) allowing our user to pass a callable defining the
+    #             # scoring strategy on OOB sample.
+    #             raise ValueError(
+    #                 "The type of target cannot be used to compute OOB "
+    #                 f"estimates. Got {y_type} while only the following are "
+    #                 "supported: continuous, continuous-multioutput, binary, "
+    #                 "multiclass, multilabel-indicator."
+    #             )
+    #         self._set_oob_score_and_attributes(X, y)
+    #
+    #     # Decapsulate classes_ attributes
+    #     if hasattr(self, "classes_") and self.n_outputs_ == 1:
+    #         self.n_classes_ = self.n_classes_[0]
+    #         self.classes_ = self.classes_[0]
+    #
+    #     return self
+
 
 class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     r"""Decision Tree Classifier with differential privacy.
@@ -233,9 +371,6 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     classes: array of shape (n_classes_, ), optional
         Array of class labels. If not provided, will be determined from the data.
 
-    random_state: float, optional
-        Sets the numpy random seed.
-
     Attributes
     ----------
     n_features_in_: int
@@ -248,7 +383,8 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         The class labels.
 
     """
-    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None):
+
+    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, **unused_args):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(
@@ -259,7 +395,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
                 min_samples_leaf=None,
                 min_weight_fraction_leaf=None,
                 max_features=None,
-                random_state=random_state,
+                random_state=None,
                 max_leaf_nodes=None,
                 min_impurity_decrease=None,
                 min_impurity_split=None
@@ -273,7 +409,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
                 min_samples_leaf=None,
                 min_weight_fraction_leaf=None,
                 max_features=None,
-                random_state=random_state,
+                random_state=None,
                 max_leaf_nodes=None,
                 min_impurity_decrease=None
             )
@@ -281,32 +417,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         self.bounds = bounds
         self.classes = classes
 
-        if random_state is not None:
-            np.random.seed(random_state)
-
-    def _build(self, features, bounds, current_depth=1):
-        if not features or current_depth >= self.max_depth+1:
-            return DecisionNode(level=current_depth, classes=self.classes_)
-
-        bounds_lower, bounds_upper = self._check_bounds(bounds, shape=len(features))
-
-        split_feature = np.random.choice(features)
-        node = DecisionNode(level=current_depth, classes=self.classes_, split_feature=split_feature)
-
-        split_value = np.random.uniform(bounds_lower[split_feature], bounds_upper[split_feature])
-        node.set_split_value(split_value)
-
-        left_bounds_upper = bounds_upper.copy()
-        left_bounds_upper[split_feature] = split_value
-        right_bounds_lower = bounds_lower.copy()
-        right_bounds_lower[split_feature] = split_value
-
-        left_child = self._build(features, (bounds_lower, left_bounds_upper), current_depth + 1)
-        right_child = self._build(features, (right_bounds_lower, bounds_upper), current_depth + 1)
-        node.set_left_child(left_child)
-        node.set_right_child(right_child)
-
-        return node
+        self._warn_unused_args(unused_args)
 
     def fit(self, X, y, sample_weight=None, check_input=True, X_idx_sorted="deprecated"):
         if sample_weight is not None:
@@ -329,17 +440,18 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
             self.classes_ = np.unique(y)
 
         self.n_classes_ = len(self.classes_)
-
         self.n_features_in_ = X.shape[1]
-        features = list(range(self.n_features_in_))
 
-        self.tree_ = self._build(features, self.bounds)
+        # Build and fit the FittingTree
+        fitting_tree = FittingTree(self.max_depth, self.n_features_in_, self.classes_, self.epsilon, self.bounds)
+        fitting_tree.build()
+        fitting_tree.fit(X, y)
 
-        for i, _ in enumerate(X):
-            node = self.tree_.classify(X[i])
-            node.update_class_count(y[i].item())
-
-        self.tree_.set_noisy_label(self.epsilon, self.classes_)
+        # Load params from FittingTree into sklearn.Tree
+        d = fitting_tree.__getstate__()
+        tree = Tree(self.n_features_in_, np.array([self.n_classes_]), self.n_outputs_)
+        tree.__setstate__(d)
+        self.tree_ = tree
 
         return self
 
@@ -351,108 +463,132 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         return {}
 
 
-class DecisionNode:
-    """Base Decision Node
-    """
+class FittingTree(DiffprivlibMixin):
+    _TREE_LEAF = -1
+    _TREE_UNDEFINED = -2
 
-    def __init__(self, level, classes, split_feature=None, split_value=None):
-        """
-        Initialize DecisionNode
+    def __init__(self, max_depth, n_features, classes, epsilon, bounds):
+        self.node_count = 0
+        self.nodes = []
+        self.max_depth = max_depth
+        self.n_features = n_features
+        self.classes = classes
+        self.epsilon = epsilon
+        self.bounds = bounds
 
-        Parameters
-        ----------
-        level: int
-            Node level in the tree
+    def __getstate__(self):
+        """Get state of FittingTree to feed into __setstate__ of sklearn.Tree"""
+        d = {"max_depth": self.max_depth,
+             "node_count": self.node_count,
+             "nodes": np.array([tuple(node) for node in self.nodes], dtype=NODE_DTYPE),
+             "values": self.values_}
+        return d
 
-        classes: list
-            List of class labels
+    def build(self):
+        stack = [StackNode(parent=self._TREE_UNDEFINED, is_left=False, depth=0, bounds=self.bounds)]
 
-        split_feature: int
-            Split feature index
+        while stack:
+            parent, is_left, depth, bounds = stack.pop()
+            node_id = self.node_count
+            bounds_lower, bounds_upper = self._check_bounds(bounds, shape=self.n_features)
 
-        split_value: Any
-            Feature value to split at
+            # Update parent node with its child
+            if parent != self._TREE_UNDEFINED:
+                if is_left:
+                    self.nodes[parent].left_child = node_id
+                else:
+                    self.nodes[parent].right_child = node_id
 
-        """
-        self._level = level
-        self._classes = classes
-        self._split_feature = split_feature
-        self._split_value = split_value
-        self._left_child = None
-        self._right_child = None
-        self._class_counts = defaultdict(int)
-        self._noisy_label = None
+            # Check if we have a leaf node, then add it
+            if depth >= self.max_depth:
+                node = Node(node_id, self._TREE_UNDEFINED, self._TREE_UNDEFINED)
+                node.left_child = self._TREE_LEAF
+                node.right_child = self._TREE_LEAF
 
-    @property
-    def noisy_label(self):
-        """Get noisy label"""
-        return self._noisy_label
+                self.nodes.append(node)
+                self.node_count += 1
+                continue
 
-    def set_split_value(self, split_value):
-        """Set split value"""
-        self._split_value = split_value
+            # We have a decision node, so pick feature and threshold
+            feature = np.random.randint(self.n_features)
+            threshold = np.random.uniform(bounds_lower[feature], bounds_upper[feature])
 
-    def set_left_child(self, node):
-        """Set left child of the node"""
-        self._left_child = node
+            left_bounds_upper = bounds_upper.copy()
+            left_bounds_upper[feature] = threshold
+            right_bounds_lower = bounds_lower.copy()
+            right_bounds_lower[feature] = threshold
 
-    def set_right_child(self, node):
-        """Set right child of the node"""
-        self._right_child = node
+            self.nodes.append(Node(node_id, feature, threshold))
+            self.node_count += 1
 
-    def is_leaf(self):
-        """Check whether the node is leaf node"""
-        return not self._left_child and not self._right_child
+            stack.append(StackNode(parent=node_id, is_left=True, depth=depth+1, bounds=(bounds_lower,
+                                                                                        left_bounds_upper)))
+            stack.append(StackNode(parent=node_id, is_left=False, depth=depth+1, bounds=(right_bounds_lower,
+                                                                                         bounds_upper)))
 
-    def update_class_count(self, class_value):
-        """Update the class count for the given class"""
-        self._class_counts[class_value] += 1
+        return self.node_count
 
-    def classify(self, x):
-        """Classify the given data"""
-        if self.is_leaf():
-            return self
+    def fit(self, X, y):
+        leaves = self.apply(X)
+        unique_leaves = np.unique(leaves)
+        values = np.zeros(shape=(self.node_count, 1, len(self.classes)))
 
-        x_val = x[self._split_feature]
-        if x_val < self._split_value:
-            child = self._left_child
-        else:
-            child = self._right_child
+        # Populate real leaves
+        for leaf in unique_leaves:
+            idxs = (leaves == leaf)
+            leaf_y = y[idxs]
 
-        return child.classify(x)
+            counts = [np.sum(leaf_y == cls) for cls in self.classes]
+            mech = PermuteAndFlip(epsilon=self.epsilon, sensitivity=1, monotonic=True, utility=counts)
+            values[leaf, 0, mech.randomise()] = 1
 
-    def set_noisy_label(self, epsilon, class_values):
-        """Set the noisy label for this node"""
-        if self.is_leaf():
-            if self._noisy_label is None:
-                for val in class_values:
-                    if val not in self._class_counts:
-                        self._class_counts[val] = 0
+        # Populate empty leaves
+        for node in self.nodes:
+            if values[node.node_id].sum() or node.left_child != self._TREE_LEAF:
+                continue
 
-                utility = list(self._class_counts.values())
-                candidates = list(self._class_counts.keys())
-                mech = PermuteAndFlip(epsilon=epsilon, sensitivity=1, monotonic=True, utility=utility,
-                                      candidates=candidates)
-                self._noisy_label = mech.randomise()
-        else:
-            if self._left_child:
-                self._left_child.set_noisy_label(epsilon, class_values)
-            if self._right_child:
-                self._right_child.set_noisy_label(epsilon, class_values)
+            values[node.node_id, 0, np.random.randint(len(self.classes))] = 1
 
-    def predict(self, X):
-        """Predict using this node"""
-        y = []
-        X = np.array(X)
-        check_array(X)
+        self.values_ = values
 
-        for x in X:
-            node = self.classify(x)
-            proba = np.zeros(len(self._classes))
-            proba[np.where(self._classes == node.noisy_label)[0].item()] = 1
-            y.append(proba)
+        return self
 
-        return np.array(y)
+    def apply(self, X):
+        n_samples = X.shape[0]
+        out = np.zeros((n_samples,), dtype=int)
+        out_ptr = out.data
+
+        for i in range(n_samples):
+            node = self.nodes[0]
+
+            while node.left_child != self._TREE_LEAF:
+                if X[i, node.feature] <= node.threshold:
+                    node = self.nodes[node.left_child]
+                else:
+                    node = self.nodes[node.right_child]
+
+            out_ptr[i] = node.node_id
+
+        return out
+
+
+class Node:
+    def __init__(self, node_id, feature, threshold):
+        self.feature = feature
+        self.threshold = threshold
+        self.left_child = -1
+        self.right_child = -1
+        self.node_id = node_id
+
+    def __iter__(self):
+        """Defines parameters needed to populate NODE_DTYPE for Tree.__setstate__ using tuple(Node)."""
+        yield self.left_child
+        yield self.right_child
+        yield self.feature
+        yield self.threshold
+        yield 0.0  # Impurity
+        yield 0  # n_node_samples
+        yield 0.0  # weighted_n_node_samples
 
 
 def calc_tree_depth(n_features, max_depth=5):

@@ -48,7 +48,7 @@ class TestRandomForestClassifier(TestCase):
     def test_simple(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021)
+        model = RandomForestClassifier(epsilon=5, n_estimators=5)
 
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
@@ -71,7 +71,7 @@ class TestRandomForestClassifier(TestCase):
     def test_with_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, random_state=2021, bounds=([2, 3, 4], [12, 13, 15]))
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, bounds=([2, 3, 4], [12, 13, 15]))
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
@@ -89,7 +89,7 @@ class TestRandomForestClassifier(TestCase):
     def test_with_not_enough_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
-        model = RandomForestClassifier(epsilon=2, n_estimators=5, random_state=2021, bounds=([2, 3], [12, 13]))
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=([2, 3], [12, 13]))
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         with self.assertRaises(ValueError):
