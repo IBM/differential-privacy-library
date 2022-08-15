@@ -464,6 +464,31 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
 
 class FittingTree(DiffprivlibMixin):
+    r"""Array-based representation of a binary decision tree, trained with differential privacy.
+
+    This tree mimics the architecture of the corresponding Tree from sklearn.tree.tree_, but without many methods given
+    in Tree. The purpose of FittingTree is to fit the parameters of the model, and have those parameters passed to
+    Tree (using FittingTree.__getstate__() and Tree.__setstate__()), to be used for prediction.
+
+    Parameters
+    ----------
+    max_depth: int
+        The maximum depth of the tree.
+
+    n_features: int
+        The number of features of the training dataset.
+
+    classes: array of shape (n_classes, )
+        The classes of the training dataset.
+
+    epsilon: float
+        Privacy parameter :math:`\epsilon`.
+
+    bounds:  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data.
+
+    """
     _TREE_LEAF = -1
     _TREE_UNDEFINED = -2
 
@@ -485,6 +510,7 @@ class FittingTree(DiffprivlibMixin):
         return d
 
     def build(self):
+        """Build the decision tree using random feature selection and random thresholding."""
         stack = [StackNode(parent=self._TREE_UNDEFINED, is_left=False, depth=0, bounds=self.bounds)]
 
         while stack:
@@ -526,14 +552,25 @@ class FittingTree(DiffprivlibMixin):
             stack.append(StackNode(parent=node_id, is_left=False, depth=depth+1, bounds=(right_bounds_lower,
                                                                                          bounds_upper)))
 
-        return self.node_count
+        return self
 
     def fit(self, X, y):
+        """Fit the tree to the given training data.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples is the number of samples and n_features is the number of features.
+
+        y : array-like, shape (n_samples,)
+            Target vector relative to X.
+
+        """
         leaves = self.apply(X)
         unique_leaves = np.unique(leaves)
         values = np.zeros(shape=(self.node_count, 1, len(self.classes)))
 
-        # Populate real leaves
+        # Populate value of real leaves
         for leaf in unique_leaves:
             idxs = (leaves == leaf)
             leaf_y = y[idxs]
@@ -542,7 +579,7 @@ class FittingTree(DiffprivlibMixin):
             mech = PermuteAndFlip(epsilon=self.epsilon, sensitivity=1, monotonic=True, utility=counts)
             values[leaf, 0, mech.randomise()] = 1
 
-        # Populate empty leaves
+        # Populate value of empty leaves
         for node in self.nodes:
             if values[node.node_id].sum() or node.left_child != self._TREE_LEAF:
                 continue
@@ -554,6 +591,7 @@ class FittingTree(DiffprivlibMixin):
         return self
 
     def apply(self, X):
+        """Finds the terminal region (=leaf node) for each sample in X."""
         n_samples = X.shape[0]
         out = np.zeros((n_samples,), dtype=int)
         out_ptr = out.data
@@ -573,6 +611,7 @@ class FittingTree(DiffprivlibMixin):
 
 
 class Node:
+    """Base storage structure for the nodes in a FittingTree object."""
     def __init__(self, node_id, feature, threshold):
         self.feature = feature
         self.threshold = threshold
