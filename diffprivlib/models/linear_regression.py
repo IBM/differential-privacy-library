@@ -177,7 +177,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds_X:  tuple
+    bounds_X :  tuple
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.

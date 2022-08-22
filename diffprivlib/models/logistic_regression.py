@@ -433,7 +433,7 @@ def _logistic_loss_and_grad(w, X, y, alpha, sample_weight=None):
     n_samples, n_features = X.shape
     grad = np.empty_like(w)
 
-    w, c, yz = _intercept_dot(w, X, y)
+    w, _, yz = _intercept_dot(w, X, y)
 
     if sample_weight is None:
         sample_weight = np.ones(n_samples)
