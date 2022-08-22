@@ -128,6 +128,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
         super().__init__(
             n_estimators=n_estimators,
             criterion=None,
+            bootstrap=False,
             n_jobs=n_jobs,
             random_state=None,
             verbose=verbose,
@@ -243,19 +244,34 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
             # that case. However, for joblib 0.12+ we respect any
             # parallel_backend contexts set at a higher level,
             # since correctness does not rely on using threads.
-            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                delayed(_parallel_build_trees)(
-                    t,
-                    False,  # bootstrap
-                    X[tree_idxs == i],
-                    y[tree_idxs == i],
-                    None,  # sample_weight
-                    i,
-                    len(trees),
-                    verbose=self.verbose,
+            try:
+                trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+                    delayed(_parallel_build_trees)(
+                        tree=t,
+                        bootstrap=False,
+                        X=X[tree_idxs == i],
+                        y=y[tree_idxs == i],
+                        sample_weight=None,
+                        tree_idx=i,
+                        n_trees=len(trees),
+                        verbose=self.verbose,
+                    )
+                    for i, t in enumerate(trees)
                 )
-                for i, t in enumerate(trees)
-            )
+            except TypeError:
+                trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+                    delayed(_parallel_build_trees)(
+                        tree=t,
+                        forest=self,
+                        X=X[tree_idxs == i],
+                        y=y[tree_idxs == i],
+                        sample_weight=None,
+                        tree_idx=i,
+                        n_trees=len(trees),
+                        verbose=self.verbose,
+                    )
+                    for i, t in enumerate(trees)
+                )
 
             # Collect newly grown trees
             self.estimators_.extend(trees)
