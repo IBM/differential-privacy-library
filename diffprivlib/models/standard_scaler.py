@@ -113,12 +113,12 @@ class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
 
     Parameters
     ----------
-    epsilon: float, default: 1.0
+    epsilon : float, default: 1.0
         The privacy budget to be allocated to learning the mean and variance of the training sample.  If
         `with_std=True`,  the privacy budget is split evenly between mean and variance (the mean must be calculated even
         when `with_mean=False`, as it is used in the calculation of the variance.
 
-    bounds:  tuple, optional
+    bounds : tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
