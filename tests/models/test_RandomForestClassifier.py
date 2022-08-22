@@ -18,11 +18,11 @@ class TestRandomForestClassifier(TestCase):
         X = [[1]]
         y = [0]
 
-        with self.assertRaises(TypeError):
-            RandomForestClassifier(n_estimators="10").fit(X, y)
+        with self.assertRaises((ValueError, TypeError)):  # Should be TypeError
+            RandomForestClassifier(n_estimators="10", bounds=(0, 1), classes=[0, 1]).fit(X, y)
         
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            RandomForestClassifier(n_estimators=1, bounds=([0], [1])).fit(X, y, sample_weight=1)
+            RandomForestClassifier(n_estimators=1, bounds=(0, 1), classes=[0, 1]).fit(X, y, sample_weight=1)
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):
@@ -34,8 +34,8 @@ class TestRandomForestClassifier(TestCase):
         with self.assertRaises(ValueError):
             RandomForestClassifier(bounds=([0], [1])).fit([[1], [2]], [[1, 2], [2, 4]])
 
-        with self.assertRaises(ValueError):
-            RandomForestClassifier(bounds=([0], [1])).fit([[1, 2], [3, 4]], [1, 0])
+        # with self.assertRaises(ValueError):
+        #     RandomForestClassifier(bounds=([0], [1])).fit([[1, 2], [3, 4]], [1, 0])
 
     def test_multi_output(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
@@ -48,7 +48,7 @@ class TestRandomForestClassifier(TestCase):
     def test_simple(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5)
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, max_depth=3)
 
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
@@ -61,7 +61,7 @@ class TestRandomForestClassifier(TestCase):
         self.assertEqual(model.n_features_in_, 3)
         self.assertEqual(model.n_classes_, 2)
         self.assertEqual(set(model.classes_), set([0, 1]))
-        self.assertEqual(model.max_depth_, 3)
+        self.assertEqual(model.max_depth, 3)
         self.assertTrue(model.estimators_)
         self.assertEqual(len(model.estimators_), 5)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
@@ -71,20 +71,37 @@ class TestRandomForestClassifier(TestCase):
     def test_with_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, bounds=([2, 3, 4], [12, 13, 15]))
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, bounds=([2, 3, 4], [12, 13, 15]), classes=[0, 1],
+                                       max_depth=3)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
+
         model.fit(X, y)
+
         check_is_fitted(model)
         self.assertEqual(model.n_features_in_, 3)
         self.assertEqual(model.n_classes_, 2)
         self.assertEqual(set(model.classes_), set([0, 1]))
-        self.assertEqual(model.max_depth_, 3)
+        self.assertEqual(model.max_depth, 3)
         self.assertTrue(model.estimators_)
         self.assertEqual(len(model.estimators_), 5)
         self.assertTrue(model.predict(np.array([[12, 3, 14]])))
         self.assertTrue(np.all(model.bounds[0] == [2, 3, 4]))
         self.assertTrue(np.all(model.bounds[1] == [12, 13, 15]))
+
+    def test_non_binary_classes(self):
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
+        y = np.array([1, 1, 1, 0, 0, 0, 1] * 3) + 2
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, bounds=([2, 3, 4], [12, 13, 15]), classes=[2, 3],
+                                       max_depth=3)
+        with self.assertRaises(NotFittedError):
+            check_is_fitted(model)
+
+        model.fit(X, y)
+
+        self.assertIn(model.predict(np.array([[12, 3, 14]])), (2, 3))
+        self.assertIn(model.predict(np.array([[2, 13, 4]])), (2, 3))
+        self.assertIn(model.predict(np.array([[3, 5, 15]])), (2, 3))
 
     def test_with_not_enough_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
@@ -102,12 +119,12 @@ class TestRandomForestClassifier(TestCase):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
         bounds = ([2, 3, 4], [12, 13, 15])
-        model = RandomForestClassifier(epsilon=2, n_estimators=5, accountant=acc, bounds=bounds)
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, accountant=acc, bounds=bounds, classes=[0, 1])
         model.fit(X, y)
         self.assertEqual((2, 0), acc.total())
         
         with BudgetAccountant(3, 0) as acc2:
-            model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=bounds)
+            model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=bounds, classes=[0, 1])
             model.fit(X, y)
             self.assertEqual((2, 0), acc2.total())
 

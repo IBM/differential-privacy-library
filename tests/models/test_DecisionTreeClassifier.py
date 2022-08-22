@@ -3,7 +3,7 @@ from unittest import TestCase
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
-from diffprivlib.models.forest import DecisionTreeClassifier, calc_tree_depth
+from diffprivlib.models.forest import DecisionTreeClassifier
 from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning
 
 

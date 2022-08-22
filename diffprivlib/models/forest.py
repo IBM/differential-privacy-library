@@ -23,8 +23,9 @@ import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
-from sklearn.tree._tree import NODE_DTYPE, Tree
-from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier
+from sklearn.exceptions import DataConversionWarning
+from sklearn.tree._tree import NODE_DTYPE, Tree, DTYPE, DOUBLE
+from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
@@ -32,8 +33,6 @@ from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.mechanisms import PermuteAndFlip
 from diffprivlib.validation import DiffprivlibMixin
 
-Dataset = namedtuple('Dataset', ['X', 'y'])
-StackNode = namedtuple("StackNode", ["parent", "is_left", "depth", "bounds"])
 MAX_INT = np.iinfo(np.int32).max
 
 
@@ -46,19 +45,23 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
 
     Parameters
     ----------
-    n_estimators: int, default: 10
+    n_estimators : int, default: 10
         The number of trees in the forest.
 
-    epsilon: float, default: 1.0
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    cat_feature_threshold: int, default: 10
-        Threshold value used to determine categorical features. For example, value of ``10`` means
-        any feature that has less than or equal to 10 unique values will be treated as a categorical feature.
+    bounds :  tuple, optional
+        Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
+        the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
+        on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
+
+    classes : array-like of shape (n_classes,)
+        Array of classes to be trained on.  If not provided, the classes will be read from the data when ``.fit()`` is
+        first called, resulting in a :class:`.PrivacyLeakWarning`.
 
     n_jobs : int, default: 1
-        Number of CPU cores used when parallelising over classes. ``-1`` means
-        using all processors.
+        Number of CPU cores used when parallelising over classes. ``-1`` means using all processors.
 
     verbose : int, default: 0
         Set to any positive number for verbosity.
@@ -66,40 +69,40 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
-    max_depth: int, default: 15
-        The maximum depth of the tree. Final depth of the tree will be calculated based on the number of continuous
-        and categorical features, but it wont be more than this number.
-        Note: The depth translates to an exponential increase in memory usage.
+    max_depth : int, default: 5
+        The maximum depth of the tree.  The depth translates to an exponential increase in memory usage.
 
-    feature_domains: dict, optional
-        A dictionary of domain values for all features where keys are the feature indexes in the training data and
-        the values are an array of domain values for categorical features and an array of min and max values for
-        continuous features. For example, if the training data is [[2, 'dog'], [5, 'cat'], [7, 'dog']], then
-        the feature_domains would be {'0': [2, 7], '1': ['dog', 'cat']}. If not provided, feature domains will
-        be constructed from the data, but this will result in :class:`.PrivacyLeakWarning`.
+    warm_start : bool, default=False
+        When set to ``True``, reuse the solution of the previous call to fit and add more estimators to the ensemble,
+        otherwise, just fit a whole new forest.
+
+    shuffle : bool, default=False
+        When set to ``True``, shuffles the datapoints to be trained on trees at random.  In diffprivlib, each datapoint
+        is used to train exactly one tree. When set to ``False``, datapoints are chosen in-order to their tree in
+        sequence.
 
     Attributes
     ----------
-    n_features_in_: int
-        The number of features when fit is performed.
+    base_estimator_ : DecisionTreeClassifier
+        The child estimator template used to create the collection of fitted sub-estimators.
 
-    n_classes_: int
-        The number of classes.
-
-    classes_: array of shape (n_classes, )
-        The classes labels.
-
-    cat_features_: array of categorical feature indexes
-        Categorical feature indexes.
-
-    max_depth_: int
-        Final max depth used for constructing decision trees.
-
-    estimators_: list of DecisionTreeClassifier
+    estimators_ : list of DecisionTreeClassifier
         The collection of fitted sub-estimators.
 
-    feature_domains_: dictionary of domain values mapped to feature
-        indexes in the training data
+    classes_ : ndarray of shape (n_classes,) or a list of such arrays
+        The classes labels.
+
+    n_classes_ : int or list
+        The number of classes.
+
+    n_features_in_ : int
+        Number of features seen during :term:`fit`.
+
+    feature_names_in_ : ndarray of shape (`n_features_in_`,)
+        Names of features seen during :term:`fit`. Defined only when `X` has feature names that are all strings.
+
+    n_outputs_ : int
+        The number of outputs when ``fit`` is performed.
 
     Examples
     --------
@@ -120,8 +123,8 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
 
     """
 
-    def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, n_jobs=1, verbose=0, accountant=None,
-                 max_depth=15, warm_start=False, **unused_args):
+    def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, classes=None, n_jobs=1, verbose=0, accountant=None,
+                 max_depth=5, warm_start=False, shuffle=False, **unused_args):
         super().__init__(
             n_estimators=n_estimators,
             criterion=None,
@@ -131,42 +134,43 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
             warm_start=warm_start)
         self.epsilon = epsilon
         self.bounds = bounds
+        self.classes = classes
         self.max_depth = max_depth
+        self.shuffle = shuffle
         self.accountant = BudgetAccountant.load_default(accountant)
 
         self.base_estimator = DecisionTreeClassifier()
-        self.estimator_params = ("cat_feature_threshold", "max_depth", "epsilon", "random_state")
+        self.estimator_params = ("max_depth", "epsilon", "bounds", "classes")
 
         self._warn_unused_args(unused_args)
 
     def fit(self, X, y, sample_weight=None):
-        """Fit the model to the given training data.
+        """
+        Build a forest of trees from the training set (X, y).
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
-            Training vector, where n_samples is the number of samples and n_features is the number of features.
+        X : array-like of shape (n_samples, n_features)
+            The training input samples. Internally, its dtype will be converted to ``dtype=np.float32``.
 
-        y : array-like, shape (n_samples,)
-            Target vector relative to X.
+        y : array-like of shape (n_samples,)
+            The target values (class labels in classification, real numbers in regression).
 
         sample_weight : ignored
             Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         Returns
         -------
-        self: class
-
+        self : object
+            Fitted estimator.
         """
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
             self._warn_unused_args("sample_weight")
 
-        X, y = self._validate_data(X, y)
-
-        if not float(self.n_estimators).is_integer() or self.n_estimators < 0:
-            raise ValueError(f'Number of estimators should be a positive integer; got {self.n_estimators}')
+        # Validate or convert input data
+        X, y = self._validate_data(X, y, multi_output=False, dtype=DTYPE)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -176,177 +180,89 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
         self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
         X = self._clip_to_bounds(X, self.bounds)
 
-        self.n_outputs_ = 1
-        self.n_features_in_ = X.shape[1]
-        self.max_depth_ = calc_tree_depth(n_features=self.n_features_in_, max_depth=self.max_depth)
-        self.classes_ = np.unique(y)
+        y = np.atleast_1d(y)
+        if y.ndim == 2 and y.shape[1] == 1:
+            warnings.warn("A column-vector y was passed when a 1d array was expected. Please change the shape of y to "
+                          "(n_samples,), for example using ravel().", DataConversionWarning, stacklevel=2)
+
+        if y.ndim == 1:
+            # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
+            y = np.reshape(y, (-1, 1))
+
+        self.n_outputs_ = y.shape[1]
+
+        if self.classes is None:
+            warnings.warn("Classes have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify the prediction classes for model.", PrivacyLeakWarning)
+            self.classes = np.unique(y)
+        self.classes_ = np.ravel(self.classes)
         self.n_classes_ = len(self.classes_)
 
-        if self.n_estimators > len(X):
-            raise ValueError('Number of estimators is more than the available samples')
+        # y, expanded_class_weight = self._validate_y_class_weight(y)
+        y = np.searchsorted(self.classes_, y)
 
-        subset_size = int(len(X) / self.n_estimators)
-        datasets = []
-        estimators = []
+        if getattr(y, "dtype", None) != DOUBLE or not y.flags.contiguous:
+            y = np.ascontiguousarray(y, dtype=DOUBLE)
 
-        for i in range(self.n_estimators):
-            estimator = DecisionTreeClassifier(max_depth=self.max_depth_,
-                                               epsilon=self.epsilon,
-                                               bounds=self.bounds,
-                                               classes=self.classes_)
-            estimators.append(estimator)
-            datasets.append(Dataset(X=X[i*subset_size:(i+1)*subset_size], y=y[i*subset_size:(i+1)*subset_size]))
+        # Check parameters
+        self._validate_estimator()
 
-        estimators = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer='processes')(
-            delayed(lambda estimator, X, y: estimator.fit(X, y))(estimator, dataset.X, dataset.y)
-            for estimator, dataset in zip(estimators, datasets)
-        )
+        # random_state = check_random_state(self.random_state)
 
-        self.estimators_ = estimators
+        if not self.warm_start or not hasattr(self, "estimators_"):
+            # Free allocated memory, if any
+            self.estimators_ = []
+
+        n_more_estimators = self.n_estimators - len(self.estimators_)
+
+        if n_more_estimators < 0:
+            raise ValueError("n_estimators=%d must be larger or equal to len(estimators_)=%d when warm_start==True"
+                             % (self.n_estimators, len(self.estimators_)))
+        elif n_more_estimators == 0:
+            warnings.warn("Warm-start fitting without increasing n_estimators does not fit new trees.")
+        else:
+            if self.warm_start and len(self.estimators_) > 0:
+                # We draw from the random state to get the random state we
+                # would have got if we hadn't used a warm_start.
+                np.random.randint(MAX_INT, size=len(self.estimators_))
+
+            trees = [
+                self._make_estimator(append=False, random_state=None)
+                for i in range(n_more_estimators)
+            ]
+
+            # Split samples between trees as evenly as possible
+            n_samples = X.shape[0]
+            tree_idxs = np.random.permutation(n_samples) if self.shuffle else np.arange(n_samples)
+            tree_idxs = (tree_idxs // (n_samples / n_more_estimators)).astype(int)
+
+            # Parallel loop: we prefer the threading backend as the Cython code
+            # for fitting the trees is internally releasing the Python GIL
+            # making threading more efficient than multiprocessing in
+            # that case. However, for joblib 0.12+ we respect any
+            # parallel_backend contexts set at a higher level,
+            # since correctness does not rely on using threads.
+            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+                delayed(_parallel_build_trees)(
+                    t,
+                    False,  # bootstrap
+                    X[tree_idxs == i],
+                    y[tree_idxs == i],
+                    None,  # sample_weight
+                    i,
+                    len(trees),
+                    verbose=self.verbose,
+                )
+                for i, t in enumerate(trees)
+            )
+
+            # Collect newly grown trees
+            self.estimators_.extend(trees)
+
         self.accountant.spend(self.epsilon, 0)
-        self.fitted_ = True
 
         return self
-
-    # def tomhas(self, X, y, sample_weight=None):
-    #     """
-    #     Build a forest of trees from the training set (X, y).
-    #
-    #     Parameters
-    #     ----------
-    #     X : {array-like, sparse matrix} of shape (n_samples, n_features)
-    #         The training input samples. Internally, its dtype will be converted
-    #         to ``dtype=np.float32``. If a sparse matrix is provided, it will be
-    #         converted into a sparse ``csc_matrix``.
-    #
-    #     y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-    #         The target values (class labels in classification, real numbers in
-    #         regression).
-    #
-    #     sample_weight : array-like of shape (n_samples,), default=None
-    #         Sample weights. If None, then samples are equally weighted. Splits
-    #         that would create child nodes with net zero or negative weight are
-    #         ignored while searching for a split in each node. In the case of
-    #         classification, splits are also ignored if they would result in any
-    #         single class carrying a negative weight in either child node.
-    #
-    #     Returns
-    #     -------
-    #     self : object
-    #         Fitted estimator.
-    #     """
-    #     self.accountant.check(self.epsilon, 0)
-    #
-    #     if sample_weight is not None:
-    #         self._warn_unused_args("sample_weight")
-    #
-    #     # Validate or convert input data
-    #     X, y = self._validate_data(X, y, dtype=DTYPE)
-    #
-    #     y = np.atleast_1d(y)
-    #     if y.ndim == 2 and y.shape[1] == 1:
-    #         warn("A column-vector y was passed when a 1d array was expected. Please change the shape of y to "
-    #              "(n_samples,), for example using ravel().", DataConversionWarning, stacklevel=2)
-    #
-    #     if y.ndim == 1:
-    #         # reshape is necessary to preserve the data contiguity against vs [:, np.newaxis] that does not.
-    #         y = np.reshape(y, (-1, 1))
-    #
-    #     self.n_outputs_ = y.shape[1]
-    #
-    #     y, expanded_class_weight = self._validate_y_class_weight(y)
-    #
-    #     if getattr(y, "dtype", None) != DOUBLE or not y.flags.contiguous:
-    #         y = np.ascontiguousarray(y, dtype=DOUBLE)
-    #
-    #     if expanded_class_weight is not None:
-    #         if sample_weight is not None:
-    #             sample_weight = sample_weight * expanded_class_weight
-    #         else:
-    #             sample_weight = expanded_class_weight
-    #
-    #     n_samples_bootstrap = _get_n_samples_bootstrap(n_samples=X.shape[0], max_samples=self.max_samples)
-    #
-    #     # Check parameters
-    #     self._validate_estimator()
-    #
-    #     if not self.bootstrap and self.oob_score:
-    #         raise ValueError("Out of bag estimation only available if bootstrap=True")
-    #
-    #     random_state = check_random_state(self.random_state)
-    #
-    #     if not self.warm_start or not hasattr(self, "estimators_"):
-    #         # Free allocated memory, if any
-    #         self.estimators_ = []
-    #
-    #     n_more_estimators = self.n_estimators - len(self.estimators_)
-    #
-    #     if n_more_estimators < 0:
-    #         raise ValueError("n_estimators=%d must be larger or equal to len(estimators_)=%d when warm_start==True"
-    #                          % (self.n_estimators, len(self.estimators_)))
-    #     elif n_more_estimators == 0:
-    #         warn("Warm-start fitting without increasing n_estimators does not fit new trees.")
-    #     else:
-    #         if self.warm_start and len(self.estimators_) > 0:
-    #             # We draw from the random state to get the random state we
-    #             # would have got if we hadn't used a warm_start.
-    #             random_state.randint(MAX_INT, size=len(self.estimators_))
-    #
-    #         trees = [
-    #             self._make_estimator(append=False, random_state=random_state)
-    #             for i in range(n_more_estimators)
-    #         ]
-    #
-    #         # Parallel loop: we prefer the threading backend as the Cython code
-    #         # for fitting the trees is internally releasing the Python GIL
-    #         # making threading more efficient than multiprocessing in
-    #         # that case. However, for joblib 0.12+ we respect any
-    #         # parallel_backend contexts set at a higher level,
-    #         # since correctness does not rely on using threads.
-    #         trees = Parallel(
-    #             n_jobs=self.n_jobs,
-    #             verbose=self.verbose,
-    #             **_joblib_parallel_args(prefer="threads"),
-    #         )(
-    #             delayed(_parallel_build_trees)(
-    #                 t,
-    #                 self,
-    #                 X,
-    #                 y,
-    #                 sample_weight,
-    #                 i,
-    #                 len(trees),
-    #                 verbose=self.verbose,
-    #                 class_weight=self.class_weight,
-    #                 n_samples_bootstrap=n_samples_bootstrap,
-    #             )
-    #             for i, t in enumerate(trees)
-    #         )
-    #
-    #         # Collect newly grown trees
-    #         self.estimators_.extend(trees)
-    #
-    #     if self.oob_score:
-    #         y_type = type_of_target(y)
-    #         if y_type in ("multiclass-multioutput", "unknown"):
-    #             # FIXME: we could consider to support multiclass-multioutput if
-    #             # we introduce or reuse a constructor parameter (e.g.
-    #             # oob_score) allowing our user to pass a callable defining the
-    #             # scoring strategy on OOB sample.
-    #             raise ValueError(
-    #                 "The type of target cannot be used to compute OOB "
-    #                 f"estimates. Got {y_type} while only the following are "
-    #                 "supported: continuous, continuous-multioutput, binary, "
-    #                 "multiclass, multilabel-indicator."
-    #             )
-    #         self._set_oob_score_and_attributes(X, y)
-    #
-    #     # Decapsulate classes_ attributes
-    #     if hasattr(self, "classes_") and self.n_outputs_ == 1:
-    #         self.n_classes_ = self.n_classes_[0]
-    #         self.classes_ = self.classes_[0]
-    #
-    #     return self
 
 
 class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
@@ -357,18 +273,18 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
     Parameters
     ----------
-    max_depth: int, default: 15
+    max_depth : int, default: 5
         The maximum depth of the tree.
 
-    epsilon: float, default: 1.0
+    epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds:  tuple, optional
+    bounds : tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
-    classes: array of shape (n_classes_, ), optional
+    classes : array-like of shape (n_classes_,), optional
         Array of class labels. If not provided, will be determined from the data.
 
     Attributes
@@ -472,25 +388,26 @@ class FittingTree(DiffprivlibMixin):
 
     Parameters
     ----------
-    max_depth: int
+    max_depth : int
         The maximum depth of the tree.
 
-    n_features: int
+    n_features : int
         The number of features of the training dataset.
 
-    classes: array of shape (n_classes, )
+    classes : array-like of shape (n_classes,)
         The classes of the training dataset.
 
-    epsilon: float
+    epsilon : float
         Privacy parameter :math:`\epsilon`.
 
-    bounds:  tuple, optional
+    bounds : tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data.
 
     """
     _TREE_LEAF = -1
     _TREE_UNDEFINED = -2
+    StackNode = namedtuple("StackNode", ["parent", "is_left", "depth", "bounds"])
 
     def __init__(self, max_depth, n_features, classes, epsilon, bounds):
         self.node_count = 0
@@ -511,7 +428,7 @@ class FittingTree(DiffprivlibMixin):
 
     def build(self):
         """Build the decision tree using random feature selection and random thresholding."""
-        stack = [StackNode(parent=self._TREE_UNDEFINED, is_left=False, depth=0, bounds=self.bounds)]
+        stack = [self.StackNode(parent=self._TREE_UNDEFINED, is_left=False, depth=0, bounds=self.bounds)]
 
         while stack:
             parent, is_left, depth, bounds = stack.pop()
@@ -547,10 +464,10 @@ class FittingTree(DiffprivlibMixin):
             self.nodes.append(Node(node_id, feature, threshold))
             self.node_count += 1
 
-            stack.append(StackNode(parent=node_id, is_left=True, depth=depth+1, bounds=(bounds_lower,
-                                                                                        left_bounds_upper)))
-            stack.append(StackNode(parent=node_id, is_left=False, depth=depth+1, bounds=(right_bounds_lower,
-                                                                                         bounds_upper)))
+            stack.append(self.StackNode(parent=node_id, is_left=True, depth=depth+1,
+                                        bounds=(bounds_lower, left_bounds_upper)))
+            stack.append(self.StackNode(parent=node_id, is_left=False, depth=depth+1,
+                                        bounds=(right_bounds_lower, bounds_upper)))
 
         return self
 
@@ -628,24 +545,3 @@ class Node:
         yield 0.0  # Impurity
         yield 0  # n_node_samples
         yield 0.0  # weighted_n_node_samples
-
-
-def calc_tree_depth(n_features, max_depth=5):
-    """Calculate tree depth
-
-    Args:
-        n_features (int): Number of features
-        max_depth (int, optional): Max depth tree. Defaults to 15.
-
-    Returns:
-        [int]: Final depth tree
-    """
-    # Designed using balls-in-bins probability. See the paper for details.
-    m = float(n_features)
-    depth = 0
-    expected_empty = m   # the number of unique attributes not selected so far
-    while expected_empty > m / 2:   # repeat until we have less than half the attributes being empty
-        expected_empty = m * ((m - 1) / m) ** depth
-        depth += 1
-    # the above was only for half the numerical attributes. now add half the categorical attributes
-    return min(max_depth, depth)
