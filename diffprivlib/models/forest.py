@@ -26,7 +26,7 @@ import numpy as np
 from sklearn.exceptions import DataConversionWarning
 from sklearn.tree._tree import NODE_DTYPE, Tree, DTYPE, DOUBLE
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
-from sklearn.tree import DecisionTreeClassifier as BaseDecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning
@@ -218,70 +218,71 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
         n_more_estimators = self.n_estimators - len(self.estimators_)
 
         if n_more_estimators < 0:
-            raise ValueError("n_estimators=%d must be larger or equal to len(estimators_)=%d when warm_start==True"
-                             % (self.n_estimators, len(self.estimators_)))
-        elif n_more_estimators == 0:
+            raise ValueError(f"n_estimators={self.n_estimators} must be larger or equal to len(estimators_)="
+                             f"{len(self.estimators_)} when warm_start==True")
+        if n_more_estimators == 0:
             warnings.warn("Warm-start fitting without increasing n_estimators does not fit new trees.")
-        else:
-            if self.warm_start and len(self.estimators_) > 0:
-                # We draw from the random state to get the random state we
-                # would have got if we hadn't used a warm_start.
-                np.random.randint(MAX_INT, size=len(self.estimators_))
+            return self
 
-            trees = [
-                self._make_estimator(append=False, random_state=None)
-                for i in range(n_more_estimators)
-            ]
+        if self.warm_start and len(self.estimators_) > 0:
+            # We draw from the random state to get the random state we
+            # would have got if we hadn't used a warm_start.
+            np.random.randint(MAX_INT, size=len(self.estimators_))
 
-            # Split samples between trees as evenly as possible
-            n_samples = X.shape[0]
-            tree_idxs = np.random.permutation(n_samples) if self.shuffle else np.arange(n_samples)
-            tree_idxs = (tree_idxs // (n_samples / n_more_estimators)).astype(int)
+        trees = [
+            self._make_estimator(append=False, random_state=None)
+            for i in range(n_more_estimators)
+        ]
 
-            # Parallel loop: we prefer the threading backend as the Cython code
-            # for fitting the trees is internally releasing the Python GIL
-            # making threading more efficient than multiprocessing in
-            # that case. However, for joblib 0.12+ we respect any
-            # parallel_backend contexts set at a higher level,
-            # since correctness does not rely on using threads.
-            try:
-                trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                    delayed(_parallel_build_trees)(
-                        tree=t,
-                        bootstrap=False,
-                        X=X[tree_idxs == i],
-                        y=y[tree_idxs == i],
-                        sample_weight=None,
-                        tree_idx=i,
-                        n_trees=len(trees),
-                        verbose=self.verbose,
-                    )
-                    for i, t in enumerate(trees)
+        # Split samples between trees as evenly as possible
+        n_samples = X.shape[0]
+        tree_idxs = np.random.permutation(n_samples) if self.shuffle else np.arange(n_samples)
+        tree_idxs = (tree_idxs // (n_samples / n_more_estimators)).astype(int)
+
+        # Parallel loop: we prefer the threading backend as the Cython code
+        # for fitting the trees is internally releasing the Python GIL
+        # making threading more efficient than multiprocessing in
+        # that case. However, for joblib 0.12+ we respect any
+        # parallel_backend contexts set at a higher level,
+        # since correctness does not rely on using threads.
+        try:
+            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+                delayed(_parallel_build_trees)(
+                    tree=t,
+                    bootstrap=False,
+                    X=X[tree_idxs == i],
+                    y=y[tree_idxs == i],
+                    sample_weight=None,
+                    tree_idx=i,
+                    n_trees=len(trees),
+                    verbose=self.verbose,
                 )
-            except TypeError:
-                trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                    delayed(_parallel_build_trees)(
-                        tree=t,
-                        forest=self,
-                        X=X[tree_idxs == i],
-                        y=y[tree_idxs == i],
-                        sample_weight=None,
-                        tree_idx=i,
-                        n_trees=len(trees),
-                        verbose=self.verbose,
-                    )
-                    for i, t in enumerate(trees)
+                for i, t in enumerate(trees)
+            )
+        except TypeError:
+            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+                delayed(_parallel_build_trees)(
+                    tree=t,
+                    forest=self,
+                    X=X[tree_idxs == i],
+                    y=y[tree_idxs == i],
+                    sample_weight=None,
+                    tree_idx=i,
+                    n_trees=len(trees),
+                    verbose=self.verbose,
                 )
+                for i, t in enumerate(trees)
+            )
 
-            # Collect newly grown trees
-            self.estimators_.extend(trees)
+        # Collect newly grown trees
+        self.estimators_.extend(trees)
 
         self.accountant.spend(self.epsilon, 0)
 
         return self
 
 
-class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
+class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
     r"""Decision Tree Classifier with differential privacy.
 
     This class implements the base differentially private decision tree classifier
@@ -303,6 +304,9 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
     classes : array-like of shape (n_classes_,), optional
         Array of class labels. If not provided, will be determined from the data.
 
+    accountant : BudgetAccountant, optional
+        Accountant to keep track of privacy budget.
+
     Attributes
     ----------
     n_features_in_: int
@@ -316,7 +320,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
 
     """
 
-    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, **unused_args):
+    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, accountant=None, **unused_args):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(
@@ -348,10 +352,34 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         self.epsilon = epsilon
         self.bounds = bounds
         self.classes = classes
+        self.accountant = BudgetAccountant.load_default(accountant)
 
         self._warn_unused_args(unused_args)
 
     def fit(self, X, y, sample_weight=None, check_input=True, X_idx_sorted="deprecated"):
+        """Build a differentially-private decision tree classifier from the training set (X, y).
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The training input samples. Internally, it will be converted to ``dtype=np.float32``.
+
+        y : array-like of shape (n_samples,)
+            The target values (class labels) as integers or strings.
+
+        sample_weight : ignored
+            Ignored by diffprivlib.  Present for consistency with sklearn API.
+
+        check_input : bool, default=True
+            Allow to bypass several input checking. Don't use this parameter unless you know what you do.
+
+        Returns
+        -------
+        self : DecisionTreeClassifier
+            Fitted estimator.
+        """
+        self.accountant.check(self.epsilon, 0)
+
         if sample_weight is not None:
             self._warn_unused_args("sample_weight")
 
@@ -384,6 +412,8 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
         tree = Tree(self.n_features_in_, np.array([self.n_classes_]), self.n_outputs_)
         tree.__setstate__(d)
         self.tree_ = tree
+
+        self.accountant.spend(self.epsilon, 0)
 
         return self
 

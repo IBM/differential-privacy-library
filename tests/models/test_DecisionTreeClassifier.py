@@ -4,7 +4,7 @@ from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import DecisionTreeClassifier
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning
+from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestDecisionTreeClassifier(TestCase):
@@ -65,3 +65,22 @@ class TestDecisionTreeClassifier(TestCase):
         model.fit(X, y)
         check_is_fitted(model)
         self.assertEqual(model.predict(np.array([[12, 3, 14]])), 3)
+
+    def test_accountant(self):
+        from diffprivlib.accountant import BudgetAccountant
+        acc = BudgetAccountant()
+
+        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
+        y = np.array([1, 1, 1, 0, 0, 0, 1])
+        bounds = ([2, 3, 4], [12, 13, 15])
+        model = DecisionTreeClassifier(epsilon=2, bounds=bounds, max_depth=3, accountant=acc)
+        model.fit(X, y)
+        self.assertEqual((2, 0), acc.total())
+
+        with BudgetAccountant(3, 0) as acc2:
+            model = DecisionTreeClassifier(epsilon=2, bounds=bounds, max_depth=3)
+            model.fit(X, y)
+            self.assertEqual((2, 0), acc2.total())
+
+            with self.assertRaises(BudgetError):
+                model.fit(X, y)
