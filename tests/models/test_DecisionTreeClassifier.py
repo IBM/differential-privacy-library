@@ -60,7 +60,7 @@ class TestDecisionTreeClassifier(TestCase):
     def test_with_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), max_depth=3)
+        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), classes=[0, 1], max_depth=3)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
@@ -70,7 +70,7 @@ class TestDecisionTreeClassifier(TestCase):
     def test_with_non_binary_labels(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([3, 3, 3, 3, 5, 5, 3] * 3)
-        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), max_depth=3)
+        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), classes=[3, 5], max_depth=3)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
@@ -116,12 +116,12 @@ class TestDecisionTreeClassifier(TestCase):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
         bounds = ([2, 3, 4], [12, 13, 15])
-        model = DecisionTreeClassifier(epsilon=2, bounds=bounds, max_depth=3, accountant=acc)
+        model = DecisionTreeClassifier(epsilon=2, bounds=bounds, classes=[0, 1], max_depth=3, accountant=acc)
         model.fit(X, y)
         self.assertEqual((2, 0), acc.total())
 
         with BudgetAccountant(3, 0) as acc2:
-            model = DecisionTreeClassifier(epsilon=2, bounds=bounds, max_depth=3)
+            model = DecisionTreeClassifier(epsilon=2, bounds=bounds, classes=[0, 1], max_depth=3)
             model.fit(X, y)
             self.assertEqual((2, 0), acc2.total())
 
