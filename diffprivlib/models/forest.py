@@ -231,7 +231,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
 
         trees = [
             self._make_estimator(append=False, random_state=None)
-            for i in range(n_more_estimators)
+            for _ in range(n_more_estimators)
         ]
 
         # Split samples between trees as evenly as possible
@@ -356,7 +356,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
 
         self._warn_unused_args(unused_args)
 
-    def fit(self, X, y, sample_weight=None, check_input=True, X_idx_sorted="deprecated"):
+    def fit(self, X, y, sample_weight=None, check_input=True):
         """Build a differentially-private decision tree classifier from the training set (X, y).
 
         Parameters
