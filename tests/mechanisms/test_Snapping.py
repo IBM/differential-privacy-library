@@ -162,7 +162,7 @@ class TestSnapping(TestCase):
         self.assertEqual(Snapping._get_nearest_power_of_2(np.nextafter(2.0, math.inf)), 4)
         self.assertEqual(Snapping._get_nearest_power_of_2(np.nextafter(2.0, -math.inf)), 2)
         self.assertEqual(Snapping._get_nearest_power_of_2(np.nextafter(sys.float_info.min, -math.inf)),
-                               sys.float_info.min)
+                         sys.float_info.min)
 
     def test_round_to_nearest_power_of_2_exact(self):
         mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
