@@ -393,12 +393,14 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
                           "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
             self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
         self.bounds = self._check_bounds(self.bounds, shape=X.shape[1])
+        X = self._clip_to_bounds(X, self.bounds)
 
-        self.classes_ = self.classes
-
-        if self.classes_ is None:
-            self.classes_ = np.unique(y)
-
+        if self.classes is None:
+            warnings.warn("Classes have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify the prediction classes for model.", PrivacyLeakWarning)
+            self.classes = np.unique(y)
+        self.classes_ = np.ravel(self.classes)
         self.n_classes_ = len(self.classes_)
         self.n_features_in_ = X.shape[1]
 

@@ -79,7 +79,7 @@ class TestDecisionTreeClassifier(TestCase):
 
     def test_sklearn_methods(self):
         depth = 3
-        clf = DecisionTreeClassifier(epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)), max_depth=depth)
+        clf = DecisionTreeClassifier(epsilon=5, bounds=(-2, 2), classes=[-1, 1], max_depth=depth)
         clf.fit(X, y)
 
         self.assertEqual(clf.n_features_in_, 2)
