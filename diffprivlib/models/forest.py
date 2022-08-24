@@ -24,7 +24,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 from sklearn.exceptions import DataConversionWarning
-from sklearn.tree._tree import NODE_DTYPE, Tree, DTYPE, DOUBLE
+from sklearn.tree._tree import NODE_DTYPE, Tree, DTYPE, DOUBLE  # pylint: disable=no-name-in-module
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
@@ -36,7 +36,7 @@ from diffprivlib.validation import DiffprivlibMixin
 MAX_INT = np.iinfo(np.int32).max
 
 
-class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):
+class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pylint: disable=too-many-ancestors
     r"""Random Forest Classifier with differential privacy.
 
     This class implements Differentially Private Random Decision Forests using Smooth Sensitivity [1].
@@ -323,7 +323,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
     def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, accountant=None, **unused_args):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
-            super().__init__(
+            super().__init__(  # pylint: disable=unexpected-keyword-arg
                 criterion=None,
                 splitter=None,
                 max_depth=max_depth,
