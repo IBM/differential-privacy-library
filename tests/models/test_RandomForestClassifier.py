@@ -1,16 +1,23 @@
 import numpy as np
 from unittest import TestCase
+
+from scipy.sparse import issparse
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
-from diffprivlib.models.forest import RandomForestClassifier
+from diffprivlib.models.forest import RandomForestClassifier, DecisionTreeClassifier
 from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError, DiffprivlibCompatibilityWarning
+
+X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]] * 3
+y = [-1, -1, -1, 1, 1, 1] * 3
+T = [[-1, -1], [2, 2], [3, 2]]
+true_result = [-1, 1, 1]
 
 
 class TestRandomForestClassifier(TestCase):
     def setUp(self):
         global_seed(2718281828)
-    
+
     def test_not_none(self):
         self.assertIsNotNone(RandomForestClassifier)
 
@@ -20,7 +27,7 @@ class TestRandomForestClassifier(TestCase):
 
         with self.assertRaises((ValueError, TypeError)):  # Should be TypeError
             RandomForestClassifier(n_estimators="10", bounds=(0, 1), classes=[0, 1]).fit(X, y)
-        
+
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             RandomForestClassifier(n_estimators=1, bounds=(0, 1), classes=[0, 1]).fit(X, y, sample_weight=1)
 
@@ -112,6 +119,85 @@ class TestRandomForestClassifier(TestCase):
         with self.assertRaises(ValueError):
             model.fit(X, y)
 
+    def test_sklearn_methods(self):
+        depth = 3
+        n_estimators = 4
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+                                     max_depth=depth)
+        clf.fit(X, y)
+
+        self.assertEqual(clf.n_features_in_, 2)
+
+        self.assertIsInstance(clf.apply(T), np.ndarray)
+        self.assertEqual(clf.apply(T).shape, (len(T), n_estimators))
+
+        for estimator in clf:
+            self.assertIsInstance(estimator, DecisionTreeClassifier)
+
+        self.assertEqual(len(clf), n_estimators)
+        self.assertIsInstance([e for e in clf], list)
+
+        self.assertIsInstance(clf.score(T, true_result), float)
+        self.assertTrue(0 <= clf.score(T, true_result) <= 1)
+
+        self.assertIsInstance(clf.decision_path(X), tuple)
+        self.assertTrue(issparse(clf.decision_path(X)[0]), msg=str(clf.decision_path(X)))
+
+        self.assertIsInstance(clf.predict(T), np.ndarray)
+        self.assertEqual(clf.predict(T).shape, (len(T),))
+
+        self.assertIsInstance(clf.predict_proba(T), np.ndarray)
+        self.assertEqual(clf.predict_proba(T).shape, (len(T), clf.n_classes_))
+
+        self.assertEqual(clf.ccp_alpha, 0.0)
+        self.assertIsNone(clf.class_weight)
+
+    def test_warm_start(self):
+        depth = 3
+        n_estimators = 4
+        clf = RandomForestClassifier(n_estimators, epsilon=1, bounds=(-2, 2), classes=np.array((-1, 1)),
+                                     max_depth=depth, warm_start=True)
+        clf.fit(X, y)
+        first_estimator = clf[0].__dict__.copy()
+
+        clf.n_estimators = n_estimators * 2
+        clf.fit(X, y)
+
+        self.assertEqual(len(clf), n_estimators * 2)
+        self.assertEqual(clf[0].__dict__, first_estimator)
+        self.assertNotEqual(clf[n_estimators].__dict__, first_estimator)
+
+    def test_parallel(self):
+        depth = 3
+        n_estimators = 4
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+                                     max_depth=depth, n_jobs=-1)
+        clf.fit(X, y)
+
+        self.assertIsNone(check_is_fitted(clf))
+
+    def test_shuffle(self):
+        depth = 3
+        n_estimators = 4
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+                                     max_depth=depth, shuffle=True)
+        clf.fit(X, y)
+
+        self.assertIsNone(check_is_fitted(clf))
+
+    def test_more_estimators_than_data(self):
+        depth = 3
+        n_estimators = 20
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+                                     max_depth=depth)
+        clf.fit(X, y)
+
+        self.assertIsNone(check_is_fitted(clf))
+
+        self.assertIsInstance(clf.predict(T), np.ndarray)
+        self.assertEqual(clf.predict(T).shape, (len(T),))
+        self.assertEqual(clf.predict_proba(T).shape, (len(T), clf.n_classes_))
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant()
@@ -122,7 +208,7 @@ class TestRandomForestClassifier(TestCase):
         model = RandomForestClassifier(epsilon=2, n_estimators=5, accountant=acc, bounds=bounds, classes=[0, 1])
         model.fit(X, y)
         self.assertEqual((2, 0), acc.total())
-        
+
         with BudgetAccountant(3, 0) as acc2:
             model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=bounds, classes=[0, 1])
             model.fit(X, y)

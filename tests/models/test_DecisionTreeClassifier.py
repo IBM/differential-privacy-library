@@ -1,10 +1,21 @@
 import numpy as np
 from unittest import TestCase
+
+from scipy.sparse import issparse
+from sklearn import datasets
+from sklearn.tree._tree import Tree
 from sklearn.utils.validation import check_is_fitted
 from sklearn.exceptions import NotFittedError
 
 from diffprivlib.models.forest import DecisionTreeClassifier
 from diffprivlib.utils import PrivacyLeakWarning, global_seed, DiffprivlibCompatibilityWarning, BudgetError
+
+
+X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
+y = [-1, -1, -1, 1, 1, 1]
+T = [[-1, -1], [2, 2], [3, 2]]
+true_result = [-1, 1, 1]
+iris = datasets.load_iris()
 
 
 class TestDecisionTreeClassifier(TestCase):
@@ -17,7 +28,7 @@ class TestDecisionTreeClassifier(TestCase):
     def test_bad_params(self):
         X = [[1]]
         y = [0]
-        
+
         with self.assertRaises(ValueError):
             DecisionTreeClassifier(epsilon=-1, bounds=([0], [1])).fit(X, y)
 
@@ -65,6 +76,38 @@ class TestDecisionTreeClassifier(TestCase):
         model.fit(X, y)
         check_is_fitted(model)
         self.assertEqual(model.predict(np.array([[12, 3, 14]])), 3)
+
+    def test_sklearn_methods(self):
+        depth = 3
+        clf = DecisionTreeClassifier(epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)), max_depth=depth)
+        clf.fit(X, y)
+
+        self.assertEqual(clf.n_features_in_, 2)
+
+        self.assertEqual(clf.get_depth(), depth)
+
+        self.assertEqual(clf.get_n_leaves(), 2 ** depth)
+
+        self.assertIsInstance(clf.apply(T), np.ndarray)
+        self.assertEqual(clf.apply(T).shape, (len(T),))
+
+        self.assertIsInstance(clf.tree_, Tree)
+
+        self.assertIsInstance(clf.score(T, true_result), float)
+        self.assertTrue(0 <= clf.score(T, true_result) <= 1)
+
+        self.assertTrue(issparse(clf.decision_path(X)))
+
+        self.assertIsNone(clf._prune_tree())
+
+        self.assertIsInstance(clf.predict(T), np.ndarray)
+        self.assertEqual(clf.predict(T).shape, (len(T),))
+
+        self.assertIsInstance(clf.predict_proba(T), np.ndarray)
+        self.assertEqual(clf.predict_proba(T).shape, (len(T), clf.n_classes_))
+
+        self.assertEqual(clf.ccp_alpha, 0.0)
+        self.assertIsNone(clf.class_weight)
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
