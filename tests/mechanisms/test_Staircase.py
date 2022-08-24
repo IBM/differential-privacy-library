@@ -102,4 +102,3 @@ class TestStaircase(TestCase):
 
     def test_variance(self):
         self.assertRaises(NotImplementedError, self.mech(epsilon=1, sensitivity=1).variance, 0)
-

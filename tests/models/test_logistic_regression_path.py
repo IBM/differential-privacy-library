@@ -53,4 +53,3 @@ class TestLogisticRegressionPath(TestCase):
         self.assertEqual(len(coefs), 3)
         self.assertEqual(len(Cs), 3)
         self.assertEqual(len(n_iter), 3)
-
