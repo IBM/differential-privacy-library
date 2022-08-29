@@ -109,6 +109,8 @@ class TestDecisionTreeClassifier(TestCase):
         self.assertEqual(clf.ccp_alpha, 0.0)
         self.assertIsNone(clf.class_weight)
 
+        self.assertIsNotNone(clf.n_features_)
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant()

@@ -167,6 +167,13 @@ class TestRandomForestClassifier(TestCase):
         self.assertEqual(clf[0].__dict__, first_estimator)
         self.assertNotEqual(clf[n_estimators].__dict__, first_estimator)
 
+        with self.assertWarns(UserWarning):
+            clf.fit(X, y)
+
+        clf.n_estimators = n_estimators
+        with self.assertRaises(ValueError):
+            clf.fit(X, y)
+
     def test_parallel(self):
         depth = 3
         n_estimators = 4
