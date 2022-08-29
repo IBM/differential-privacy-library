@@ -24,7 +24,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 from sklearn.exceptions import DataConversionWarning
-from sklearn.tree._tree import NODE_DTYPE, Tree, DTYPE, DOUBLE  # pylint: disable=no-name-in-module
+from sklearn.tree._tree import Tree, DOUBLE, DTYPE, NODE_DTYPE  # pylint: disable=no-name-in-module
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
@@ -39,9 +39,9 @@ MAX_INT = np.iinfo(np.int32).max
 class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pylint: disable=too-many-ancestors
     r"""Random Forest Classifier with differential privacy.
 
-    This class implements Differentially Private Random Decision Forests using Smooth Sensitivity [1].
+    This class implements Differentially Private Random Decision Forests using [1].
     :math:`\epsilon`-Differential privacy is achieved by constructing decision trees via random splitting criterion and
-    applying Exponential Mechanism to produce a noisy label.
+    applying the :class:`.PermuteAndFlip` Mechanism to determine a noisy label.
 
     Parameters
     ----------
@@ -234,7 +234,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
             for _ in range(n_more_estimators)
         ]
 
-        # Split samples between trees as evenly as possible
+        # Split samples between trees as evenly as possible (randomly if shuffle==True)
         n_samples = X.shape[0]
         tree_idxs = np.random.permutation(n_samples) if self.shuffle else np.arange(n_samples)
         tree_idxs = (tree_idxs // (n_samples / n_more_estimators)).astype(int)
@@ -301,8 +301,9 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
 
-    classes : array-like of shape (n_classes_,), optional
-        Array of class labels. If not provided, will be determined from the data.
+    classes : array-like of shape (n_classes,), optional
+        Array of class labels. If not provided, the classes will be read from the data when ``.fit()`` is first called,
+        resulting in a :class:`.PrivacyLeakWarning`.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -404,12 +405,12 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self.n_classes_ = len(self.classes_)
         self.n_features_in_ = X.shape[1]
 
-        # Build and fit the FittingTree
-        fitting_tree = FittingTree(self.max_depth, self.n_features_in_, self.classes_, self.epsilon, self.bounds)
+        # Build and fit the _FittingTree
+        fitting_tree = _FittingTree(self.max_depth, self.n_features_in_, self.classes_, self.epsilon, self.bounds)
         fitting_tree.build()
         fitting_tree.fit(X, y)
 
-        # Load params from FittingTree into sklearn.Tree
+        # Load params from _FittingTree into sklearn.Tree
         d = fitting_tree.__getstate__()
         tree = Tree(self.n_features_in_, np.array([self.n_classes_]), self.n_outputs_)
         tree.__setstate__(d)
@@ -427,12 +428,12 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         return {}
 
 
-class FittingTree(DiffprivlibMixin):
+class _FittingTree(DiffprivlibMixin):
     r"""Array-based representation of a binary decision tree, trained with differential privacy.
 
     This tree mimics the architecture of the corresponding Tree from sklearn.tree.tree_, but without many methods given
-    in Tree. The purpose of FittingTree is to fit the parameters of the model, and have those parameters passed to
-    Tree (using FittingTree.__getstate__() and Tree.__setstate__()), to be used for prediction.
+    in Tree. The purpose of _FittingTree is to fit the parameters of the model, and have those parameters passed to
+    Tree (using _FittingTree.__getstate__() and Tree.__setstate__()), to be used for prediction.
 
     Parameters
     ----------
@@ -467,7 +468,7 @@ class FittingTree(DiffprivlibMixin):
         self.bounds = bounds
 
     def __getstate__(self):
-        """Get state of FittingTree to feed into __setstate__ of sklearn.Tree"""
+        """Get state of _FittingTree to feed into __setstate__ of sklearn.Tree"""
         d = {"max_depth": self.max_depth,
              "node_count": self.node_count,
              "nodes": np.array([tuple(node) for node in self.nodes], dtype=NODE_DTYPE),
@@ -492,7 +493,7 @@ class FittingTree(DiffprivlibMixin):
 
             # Check if we have a leaf node, then add it
             if depth >= self.max_depth:
-                node = Node(node_id, self._TREE_UNDEFINED, self._TREE_UNDEFINED)
+                node = _Node(node_id, self._TREE_UNDEFINED, self._TREE_UNDEFINED)
                 node.left_child = self._TREE_LEAF
                 node.right_child = self._TREE_LEAF
 
@@ -509,7 +510,7 @@ class FittingTree(DiffprivlibMixin):
             right_bounds_lower = bounds_lower.copy()
             right_bounds_lower[feature] = threshold
 
-            self.nodes.append(Node(node_id, feature, threshold))
+            self.nodes.append(_Node(node_id, feature, threshold))
             self.node_count += 1
 
             stack.append(self.StackNode(parent=node_id, is_left=True, depth=depth+1,
@@ -575,8 +576,8 @@ class FittingTree(DiffprivlibMixin):
         return out
 
 
-class Node:
-    """Base storage structure for the nodes in a FittingTree object."""
+class _Node:
+    """Base storage structure for the nodes in a _FittingTree object."""
     def __init__(self, node_id, feature, threshold):
         self.feature = feature
         self.threshold = threshold
@@ -585,7 +586,7 @@ class Node:
         self.node_id = node_id
 
     def __iter__(self):
-        """Defines parameters needed to populate NODE_DTYPE for Tree.__setstate__ using tuple(Node)."""
+        """Defines parameters needed to populate NODE_DTYPE for Tree.__setstate__ using tuple(_Node)."""
         yield self.left_child
         yield self.right_child
         yield self.feature

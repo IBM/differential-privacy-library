@@ -18,12 +18,17 @@ Logistic Regression
    :members:
    :inherited-members:
 
-Random Forest
+Tree-Based Models
 +++++++++++++++++++
 .. autoclass:: RandomForestClassifier
    :members:
    :inherited-members:
-   :exclude-members: apply,decision_path,feature_importances_
+   :exclude-members: feature_importances_,n_features_
+
+.. autoclass:: DecisionTreeClassifier
+   :members:
+   :inherited-members:
+   :exclude-members: cost_complexity_pruning_path,feature_importances_,n_features_
 
 Regression models
 -----------------
