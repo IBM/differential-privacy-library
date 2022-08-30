@@ -19,3 +19,9 @@ class TestFittingTree(TestCase):
 
         sktree = Tree(3, np.array([len(classes)]), 1)
         sktree.__setstate__(d)
+
+    def test_fit_before_build(self):
+        tree = _FittingTree(5, 3, [0, 1], 1, (0, 1))
+
+        with self.assertRaises(ValueError):
+            tree.fit([[1, 1, 1]], [0])

@@ -532,6 +532,9 @@ class _FittingTree(DiffprivlibMixin):
             Target vector relative to X.
 
         """
+        if not self.nodes:
+            raise ValueError("Fitting Tree must be built before calling fit().")
+
         leaves = self.apply(X)
         unique_leaves = np.unique(leaves)
         values = np.zeros(shape=(self.node_count, 1, len(self.classes)))
