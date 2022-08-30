@@ -183,7 +183,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
     epsilon : float, default: 1.0
         Privacy parameter :math:`\epsilon`.
 
-    bounds_X:  tuple
+    bounds_X :  tuple
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
@@ -293,20 +293,16 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
             X, y, bounds_X, bounds_y, epsilon=self.epsilon * (1 - epsilon_intercept_scale), alpha=0,
             random_state=random_state)
         coef = np.zeros((n_features, n_targets))
-        residues = []
 
         for i, obj in enumerate(objs):
             opt_result = minimize(obj, np.zeros(n_features), jac=True)
             coef[:, i] = opt_result.x
-            residues += [opt_result.fun]
 
         self.coef_ = coef.T
-        self._residues = residues
         self._obj_coefs = obj_coefs
 
         if y.ndim == 1:
             self.coef_ = np.ravel(self.coef_)
-            self._residues = self._residues[0]
         self._set_intercept(X_offset, y_offset, X_scale)
 
         self.accountant.spend(self.epsilon, 0)

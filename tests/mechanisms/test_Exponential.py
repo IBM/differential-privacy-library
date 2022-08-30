@@ -148,8 +148,8 @@ class TestExponential(TestCase):
         self.assertRaises(ValueError, self.mech, epsilon=1, utility=list_with_inf, sensitivity=1)
         self.assertRaises(ValueError, self.mech, epsilon=1, utility=[1] * 3, measure=list_with_inf, sensitivity=1)
 
-        self.assertRaises(ValueError, self.mech, epsilon=1, utility=[-l for l in list_with_inf], sensitivity=1)
-        self.assertRaises(ValueError, self.mech, epsilon=1, utility=[1] * 3, measure=[-l for l in list_with_inf],
+        self.assertRaises(ValueError, self.mech, epsilon=1, utility=[-val for val in list_with_inf], sensitivity=1)
+        self.assertRaises(ValueError, self.mech, epsilon=1, utility=[1] * 3, measure=[-val for val in list_with_inf],
                           sensitivity=1)
 
     def test_distrib_prob(self):

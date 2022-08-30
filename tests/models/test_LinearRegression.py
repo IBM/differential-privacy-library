@@ -110,7 +110,6 @@ class TestLinearRegression(TestCase):
 
         self.assertTrue(np.allclose(predict1, predict2))
         self.assertTrue(np.allclose(clf.coef_, clf2.coef_))
-        self.assertTrue(np.allclose(clf._residues, clf2._residues))
 
     def test_simple(self):
         X = np.linspace(-1, 1, 1000)

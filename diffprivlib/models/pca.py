@@ -105,7 +105,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         If True, the data is assumed to have been centered previously (e.g. using :class:`.StandardScaler`), and
         therefore will not require the consumption of privacy budget to calculate the mean.
 
-    bounds:  tuple, optional
+    bounds : tuple, optional
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data, or vectors with one entry per feature.  If not provided, the bounds are computed
         on the data when ``.fit()`` is first called, resulting in a :class:`.PrivacyLeakWarning`.
