@@ -150,7 +150,7 @@ class GaussianAnalytic(Gaussian):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        return DPMechanism._check_epsilon_delta(epsilon, delta)  # pylint: disable=W0212
+        return DPMechanism._check_epsilon_delta(epsilon, delta)  # pylint: disable=protected-access
 
     def _check_all(self, value):
         super()._check_all(value)

@@ -6,7 +6,7 @@ import struct
 
 import numpy as np
 try:
-    from crlibm import log_rn
+    from crlibm import log_rn  # pylint: disable=no-name-in-module
 except ModuleNotFoundError:
     log_rn = np.log
 

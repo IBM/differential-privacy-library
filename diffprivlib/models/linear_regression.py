@@ -275,6 +275,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
             if self.bounds_y is None:
                 self.bounds_y = (np.min(y, axis=0), np.max(y, axis=0))
 
+        # pylint: disable=no-member
         self.bounds_X = self._check_bounds(self.bounds_X, X.shape[1])
         self.bounds_y = self._check_bounds(self.bounds_y, y.shape[1] if y.ndim > 1 else 1)
 

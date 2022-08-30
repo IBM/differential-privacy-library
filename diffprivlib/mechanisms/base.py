@@ -178,7 +178,7 @@ class DPMechanism(DPMachine, abc.ABC):
         return True
 
 
-class TruncationAndFoldingMixin:  # pylint: disable=R0903
+class TruncationAndFoldingMixin:  # pylint: disable=too-few-public-methods
     """Mixin for truncating or folding the outputs of a mechanism.  Must be instantiated with a :class:`.DPMechanism`.
 
     Parameters

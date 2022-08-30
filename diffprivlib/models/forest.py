@@ -284,7 +284,7 @@ class DecisionTreeClassifier(BaseDecisionTreeClassifier, DiffprivlibMixin):
                  cat_features=None, classes=None):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
-            super().__init__(  # pylint: disable=E1123
+            super().__init__(  # pylint: disable=unexpected-keyword-arg
                 criterion=None,
                 splitter=None,
                 max_depth=max_depth,

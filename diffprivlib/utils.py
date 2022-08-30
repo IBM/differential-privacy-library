@@ -94,7 +94,7 @@ def check_random_state(seed, secure=False):
         if isinstance(seed, secrets.SystemRandom):
             return seed
 
-        if seed is None or seed is np.random.mtrand._rand:  # pylint: disable=W0212
+        if seed is None or seed is np.random.mtrand._rand:  # pylint: disable=protected-access
             return secrets.SystemRandom()
     elif isinstance(seed, secrets.SystemRandom):
         raise ValueError("secrets.SystemRandom instance cannot be passed when secure is False.")
