@@ -32,4 +32,4 @@ jobs:
     - name: pycodestyle
       run: pycodestyle --max-line-length=120 diffprivlib
     - name: pylint
-      run: pylint --fail-under=9.5 -rn diffprivlib
+      run: pylint --fail-under=9.0 -rn diffprivlib
