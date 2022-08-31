@@ -22,7 +22,7 @@ class TestRandomForestClassifier(TestCase):
         X = [[1]]
         y = [0]
 
-        with self.assertRaises((ValueError, TypeError)):  # Should be TypeError
+        with self.assertRaises((ValueError, TypeError)):  # Should be TypeError?
             RandomForestClassifier(n_estimators="10", bounds=(0, 1), classes=[0, 1]).fit(X, y)
 
         with self.assertWarns(DiffprivlibCompatibilityWarning):
@@ -49,15 +49,15 @@ class TestRandomForestClassifier(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, [y, y])
 
-    def test_simple_prob(self):
+    def test_simple(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = RandomForestClassifier(epsilon=5, n_estimators=5, max_depth=3, random_state=0)
+        model = RandomForestClassifier(epsilon=5, n_estimators=5, max_depth=3, random_state=1)
 
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
 
-        # when `feature_domains` is not provided, we should get a privacy leakage warning
+        # when `bounds` is not provided, we should get a privacy leakage warning
         with self.assertWarns(PrivacyLeakWarning):
             model.fit(X, y)
         check_is_fitted(model)
@@ -78,7 +78,7 @@ class TestRandomForestClassifier(TestCase):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
         model = RandomForestClassifier(epsilon=5, n_estimators=5, bounds=([2, 3, 4], [12, 13, 15]), classes=[0, 1],
-                                       max_depth=3, random_state=0)
+                                       max_depth=3, random_state=1)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
 
@@ -114,7 +114,7 @@ class TestRandomForestClassifier(TestCase):
     def test_with_not_enough_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]])
         y = np.array([1, 1, 1, 0, 0, 0, 1])
-        model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=([2, 3], [12, 13]))
+        model = RandomForestClassifier(epsilon=2, n_estimators=5, bounds=([2, 3], [12, 13]), classes=[0, 1])
 
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
@@ -123,31 +123,32 @@ class TestRandomForestClassifier(TestCase):
             model.fit(X, y)
 
     def test_random_state(self):
-        X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
-        y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        feature_domains = {'0': [2.0, 12.0], '1': [3.0, 13.0], '2': [4.0, 15.0]}
-        model0 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=0, cat_feature_threshold=2,
-                                        feature_domains=feature_domains)
-        model1 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=1, cat_feature_threshold=2,
-                                        feature_domains=feature_domains)
+        model0 = RandomForestClassifier(20, epsilon=0.1, bounds=(-2, 2), classes=[-1, 1], max_depth=3,
+                                        random_state=0)
+        model1 = RandomForestClassifier(20, epsilon=0.1, bounds=(-2, 2), classes=[-1, 1], max_depth=3,
+                                        random_state=2)
         model0.fit(X, y)
         model1.fit(X, y)
 
-        self.assertFalse(np.isclose(model0.predict_proba(np.array([[12, 3, 14]])),
-                                    model1.predict_proba(np.array([[12, 3, 14]]))).any(),
-                         (model0.predict_proba(np.array([[12, 3, 14]])), model1.predict_proba(np.array([[12, 3, 14]]))))
+        self.assertFalse(np.isclose(model0.predict_proba(np.array([[-2, -1]])),
+                                    model1.predict_proba(np.array([[-2, -1]]))).any(),
+                         (model0.predict_proba(np.array([[-2, -1]])), model1.predict_proba(np.array([[-2, -1]]))))
 
-        model1 = RandomForestClassifier(epsilon=5, n_estimators=21, random_state=0, cat_feature_threshold=2,
-                                        feature_domains=feature_domains)
+        model1 = RandomForestClassifier(20, epsilon=0.1, bounds=(-2, 2), classes=[-1, 1], max_depth=3,
+                                        random_state=0)
         model1.fit(X, y)
-        self.assertTrue(np.isclose(model0.predict_proba(np.array([[12, 3, 14]])),
-                                    model1.predict_proba(np.array([[12, 3, 14]]))).any(),
-                         (model0.predict_proba(np.array([[12, 3, 14]])), model1.predict_proba(np.array([[12, 3, 14]]))))
+        for i in range(20):
+            self.assertIsNotNone(model0.estimators_[i].random_state)
+            self.assertEqual(model0.estimators_[i].random_state, model1.estimators_[i].random_state)
+
+        self.assertTrue(np.isclose(model0.predict_proba(np.array([[-2, -1]])),
+                                   model1.predict_proba(np.array([[-2, -1]]))).any(),
+                        (model0.predict_proba(np.array([[-2, -1]])), model1.predict_proba(np.array([[-2, -1]]))))
 
     def test_sklearn_methods(self):
         depth = 3
         n_estimators = 4
-        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=[-1, 1],
                                      max_depth=depth)
         clf.fit(X, y)
 
@@ -180,8 +181,8 @@ class TestRandomForestClassifier(TestCase):
     def test_warm_start(self):
         depth = 3
         n_estimators = 4
-        clf = RandomForestClassifier(n_estimators, epsilon=1, bounds=(-2, 2), classes=np.array((-1, 1)),
-                                     max_depth=depth, warm_start=True)
+        clf = RandomForestClassifier(n_estimators, epsilon=1, bounds=(-2, 2), classes=[-1, 1],
+                                     max_depth=depth, warm_start=True, random_state=0)
         clf.fit(X, y)
         first_estimator = clf[0].__dict__.copy()
 
@@ -199,10 +200,18 @@ class TestRandomForestClassifier(TestCase):
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
+        # Estimators should still have the same seed
+        clf2 = RandomForestClassifier(n_estimators * 2, epsilon=1, bounds=(-2, 2), classes=[-1, 1],
+                                      max_depth=depth, warm_start=True, random_state=0)
+        clf2.fit(X, y)
+
+        for i in range(n_estimators * 2):
+            self.assertEqual(clf.estimators_[i].random_state, clf2.estimators_[i].random_state)
+
     def test_parallel(self):
         depth = 3
         n_estimators = 4
-        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=[-1, 1],
                                      max_depth=depth, n_jobs=-1)
         clf.fit(X, y)
 
@@ -211,16 +220,27 @@ class TestRandomForestClassifier(TestCase):
     def test_shuffle(self):
         depth = 3
         n_estimators = 4
-        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
-                                     max_depth=depth, shuffle=True)
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=[-1, 1],
+                                     max_depth=depth, random_state=0, shuffle=False)
         clf.fit(X, y)
 
-        self.assertIsNone(check_is_fitted(clf))
+        clf_shuffle = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=[-1, 1],
+                                             max_depth=depth, random_state=0, shuffle=True)
+        clf_shuffle.fit(X, y)
+        self.assertIsNone(check_is_fitted(clf_shuffle))
+
+        # Estimators should have the same seed
+        for i in range(n_estimators):
+            self.assertEqual(clf.estimators_[i].random_state, clf_shuffle.estimators_[i].random_state)
+
+        # But predictions should be different, since trained on different data
+        self.assertFalse(np.isclose(clf.predict_proba(T), clf_shuffle.predict_proba(T)).all(),
+                         (clf.predict_proba(T), clf_shuffle.predict_proba(T)))
 
     def test_more_estimators_than_data(self):
         depth = 3
         n_estimators = 20
-        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=np.array((-1, 1)),
+        clf = RandomForestClassifier(n_estimators, epsilon=5, bounds=(-2, 2), classes=[-1, 1],
                                      max_depth=depth)
         clf.fit(X, y)
 

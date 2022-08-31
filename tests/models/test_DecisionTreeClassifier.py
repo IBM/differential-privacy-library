@@ -57,7 +57,8 @@ class TestDecisionTreeClassifier(TestCase):
     def test_with_bounds(self):
         X = np.array([[12, 3, 14], [12, 3, 4], [12, 3, 4], [2, 13, 4], [2, 13, 14], [2, 3, 14], [3, 5, 15]] * 3)
         y = np.array([1, 1, 1, 0, 0, 0, 1] * 3)
-        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), classes=[0, 1], max_depth=3)
+        model = DecisionTreeClassifier(epsilon=5, bounds=([2, 3, 4], [12, 13, 14]), classes=[0, 1], max_depth=3,
+                                       random_state=0)
         with self.assertRaises(NotFittedError):
             check_is_fitted(model)
         model.fit(X, y)
@@ -84,7 +85,11 @@ class TestDecisionTreeClassifier(TestCase):
 
         model1 = DecisionTreeClassifier(epsilon=0.01, bounds=(-2, 2), classes=[-1, 1], max_depth=3, random_state=0)
         model1.fit(X, y)
-        self.assertEqual(model0.predict(np.array([[-2, -1]])), model1.predict(np.array([[-2, -1]])))
+        self.assertTrue(np.isclose(model0.predict_proba(np.array([[-2, -1]])),
+                                   model1.predict_proba(np.array([[-2, -1]]))).all())
+
+        model1 = DecisionTreeClassifier(epsilon=0.01, bounds=(-2, 2), classes=[-1, 1], max_depth=3, random_state=None)
+        model1.fit(X, y)
 
     def test_sklearn_methods(self):
         depth = 3

@@ -29,7 +29,7 @@ from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestCla
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
 from diffprivlib.accountant import BudgetAccountant
-from diffprivlib.utils import PrivacyLeakWarning
+from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.mechanisms import PermuteAndFlip
 from diffprivlib.validation import DiffprivlibMixin
 
@@ -65,6 +65,11 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
 
     verbose : int, default: 0
         Set to any positive number for verbosity.
+
+    random_state : int or RandomState, optional
+        Controls both the randomness of the shuffling of the samples used when building trees (if ``shuffle=True``) and
+        training of the differentially-private :class:`.DecisionTreeClassifier` to construct the forest.  To obtain a
+        deterministic behaviour during randomisation, ``random_state`` has to be fixed to an integer.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -124,13 +129,13 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
     """
 
     def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, classes=None, n_jobs=1, verbose=0, accountant=None,
-                 max_depth=5, warm_start=False, shuffle=False, **unused_args):
+                 random_state=None, max_depth=5, warm_start=False, shuffle=False, **unused_args):
         super().__init__(
             n_estimators=n_estimators,
             criterion=None,
             bootstrap=False,
             n_jobs=n_jobs,
-            random_state=None,
+            random_state=random_state,
             verbose=verbose,
             warm_start=warm_start)
         self.epsilon = epsilon
@@ -209,7 +214,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         # Check parameters
         self._validate_estimator()
 
-        # random_state = check_random_state(self.random_state)
+        random_state = check_random_state(self.random_state)
 
         if not self.warm_start or not hasattr(self, "estimators_"):
             # Free allocated memory, if any
@@ -227,16 +232,16 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         if self.warm_start and len(self.estimators_) > 0:
             # We draw from the random state to get the random state we
             # would have got if we hadn't used a warm_start.
-            np.random.randint(MAX_INT, size=len(self.estimators_))
+            random_state.randint(MAX_INT, size=len(self.estimators_))
 
         trees = [
-            self._make_estimator(append=False, random_state=None)
+            self._make_estimator(append=False, random_state=random_state)
             for _ in range(n_more_estimators)
         ]
 
         # Split samples between trees as evenly as possible (randomly if shuffle==True)
         n_samples = X.shape[0]
-        tree_idxs = np.random.permutation(n_samples) if self.shuffle else np.arange(n_samples)
+        tree_idxs = random_state.permutation(n_samples) if self.shuffle else np.arange(n_samples)
         tree_idxs = (tree_idxs // (n_samples / n_more_estimators)).astype(int)
 
         # Parallel loop: we prefer the threading backend as the Cython code
@@ -305,6 +310,12 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         Array of class labels. If not provided, the classes will be read from the data when ``.fit()`` is first called,
         resulting in a :class:`.PrivacyLeakWarning`.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the estimator.  At each split, the feature to split on is chosen randomly, as is the
+        threshold at which to split.  The classification label at each leaf is then randomised, subject to differential
+        privacy constraints. To obtain a deterministic behaviour during randomisation, ``random_state`` has to be fixed
+        to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -321,7 +332,8 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
 
     """
 
-    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, accountant=None, **unused_args):
+    def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None, accountant=None,
+                 **unused_args):
         # TODO: Remove try...except when sklearn v1.0 is min-requirement
         try:
             super().__init__(  # pylint: disable=unexpected-keyword-arg
@@ -332,7 +344,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
                 min_samples_leaf=None,
                 min_weight_fraction_leaf=None,
                 max_features=None,
-                random_state=None,
+                random_state=random_state,
                 max_leaf_nodes=None,
                 min_impurity_decrease=None,
                 min_impurity_split=None
@@ -346,7 +358,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
                 min_samples_leaf=None,
                 min_weight_fraction_leaf=None,
                 max_features=None,
-                random_state=None,
+                random_state=random_state,
                 max_leaf_nodes=None,
                 min_impurity_decrease=None
             )
@@ -379,6 +391,8 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self : DecisionTreeClassifier
             Fitted estimator.
         """
+        random_state = check_random_state(self.random_state)
+
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
@@ -406,7 +420,8 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self.n_features_in_ = X.shape[1]
 
         # Build and fit the _FittingTree
-        fitting_tree = _FittingTree(self.max_depth, self.n_features_in_, self.classes_, self.epsilon, self.bounds)
+        fitting_tree = _FittingTree(self.max_depth, self.n_features_in_, self.classes_, self.epsilon, self.bounds,
+                                    random_state)
         fitting_tree.build()
         fitting_tree.fit(X, y)
 
@@ -449,16 +464,20 @@ class _FittingTree(DiffprivlibMixin):
     epsilon : float
         Privacy parameter :math:`\epsilon`.
 
-    bounds : tuple, optional
+    bounds : tuple
         Bounds of the data, provided as a tuple of the form (min, max).  `min` and `max` can either be scalars, covering
         the min/max of the entire data.
+
+    random_state : RandomState
+        Controls the randomness of the building and training process: the feature to split at each node, the threshold
+        to split at and the randomisation of the label at each leaf.
 
     """
     _TREE_LEAF = -1
     _TREE_UNDEFINED = -2
     StackNode = namedtuple("StackNode", ["parent", "is_left", "depth", "bounds"])
 
-    def __init__(self, max_depth, n_features, classes, epsilon, bounds):
+    def __init__(self, max_depth, n_features, classes, epsilon, bounds, random_state):
         self.node_count = 0
         self.nodes = []
         self.max_depth = max_depth
@@ -466,6 +485,7 @@ class _FittingTree(DiffprivlibMixin):
         self.classes = classes
         self.epsilon = epsilon
         self.bounds = bounds
+        self.random_state = random_state
 
     def __getstate__(self):
         """Get state of _FittingTree to feed into __setstate__ of sklearn.Tree"""
@@ -502,8 +522,8 @@ class _FittingTree(DiffprivlibMixin):
                 continue
 
             # We have a decision node, so pick feature and threshold
-            feature = np.random.randint(self.n_features)
-            threshold = np.random.uniform(bounds_lower[feature], bounds_upper[feature])
+            feature = self.random_state.randint(self.n_features)
+            threshold = self.random_state.uniform(bounds_lower[feature], bounds_upper[feature])
 
             left_bounds_upper = bounds_upper.copy()
             left_bounds_upper[feature] = threshold
@@ -545,7 +565,8 @@ class _FittingTree(DiffprivlibMixin):
             leaf_y = y[idxs]
 
             counts = [np.sum(leaf_y == cls) for cls in self.classes]
-            mech = PermuteAndFlip(epsilon=self.epsilon, sensitivity=1, monotonic=True, utility=counts)
+            mech = PermuteAndFlip(epsilon=self.epsilon, sensitivity=1, monotonic=True, utility=counts,
+                                  random_state=self.random_state)
             values[leaf, 0, mech.randomise()] = 1
 
         # Populate value of empty leaves
@@ -553,7 +574,7 @@ class _FittingTree(DiffprivlibMixin):
             if values[node.node_id].sum() or node.left_child != self._TREE_LEAF:
                 continue
 
-            values[node.node_id, 0, np.random.randint(len(self.classes))] = 1
+            values[node.node_id, 0, self.random_state.randint(len(self.classes))] = 1
 
         self.values_ = values
 
