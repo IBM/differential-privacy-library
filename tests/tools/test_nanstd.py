@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.utils import nanstd
-from diffprivlib.utils import PrivacyLeakWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_state
 
 
 class TestNanStd(TestCase):
@@ -58,9 +58,10 @@ class TestNanStd(TestCase):
 
     def test_clipped_output(self):
         a = np.random.random((10,))
+        rng = check_random_state(0)
 
         for i in range(100):
-            self.assertTrue(0 <= nanstd(a, epsilon=1e-5, bounds=(0, 1)) <= 1)
+            self.assertTrue(0 <= nanstd(a, epsilon=1e-3, bounds=(0, 1), random_state=rng) <= 1)
 
     def test_nan(self):
         a = np.random.random((5, 5))

@@ -313,13 +313,6 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         in Differential Privacy." Journal of Privacy and Confidentiality 10, no. 1 (2020).
 
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, lower=lower, upper=upper,
-                         random_state=random_state)
-
-        if isinstance(self._rng, secrets.SystemRandom):
-            self._rng = np.random.default_rng()
-
     def _find_scale(self):
         eps = self.epsilon
         delta = self.delta
@@ -416,8 +409,12 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         samples = 1
 
         while True:
-            noisy = value + self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
-                                                                self._rng.random(samples), self._rng.random(samples))
+            try:
+                unif = self._rng.random(4 * samples)
+            except TypeError:  # rng is secrets.SystemRandom
+                unif = [self._rng.random() for _ in range(4 * samples)]
+            noisy = value + self._scale * self._laplace_sampler(*np.array(unif).reshape(4, -1))
+
             if ((noisy >= self.lower) & (noisy <= self.upper)).any():
                 idx = np.argmax((noisy >= self.lower) & (noisy <= self.upper))
                 return noisy[idx]
@@ -458,9 +455,6 @@ class LaplaceBoundedNoise(Laplace):
         super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         self._noise_bound = None
 
-        if isinstance(self._rng, secrets.SystemRandom):
-            self._rng = np.random.default_rng()
-
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
         if epsilon == 0:
@@ -494,8 +488,12 @@ class LaplaceBoundedNoise(Laplace):
         samples = 1
 
         while True:
-            noisy = self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
-                                                        self._rng.random(samples), self._rng.random(samples))
+            try:
+                unif = self._rng.random(4 * samples)
+            except TypeError:  # rng is secrets.SystemRandom
+                unif = [self._rng.random() for _ in range(4 * samples)]
+            noisy = self._scale * self._laplace_sampler(*np.array(unif).reshape(4, -1))
+
             if ((noisy >= - self._noise_bound) & (noisy <= self._noise_bound)).any():
                 idx = np.argmax((noisy >= - self._noise_bound) & (noisy <= self._noise_bound))
                 return value + noisy[idx]
