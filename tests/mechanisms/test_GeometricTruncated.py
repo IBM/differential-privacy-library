@@ -90,7 +90,7 @@ class TestGeometricTruncated(TestCase):
 
     def test_neighbors_prob(self):
         epsilon = 1
-        runs = 10000
+        runs = 5000
         mech = self.mech(epsilon=1, sensitivity=1, lower=0, upper=4, random_state=0)
         count = [0, 0]
 

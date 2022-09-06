@@ -2,6 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import PermuteAndFlip
+from diffprivlib.utils import check_random_state
 
 
 class TestPermuteAndFlip(TestCase):
@@ -177,9 +178,10 @@ class TestPermuteAndFlip(TestCase):
 
     def test_monotonic_distrib(self):
         epsilon = np.log(2)
-        runs = 40000
-        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=True)
-        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=True)
+        runs = 1000
+        rng = check_random_state(0)
+        mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=True, random_state=rng)
+        mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=True, random_state=rng)
         counts = np.zeros((2, 3))
 
         for i in range(runs):
@@ -187,7 +189,6 @@ class TestPermuteAndFlip(TestCase):
             counts[1, mech2.randomise()] += 1
 
         for vec in counts.T:
-            # print(vec.max() / vec.min())
             self.assertLessEqual(vec.max() / vec.min(), np.exp(epsilon) + 0.1)
 
     def test_random_state(self):

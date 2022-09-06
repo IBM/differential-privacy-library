@@ -2,6 +2,7 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Bingham
+from diffprivlib.utils import check_random_state
 
 
 class TestBingham(TestCase):
@@ -128,12 +129,13 @@ class TestBingham(TestCase):
             mech.randomise(np.ones((3, 3, 3)))
 
     def test_large_input(self):
-        X = np.random.randn(10000, 21)
+        rng = check_random_state(0)
+        X = rng.randn(5000, 21)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
         XtX = X.T.dot(X)
 
-        mech = self.mech(epsilon=1)
+        mech = self.mech(epsilon=1, random_state=rng)
         self.assertIsNotNone(mech.randomise(XtX))
 
     def test_different_result(self):

@@ -71,22 +71,15 @@ class TestLaplaceBoundedNoise(TestCase):
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
 
     def test_neighbors_prob(self):
-        runs = 10000
+        runs = 1000
         delta = 0.1
-        mech = self.mech(epsilon=1, delta=delta, sensitivity=1, random_state=0)
-        count = [0, 0]
+        mech = self.mech(epsilon=1, delta=delta, sensitivity=1, random_state=2)
 
-        for i in range(runs):
-            val0 = mech.randomise(0)
-            if val0 <= 1 - mech._noise_bound:
-                count[0] += 1
+        count0 = (np.array([mech.randomise(0) for _ in range(runs)]) <= 1 - mech._noise_bound).sum()
+        count1 = (np.array([mech.randomise(1) for _ in range(runs)]) >= mech._noise_bound).sum()
 
-            val1 = mech.randomise(1)
-            if val1 >= mech._noise_bound:
-                count[1] += 1
-
-        self.assertAlmostEqual(count[0] / runs, delta, delta=delta/10)
-        self.assertAlmostEqual(count[1] / runs, delta, delta=delta/10)
+        self.assertAlmostEqual(count0 / runs, delta, delta=delta / 10)
+        self.assertAlmostEqual(count1 / runs, delta, delta=delta / 10)
 
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, delta=0.1, sensitivity=1)

@@ -9,7 +9,7 @@ except ImportError:
     import sklearn.decomposition.pca as sk_pca
 
 from diffprivlib.models.pca import PCA
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError, check_random_state
 
 
 class TestPCA(TestCase):
@@ -91,8 +91,8 @@ class TestPCA(TestCase):
             self.assertTrue(np.allclose(np.abs((clf.components_ / sk_clf.components_).sum(axis=1)), clf.n_features_))
 
     def test_big_epsilon(self):
-        rng = np.random.RandomState(0)
-        X = rng.randn(5000, 10)
+        rng = check_random_state(2)
+        X = rng.randn(2000, 10)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
 

@@ -29,8 +29,8 @@ class TestRoundedInteger(TestCase):
 
     def test_distrib(self):
         epsilon = np.log(2)
-        runs = 10000
-        mech = RoundedInteger(Laplace(epsilon=epsilon, sensitivity=1))
+        runs = 5000
+        mech = RoundedInteger(Laplace(epsilon=epsilon, sensitivity=1, random_state=0))
         count = [0, 0]
 
         for _ in range(runs):

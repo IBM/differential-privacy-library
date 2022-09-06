@@ -190,21 +190,14 @@ class TestSnapping(TestCase):
 
     def test_neighbours_prob(self):
         epsilon = 1
-        runs = 10000
-        mech = self.mech(epsilon=epsilon, sensitivity=1, lower=0, upper=1000)
-        count = [0, 0]
+        runs = 5000
+        mech = self.mech(epsilon=epsilon, sensitivity=1, lower=0, upper=1000, random_state=0)
 
-        for i in range(runs):
-            val0 = mech.randomise(0)
-            if val0 <= 0:
-                count[0] += 1
+        count0 = (np.array([mech.randomise(0) for _ in range(runs)]) <= 0).sum()
+        count1 = (np.array([mech.randomise(1) for _ in range(runs)]) <= 0).sum()
 
-            val1 = mech.randomise(1)
-            if val1 <= 0:
-                count[1] += 1
-
-        self.assertGreater(count[0], count[1])
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+        self.assertGreater(count0, count1)
+        self.assertLessEqual(count0 / runs, np.exp(epsilon) * count1 / runs + 0.1)
 
     def test_random_state(self):
         mech1 = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000, random_state=42)

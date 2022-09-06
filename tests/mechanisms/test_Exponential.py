@@ -121,7 +121,7 @@ class TestExponential(TestCase):
         measure = [1, 2, 1, 1]
         utility = [1, 1, 0, 0]
         runs = 20000
-        mech = self.mech(epsilon=2 * np.log(2), utility=utility, measure=measure, sensitivity=1)
+        mech = self.mech(epsilon=2 * np.log(2), utility=utility, measure=measure, sensitivity=1, random_state=0)
         count = [0] * 4
 
         for i in range(runs):
@@ -154,7 +154,7 @@ class TestExponential(TestCase):
 
     def test_distrib_prob(self):
         epsilon = np.log(2)
-        runs = 20000
+        runs = 2000
         rng = np.random.RandomState(42)
         mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=False, random_state=rng)
         mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=False, random_state=rng)
@@ -170,7 +170,7 @@ class TestExponential(TestCase):
 
     def test_monotonic_distrib(self):
         epsilon = np.log(2)
-        runs = 20000
+        runs = 2000
         rng = np.random.RandomState(42)
         mech1 = self.mech(epsilon=epsilon, utility=[2, 1, 0], sensitivity=1, monotonic=True, random_state=rng)
         mech2 = self.mech(epsilon=epsilon, utility=[2, 1, 1], sensitivity=1, monotonic=True, random_state=rng)
@@ -181,7 +181,6 @@ class TestExponential(TestCase):
             counts[1, mech2.randomise()] += 1
 
         for vec in counts.T:
-            # print(vec.max() / vec.min())
             self.assertLessEqual(vec.max() / vec.min(), np.exp(epsilon) + 0.1)
 
     def test_random_state(self):

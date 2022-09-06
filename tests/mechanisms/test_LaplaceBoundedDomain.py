@@ -63,21 +63,14 @@ class TestLaplaceBoundedDomain(TestCase):
 
     def test_neighbors_prob(self):
         epsilon = 1
-        runs = 10000
+        runs = 1000
         mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1, random_state=0)
-        count = [0, 0]
 
-        for i in range(runs):
-            val0 = mech.randomise(0)
-            if val0 <= 0.5:
-                count[0] += 1
+        count0 = (np.array([mech.randomise(0) for _ in range(runs)]) <= 0.5).sum()
+        count1 = (np.array([mech.randomise(1) for _ in range(runs)]) <= 0.5).sum()
 
-            val1 = mech.randomise(1)
-            if val1 <= 0.5:
-                count[1] += 1
-
-        self.assertGreater(count[0], count[1])
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+        self.assertGreater(count0, count1)
+        self.assertLessEqual(count0 / runs, np.exp(epsilon) * count1 / runs + 0.1)
 
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, delta=0, sensitivity=1, lower=0, upper=1)
