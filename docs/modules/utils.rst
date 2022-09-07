@@ -17,5 +17,6 @@ General classes
 General functions
 -----------------
 
+.. autofunction:: check_random_state
 .. autofunction:: copy_docstring
 .. autofunction:: warn_unused_args
