@@ -516,7 +516,7 @@ class ExponentialHierarchical(ExponentialCategorical):
                 hierarchy[_value] = parent_node + [_i]
             elif not isinstance(_value, list):
                 raise TypeError("All leaves of the hierarchy must be a string " +
-                                "(see node " + (parent_node + [_i]).__str__() + ")")
+                                "(see node " + str(parent_node + [_i]) + ")")
             else:
                 hierarchy.update(self._build_hierarchy(_value, parent_node + [_i]))
 
@@ -532,7 +532,7 @@ class ExponentialHierarchical(ExponentialCategorical):
                 hierarchy_height = len(_hierarchy_locator)
             elif len(_hierarchy_locator) != hierarchy_height:
                 raise ValueError(
-                    f"Leaves of the hierarchy must all be at the same level (node {_hierarchy_locator.__str__()} is at "
+                    f"Leaves of the hierarchy must all be at the same level (node {str(_hierarchy_locator)} is at "
                     f"level {len(_hierarchy_locator)} instead of hierarchy height {hierarchy_height})"
                 )
 

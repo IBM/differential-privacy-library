@@ -37,7 +37,7 @@ class DPTransformer(DPMachine):
 
         self.parent = parent
 
-    def pre_transform(self, value):  # pylint: disable=no-self-use
+    def pre_transform(self, value):
         """Performs no transformation on the input data, and is ingested by the mechanism as-is.
 
         Parameters
@@ -52,7 +52,7 @@ class DPTransformer(DPMachine):
         """
         return value
 
-    def post_transform(self, value):  # pylint: disable=no-self-use
+    def post_transform(self, value):
         """Performs no transformation on the output of the mechanism, and is returned as-is.
 
         Parameters

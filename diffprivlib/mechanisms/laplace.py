@@ -18,7 +18,6 @@
 """
 The classic Laplace mechanism in differential privacy, and its derivatives.
 """
-import secrets
 from numbers import Real
 
 import numpy as np

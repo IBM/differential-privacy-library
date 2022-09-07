@@ -18,7 +18,6 @@
 """
 The vector mechanism in differential privacy, for producing perturbed objectives
 """
-import secrets
 from numbers import Real
 
 import numpy as np
