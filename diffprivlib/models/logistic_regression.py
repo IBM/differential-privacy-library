@@ -49,12 +49,19 @@ import warnings
 import numpy as np
 from joblib import delayed, Parallel
 from scipy import optimize
-from scipy.special import expit
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.utils import check_array, check_consistent_length
-from sklearn.utils.extmath import safe_sparse_dot, log_logistic
 from sklearn.utils.multiclass import check_classification_targets
+
+# todo: Remove when sklearn v1.1.0 is min requirement
+try:
+    from sklearn.linear_model._linear_loss import LinearModelLoss
+    from sklearn._loss import HalfBinomialLoss
+    SKL_LOSS_MODULE = True
+except (ModuleNotFoundError, ImportError):
+    from sklearn.linear_model._logistic import _logistic_loss_and_grad
+    SKL_LOSS_MODULE = False
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
@@ -379,7 +386,7 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     output_vec = np.zeros(n_features + int(fit_intercept), dtype=X.dtype)
     mask = (y == pos_class)
     y_bin = np.ones(y.shape, dtype=X.dtype)
-    y_bin[~mask] = -1.
+    y_bin[~mask] = 0.0 if SKL_LOSS_MODULE else -1.0
     # for compute_class_weight
 
     if coef is not None:
@@ -391,17 +398,23 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
 
     target = y_bin
 
+    if SKL_LOSS_MODULE:
+        func = LinearModelLoss(base_loss=HalfBinomialLoss(), fit_intercept=fit_intercept).loss_gradient
+    else:
+        func = _logistic_loss_and_grad
+
     coefs = []
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
         vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1. / C,
                              function_sensitivity=0.25, data_sensitivity=data_norm, random_state=random_state)
-        noisy_logistic_loss = vector_mech.randomise(_logistic_loss_and_grad)
+        noisy_logistic_loss = vector_mech.randomise(func)
+
+        args = (X, target, sample_weight, 1. / C) if SKL_LOSS_MODULE else (X, target, 1. / C, sample_weight)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
-                                                     args=(X, target, 1. / C, sample_weight), iprint=iprint, pgtol=tol,
-                                                     maxiter=max_iter)
+                                                     args=args, iprint=iprint, pgtol=tol, maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 
@@ -410,95 +423,6 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
         n_iter[i] = info['nit']
 
     return np.array(coefs), np.array(Cs), n_iter
-
-
-def _logistic_loss_and_grad(w, X, y, alpha, sample_weight=None):
-    """Computes the logistic loss and gradient.
-
-    Parameters
-    ----------
-    w : ndarray of shape (n_features,) or (n_features + 1,)
-        Coefficient vector.
-
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Training data.
-
-    y : ndarray of shape (n_samples,)
-        Array of labels.
-
-    alpha : float
-        Regularization parameter. alpha is equal to 1 / C.
-
-    sample_weight : array-like of shape (n_samples,), default=None
-        Array of weights that are assigned to individual samples.  If not provided, then each sample is given unit
-        weight.
-
-    Returns
-    -------
-    out : float
-        Logistic loss.
-
-    grad : ndarray of shape (n_features,) or (n_features + 1,)
-        Logistic gradient.
-
-    """
-    n_samples, n_features = X.shape
-    grad = np.empty_like(w)
-
-    w, _, yz = _intercept_dot(w, X, y)
-
-    if sample_weight is None:
-        sample_weight = np.ones(n_samples)
-
-    # Logistic loss is the negative of the log of the logistic function.
-    out = -np.sum(sample_weight * log_logistic(yz)) + 0.5 * alpha * np.dot(w, w)
-
-    z = expit(yz)
-    z0 = sample_weight * (z - 1) * y
-
-    grad[:n_features] = safe_sparse_dot(X.T, z0) + alpha * w
-
-    # Case where we fit the intercept.
-    if grad.shape[0] > n_features:
-        grad[-1] = z0.sum()
-    return out, grad
-
-
-def _intercept_dot(w, X, y):
-    """Computes y * np.dot(X, w).
-    It takes into consideration if the intercept should be fit or not.
-
-    Parameters
-    ----------
-    w : ndarray of shape (n_features,) or (n_features + 1,)
-        Coefficient vector.
-
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
-        Training data.
-
-    y : ndarray of shape (n_samples,)
-        Array of labels.
-
-    Returns
-    -------
-    w : ndarray of shape (n_features,)
-        Coefficient vector without the intercept weight (w[-1]) if the intercept should be fit. Unchanged otherwise.
-
-    c : float
-        The intercept.
-
-    yz : float
-        y * np.dot(X, w).
-
-    """
-    c = 0.0
-    if w.size == X.shape[1] + 1:
-        c = w[-1]
-        w = w[:-1]
-
-    z = safe_sparse_dot(X, w) + c
-    yz = y * z
-    return w, c, yz
 
 
 def _check_solver(solver, penalty, dual):
