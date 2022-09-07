@@ -5,51 +5,44 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 from diffprivlib.models.naive_bayes import GaussianNB
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError, check_random_state
+
+# Data is just 6 separable points in the plane
+X = np.array([[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]])
+y = np.array([1, 1, 1, 2, 2, 2])
 
 
 class TestGaussianNB(TestCase):
     def test_not_none(self):
-        clf = GaussianNB(epsilon=1, bounds=(0, 1))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         self.assertIsNotNone(clf)
 
     def test_zero_epsilon(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=0, bounds=(0, 1))
+        clf = GaussianNB(epsilon=0, bounds=(-2, 2))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
     def test_neg_epsilon(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=-1, bounds=(0, 1))
+        clf = GaussianNB(epsilon=-1, bounds=(-2, 2))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
     def test_sample_weight_warning(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         w = abs(np.random.randn(10))
 
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             clf.fit(X, y, sample_weight=w)
 
     def test_mis_ordered_bounds(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
         clf = GaussianNB(epsilon=1, bounds=([0, 1], [1, 0]))
 
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
     def test_no_bounds(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
         clf = GaussianNB()
 
         with self.assertWarns(PrivacyLeakWarning):
@@ -58,8 +51,8 @@ class TestGaussianNB(TestCase):
         self.assertIsNotNone(clf)
 
     def test_missing_bounds(self):
-        X = np.random.random((10, 3))
-        y = np.random.randint(2, size=10)
+        rng = check_random_state(0)
+        X = rng.random((10, 6))
 
         clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
 
@@ -67,7 +60,8 @@ class TestGaussianNB(TestCase):
             clf.fit(X, y)
 
     def test_noisy_count(self):
-        y = np.random.randint(20, size=10000)
+        rng = check_random_state(0)
+        y = rng.randint(20, size=10000)
         actual_counts = np.array([(y == y_i).sum() for y_i in np.unique(y)])
 
         clf = GaussianNB(epsilon=3)
@@ -86,12 +80,14 @@ class TestGaussianNB(TestCase):
         from sklearn import datasets
 
         dataset = datasets.load_iris()
+        rng = check_random_state(0)
 
-        x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2)
+        x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2,
+                                                            random_state=rng)
 
         bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
-        clf_dp = GaussianNB(epsilon=1.0, bounds=bounds, random_state=0)
+        clf_dp = GaussianNB(epsilon=1.0, bounds=bounds, random_state=rng)
         clf_non_private = sk_nb()
 
         for clf in [clf_dp, clf_non_private]:
@@ -113,12 +109,14 @@ class TestGaussianNB(TestCase):
     def test_with_iris(self):
         from sklearn import datasets
         dataset = datasets.load_iris()
+        rng = check_random_state(0)
 
-        x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2)
+        x_train, x_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=.2,
+                                                            random_state=rng)
 
         bounds = ([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5])
 
-        clf = GaussianNB(epsilon=5.0, bounds=bounds, random_state=0)
+        clf = GaussianNB(epsilon=5.0, bounds=bounds, random_state=rng)
         clf.fit(x_train, y_train)
 
         accuracy = clf.score(x_test, y_test)
@@ -133,71 +131,55 @@ class TestGaussianNB(TestCase):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant()
 
-        x_train = np.random.random((10, 2))
-        y_train = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1.0, bounds=(0, 1), accountant=acc)
-        clf.fit(x_train, y_train)
+        clf = GaussianNB(epsilon=1.0, bounds=(-2, 2), accountant=acc)
+        clf.fit(X, y)
         self.assertEqual((1, 0), acc.total())
 
         with BudgetAccountant(1.5, 0) as acc2:
-            clf = GaussianNB(epsilon=1.0, bounds=(0, 1))
-            clf.fit(x_train, y_train)
+            clf = GaussianNB(epsilon=1.0, bounds=(-2, 2))
+            clf.fit(X, y)
             self.assertEqual((1, 0), acc2.total())
 
             with self.assertRaises(BudgetError):
-                clf.fit(x_train, y_train)
+                clf.fit(X, y)
 
     def test_priors(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(0.75, 0.25))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2), priors=(0.75, 0.25))
         self.assertIsNotNone(clf.fit(X, y))
 
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(1,))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2), priors=(1,))
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(0.5, 0.7))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2), priors=(0.5, 0.7))
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), priors=(-0.5, 1.5))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2), priors=(-0.5, 1.5))
         with self.assertRaises(ValueError):
             clf.fit(X, y)
 
     def test_bad_refit_shape(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         clf.fit(X, y)
 
-        X2 = np.random.random((10, 3))
+        X2 = np.random.random((6, 3))
         clf.bounds = ([0, 0, 0], [1, 1, 1])
 
         with self.assertRaises(ValueError):
             clf.partial_fit(X2, y)
 
     def test_bad_refit_classes(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         clf.fit(X, y)
 
-        X2 = np.random.random((10, 2))
-        y2 = np.random.randint(3, size=10)
+        y2 = np.array([1, 1, 1, 2, 2, 3])
 
         with self.assertRaises(ValueError):
-            clf.partial_fit(X2, y2)
+            clf.partial_fit(X, y2)
 
     def test_update_mean_variance(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf = GaussianNB(epsilon=1, bounds=([-2, -2], [2, 2]))
         self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, None, n_noisy=5))
         self.assertIsNotNone(clf._update_mean_variance(0, 0, 0, X, None, n_noisy=0))
         self.assertWarns(PrivacyLeakWarning, clf._update_mean_variance, 0, 0, 0, X, None)
@@ -205,26 +187,19 @@ class TestGaussianNB(TestCase):
                          sample_weight=1)
 
     def test_sigma(self):
-        X = np.random.random((10, 2))
-        y = np.random.randint(2, size=10)
-
-        clf = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]))
+        clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         clf.fit(X, y)
         self.assertIsInstance(clf.sigma_, np.ndarray)
 
     def test_random_state(self):
-        rng = np.random.RandomState(0)
-        X = rng.random((20, 2))
-        y = rng.randint(2, size=20)
-
-        clf0 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=0)
-        clf1 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=1)
+        clf0 = GaussianNB(epsilon=1, bounds=(-2, 2), random_state=0)
+        clf1 = GaussianNB(epsilon=1, bounds=(-2, 2), random_state=1)
         clf0.fit(X, y)
         clf1.fit(X, y)
-        self.assertFalse(np.any(clf0.theta_ == clf1.theta_))
-        self.assertFalse(np.any(clf0.var_ == clf1.var_))
+        self.assertFalse(np.all(clf0.theta_ == clf1.theta_))
+        self.assertFalse(np.all(clf0.var_ == clf1.var_))
 
-        clf1 = GaussianNB(epsilon=1, bounds=([0, 0], [1, 1]), random_state=0)
+        clf1 = GaussianNB(epsilon=1, bounds=(-2, 2), random_state=0)
         clf1.fit(X, y)
         self.assertTrue(np.all(clf0.theta_ == clf1.theta_))
         self.assertTrue(np.all(clf0.var_ == clf1.var_))
