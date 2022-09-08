@@ -65,7 +65,7 @@ except (ModuleNotFoundError, ImportError):
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, warn_unused_args, check_random_state
+from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 
