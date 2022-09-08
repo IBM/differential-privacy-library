@@ -4,7 +4,6 @@ from unittest import TestCase
 import pytest
 
 from diffprivlib.models.linear_regression import LinearRegression
-from diffprivlib.models.logistic_regression import _check_solver, _check_multi_class
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
@@ -161,24 +160,6 @@ class TestLinearRegression(TestCase):
         self.assertEqual(clf_dp2.intercept_.shape, (4,))
         self.assertEqual(clf_dp2.coef_.shape, clf_sk.coef_.shape)
         self.assertEqual(clf_dp2.predict(x0).shape, clf_sk.predict(x0).shape)
-
-    def test_check_solver(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            _check_solver("wrong_solver", "l2", False)
-
-        with self.assertRaises(ValueError):
-            _check_solver("lbfgs", "l1", False)
-
-        with self.assertRaises(ValueError):
-            _check_solver("lbfgs", "l2", True)
-
-        self.assertIsNotNone(_check_solver("lbfgs", "l2", False))
-
-    def test_check_multi_class(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            _check_multi_class("multinomial", "lbfgs", 2)
-
-        self.assertIsNotNone(_check_multi_class("ovr", "lbfgs", 2))
 
     def test_random_state(self):
         X = np.linspace(-1, 1, 1000)

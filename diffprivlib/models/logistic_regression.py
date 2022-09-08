@@ -223,9 +223,8 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError(f"Tolerance for stopping criteria must be positive; got (tol={self.tol})")
 
-        solver = _check_solver(self.solver, self.penalty, self.dual)
         X, y = self._validate_data(X, y, accept_sparse='csr', dtype=float, order="C",
-                                   accept_large_sparse=solver != 'liblinear')
+                                   accept_large_sparse=True)
         check_classification_targets(y)
         self.classes_ = np.unique(y)
         _, n_features = X.shape
@@ -237,8 +236,6 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
             self.data_norm = np.linalg.norm(X, axis=1).max()
 
         X = self._clip_to_norm(X, self.data_norm)
-
-        self.multi_class = _check_multi_class(self.multi_class, solver, len(self.classes_))
 
         n_classes = len(self.classes_)
         classes_ = self.classes_
@@ -359,15 +356,13 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     if isinstance(Cs, numbers.Integral):
         Cs = np.logspace(-4, 4, int(Cs))
 
-    solver = 'lbfgs'
-
     # Data norm increases if intercept is included
     if fit_intercept:
         data_norm = np.sqrt(data_norm ** 2 + 1)
 
     # Pre-processing.
     if check_input:
-        X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=solver != 'liblinear')
+        X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=True)
         y = check_array(y, ensure_2d=False, dtype=None)
         check_consistent_length(X, y)
     _, n_features = X.shape
@@ -387,7 +382,6 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     mask = (y == pos_class)
     y_bin = np.ones(y.shape, dtype=X.dtype)
     y_bin[~mask] = 0.0 if SKL_LOSS_MODULE else -1.0
-    # for compute_class_weight
 
     if coef is not None:
         # it must work both giving the bias term and not
@@ -423,26 +417,3 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
         n_iter[i] = info['nit']
 
     return np.array(coefs), np.array(Cs), n_iter
-
-
-def _check_solver(solver, penalty, dual):
-    if solver != 'lbfgs':
-        warnings.warn("For diffprivlib, solver must be 'lbfgs'.", DiffprivlibCompatibilityWarning)
-        solver = 'lbfgs'
-
-    if penalty != 'l2':
-        raise ValueError(f"Solver {solver} supports only l2 penalties, got {penalty} penalty.")
-    if dual:
-        raise ValueError(f"Solver {solver} supports only dual=False, got dual={dual}")
-    return solver
-
-
-def _check_multi_class(multi_class, solver, n_classes):
-    del solver, n_classes
-
-    if multi_class != 'ovr':
-        warnings.warn(f"For diffprivlib, multi_class must be 'ovr', got {multi_class}.",
-                      DiffprivlibCompatibilityWarning)
-        multi_class = 'ovr'
-
-    return multi_class
