@@ -1,4 +1,8 @@
+import secrets
 from unittest import TestCase
+
+import numpy as np
+from sklearn.utils import check_random_state
 
 from diffprivlib.mechanisms import DPMachine, DPMechanism
 
@@ -59,3 +63,19 @@ class TestDPMechanism(TestCase):
         mse_mech = TestMSE(epsilon=1, delta=0)
 
         self.assertEqual(mse_mech.mse(1), 2)
+
+    def test_random_state(self):
+        rng = check_random_state(None)
+        rng2 = check_random_state(None)
+        self.assertIs(rng, np.random.mtrand._rand)
+        self.assertIs(rng, rng2)
+
+        mech = self.mech(epsilon=1, delta=0, random_state=None)
+        self.assertIsInstance(mech._rng, secrets.SystemRandom)
+
+        mech = self.mech(epsilon=1, delta=0, random_state=rng)
+        self.assertIsInstance(mech._rng, secrets.SystemRandom)
+
+        mech = self.mech(epsilon=1, delta=0, random_state=1)
+        self.assertNotIsInstance(mech._rng, secrets.SystemRandom)
+        self.assertIsInstance(mech._rng, np.random.RandomState)

@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.utils import nanstd
-from diffprivlib.utils import PrivacyLeakWarning, global_seed, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_state
 
 
 class TestNanStd(TestCase):
@@ -38,7 +38,6 @@ class TestNanStd(TestCase):
         self.assertIsNotNone(res)
 
     def test_large_epsilon(self):
-        global_seed(12345)
         a = np.random.random(1000)
         res = float(np.std(a))
         res_dp = nanstd(a, epsilon=5, bounds=(0, 1))
@@ -46,7 +45,6 @@ class TestNanStd(TestCase):
         self.assertAlmostEqual(res, res_dp, delta=0.01)
 
     def test_large_epsilon_axis(self):
-        global_seed(12345)
         a = np.random.random((1000, 5))
         res = np.std(a, axis=0)
         res_dp = nanstd(a, epsilon=15, bounds=(0, 1), axis=0)
@@ -60,9 +58,10 @@ class TestNanStd(TestCase):
 
     def test_clipped_output(self):
         a = np.random.random((10,))
+        rng = check_random_state(0)
 
         for i in range(100):
-            self.assertTrue(0 <= nanstd(a, epsilon=1e-5, bounds=(0, 1)) <= 1)
+            self.assertTrue(0 <= nanstd(a, epsilon=1e-3, bounds=(0, 1), random_state=rng) <= 1)
 
     def test_nan(self):
         a = np.random.random((5, 5))

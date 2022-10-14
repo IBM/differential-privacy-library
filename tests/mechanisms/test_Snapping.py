@@ -5,14 +5,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Snapping
-from diffprivlib.utils import global_seed
 
 
 class TestSnapping(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Snapping
 
     def teardown_method(self, method):
@@ -60,7 +56,7 @@ class TestSnapping(TestCase):
 
     def test_neg_effective_epsilon(self):
         with self.assertRaises(ValueError):
-            self.mech(epsilon=np.nextafter((2*np.finfo(float).epsneg), 0), sensitivity=1, lower=0, upper=1000)
+            self.mech(epsilon=np.nextafter((2 * np.finfo(float).epsneg), 0), sensitivity=1, lower=0, upper=1000)
 
     def test_zero_effective_epsilon(self):
         with self.assertRaises(ValueError):
@@ -69,20 +65,6 @@ class TestSnapping(TestCase):
     def test_immediately_above_zero_effective_epsilon(self):
         mech = self.mech(epsilon=np.nextafter(2 * np.finfo(float).epsneg, math.inf), sensitivity=1, lower=0, upper=1000)
         self.assertIsNotNone(mech.randomise(1))
-
-    def test_repr(self):
-        repr_ = repr(self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000))
-        self.assertIn(".Snapping(", repr_)
-
-    def test_bias(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
-        with self.assertRaises(NotImplementedError):
-            mech.bias(1)
-
-    def test_variance(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
-        with self.assertRaises(NotImplementedError):
-            mech.variance(1)
 
     def test_scale_bound_symmetric_sensitivity_1(self):
         mech = self.mech(epsilon=1.0, sensitivity=1, lower=-10, upper=10)
@@ -164,28 +146,14 @@ class TestSnapping(TestCase):
         self.assertEqual(Snapping._get_nearest_power_of_2(np.nextafter(sys.float_info.min, -math.inf)),
                          sys.float_info.min)
 
-    def test_round_to_nearest_power_of_2_exact(self):
+    def test_round_to_nearest_power_of_2(self):
         mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
+
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(2.0, 2.0), 2)
-
-    def test_round_to_nearest_power_of_2_below_exact(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(2.0, -math.inf), 2.0), 2)
-
-    def test_round_to_nearest_power_of_2_above_exact(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(2.0, math.inf), 2.0), 2.0)
-
-    def test_round_to_nearest_power_of_2_middle(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(3.0, 2.0), 4)
-
-    def test_round_to_nearest_power_of_2_below_middle(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(3.0, -math.inf), 2.0), 2)
-
-    def test_round_to_nearest_power_of_2_above_middle(self):
-        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
         self.assertAlmostEqual(mech._round_to_nearest_power_of_2(np.nextafter(3.0, math.inf), 2.0), 4.0)
 
     def test_non_numeric(self):
@@ -222,18 +190,37 @@ class TestSnapping(TestCase):
 
     def test_neighbours_prob(self):
         epsilon = 1
-        runs = 10000
-        mech = self.mech(epsilon=epsilon, sensitivity=1, lower=0, upper=1000)
-        count = [0, 0]
+        runs = 5000
+        mech = self.mech(epsilon=epsilon, sensitivity=1, lower=0, upper=1000, random_state=0)
 
-        for i in range(runs):
-            val0 = mech.randomise(0)
-            if val0 <= 0:
-                count[0] += 1
+        count0 = (np.array([mech.randomise(0) for _ in range(runs)]) <= 0).sum()
+        count1 = (np.array([mech.randomise(1) for _ in range(runs)]) <= 0).sum()
 
-            val1 = mech.randomise(1)
-            if val1 <= 0:
-                count[1] += 1
+        self.assertGreater(count0, count1)
+        self.assertLessEqual(count0 / runs, np.exp(epsilon) * count1 / runs + 0.1)
 
-        self.assertGreater(count[0], count[1])
-        self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000, random_state=42)
+        mech2 = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000, random_state=42)
+        self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000, random_state=rng)
+        mech2 = self.mech(epsilon=1, sensitivity=1, lower=0, upper=1000, random_state=rng)
+        self.assertNotEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+    def test_repr(self):
+        repr_ = repr(self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000))
+        self.assertIn(".Snapping(", repr_)
+
+    def test_bias(self):
+        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
+        with self.assertRaises(NotImplementedError):
+            mech.bias(1)
+
+    def test_variance(self):
+        mech = self.mech(epsilon=1.0, sensitivity=1, lower=0, upper=1000)
+        with self.assertRaises(NotImplementedError):
+            mech.variance(1)

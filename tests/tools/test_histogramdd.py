@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogramdd
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError
 
 
 class TestHistogramdd(TestCase):
@@ -33,7 +33,6 @@ class TestHistogramdd(TestCase):
             self.assertTrue((edges[i] == dp_edges[i]).all())
 
     def test_different_result(self):
-        global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
         hist, _ = np.histogramdd(a, bins=3, range=[(0, 10)])
         dp_hist, _ = histogramdd(a, epsilon=0.1, bins=3, range=[(0, 10)])
@@ -43,7 +42,6 @@ class TestHistogramdd(TestCase):
         self.assertTrue((hist != dp_hist).any())
 
     def test_density_1d(self):
-        global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
         dp_hist, _ = histogramdd(a, epsilon=10, bins=3, range=[(0, 10)], density=True)
 
@@ -52,7 +50,6 @@ class TestHistogramdd(TestCase):
         self.assertAlmostEqual(dp_hist.sum(), 1.0 * 3 / 10)
 
     def test_density_2d(self):
-        global_seed(3141592653)
         a = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]).T
         dp_hist, _ = histogramdd(a, epsilon=10, bins=3, range=[(0, 10), (0, 10)], density=True)
 

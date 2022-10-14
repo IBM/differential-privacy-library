@@ -48,6 +48,10 @@ class Laplace(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [DMNS16] Dwork, Cynthia, Frank McSherry, Kobbi Nissim, and Adam Smith. "Calibrating noise to sensitivity in
@@ -60,8 +64,8 @@ class Laplace(DPMechanism):
         arXiv:2107.10138 (2021).
 
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = None
 
@@ -168,9 +172,13 @@ class LaplaceTruncated(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @copy_docstring(Laplace.bias)
@@ -233,9 +241,13 @@ class LaplaceFolded(Laplace, TruncationAndFoldingMixin):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @copy_docstring(Laplace.bias)
@@ -290,16 +302,16 @@ class LaplaceBoundedDomain(LaplaceTruncated):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [HABM20] Holohan, Naoise, Spiros Antonatos, Stefano Braghin, and Pól Mac Aonghusa. "The Bounded Laplace Mechanism
         in Differential Privacy." Journal of Privacy and Confidentiality 10, no. 1 (2020).
 
     """
-    def __init__(self, *, epsilon, delta=0.0, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, lower=lower, upper=upper)
-        self._rng = np.random.default_rng()
-
     def _find_scale(self):
         eps = self.epsilon
         delta = self.delta
@@ -396,8 +408,12 @@ class LaplaceBoundedDomain(LaplaceTruncated):
         samples = 1
 
         while True:
-            noisy = value + self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
-                                                                self._rng.random(samples), self._rng.random(samples))
+            try:
+                unif = self._rng.random(4 * samples)
+            except TypeError:  # rng is secrets.SystemRandom
+                unif = [self._rng.random() for _ in range(4 * samples)]
+            noisy = value + self._scale * self._laplace_sampler(*np.array(unif).reshape(4, -1))
+
             if ((noisy >= self.lower) & (noisy <= self.upper)).any():
                 idx = np.argmax((noisy >= self.lower) & (noisy <= self.upper))
                 return noisy[idx]
@@ -424,16 +440,19 @@ class LaplaceBoundedNoise(Laplace):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [GDGK18] Geng, Quan, Wei Ding, Ruiqi Guo, and Sanjiv Kumar. "Truncated Laplacian Mechanism for Approximate
         Differential Privacy." arXiv preprint arXiv:1810.00877v1 (2018).
 
     """
-    def __init__(self, *, epsilon, delta, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         self._noise_bound = None
-        self._rng = np.random.default_rng()
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -443,7 +462,7 @@ class LaplaceBoundedNoise(Laplace):
         if isinstance(delta, Real) and not 0 < delta < 0.5:
             raise ValueError("Delta must be strictly in the interval (0,0.5). For zero delta, use :class:`.Laplace`.")
 
-        return super(Laplace, cls)._check_epsilon_delta(epsilon, delta)
+        return super()._check_epsilon_delta(epsilon, delta)
 
     @copy_docstring(Laplace.bias)
     def bias(self, value):
@@ -468,8 +487,12 @@ class LaplaceBoundedNoise(Laplace):
         samples = 1
 
         while True:
-            noisy = self._scale * self._laplace_sampler(self._rng.random(samples), self._rng.random(samples),
-                                                        self._rng.random(samples), self._rng.random(samples))
+            try:
+                unif = self._rng.random(4 * samples)
+            except TypeError:  # rng is secrets.SystemRandom
+                unif = [self._rng.random() for _ in range(4 * samples)]
+            noisy = self._scale * self._laplace_sampler(*np.array(unif).reshape(4, -1))
+
             if ((noisy >= - self._noise_bound) & (noisy <= self._noise_bound)).any():
                 idx = np.argmax((noisy >= - self._noise_bound) & (noisy <= self._noise_bound))
                 return value + noisy[idx]

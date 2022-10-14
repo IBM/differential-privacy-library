@@ -44,14 +44,18 @@ class Binary(DPMechanism):
     value1 : str
         1st binary label.  Cannot be the same as ``value0``.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     Notes
     -----
     * The binary attributes, known as `labels`, must be specified as strings.  If non-string labels are required (e.g.
       integer-valued labels), a :class:`.DPTransformer` can be used (e.g. :class:`.IntToString`).
 
     """
-    def __init__(self, *, epsilon, value0, value1):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, value0, value1, random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.value0, self.value1 = self._check_labels(value0, value1)
 
     @classmethod

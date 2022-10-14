@@ -4,14 +4,10 @@ from unittest import TestCase
 import pytest
 
 from diffprivlib.models.linear_regression import LinearRegression
-from diffprivlib.models.logistic_regression import _check_solver, _check_multi_class
-from diffprivlib.utils import global_seed, PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 
 
 class TestLinearRegression(TestCase):
-    def setup_method(self, method):
-        global_seed(3141592653)
-
     def test_not_none(self):
         self.assertIsNotNone(LinearRegression)
 
@@ -68,15 +64,17 @@ class TestLinearRegression(TestCase):
         from sklearn import linear_model
         from sklearn.model_selection import train_test_split
 
+        rng = np.random.RandomState(0)
         dataset = datasets.load_iris()
-        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2,
+                                                            random_state=rng)
 
-        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
+        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2), random_state=rng)
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2))
+        clf = LinearRegression(bounds_X=([4.3, 2.0, 1.1, 0.1], [7.9, 4.4, 6.9, 2.5]), bounds_y=(0, 2), random_state=rng)
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
@@ -117,7 +115,7 @@ class TestLinearRegression(TestCase):
         y = X.copy()
         X = X[:, np.newaxis]
 
-        clf = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1))
+        clf = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1), random_state=0)
         clf.fit(X, y)
         print(clf.predict(np.array([0.5]).reshape(-1, 1)))
 
@@ -163,23 +161,20 @@ class TestLinearRegression(TestCase):
         self.assertEqual(clf_dp2.coef_.shape, clf_sk.coef_.shape)
         self.assertEqual(clf_dp2.predict(x0).shape, clf_sk.predict(x0).shape)
 
-    def test_check_solver(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            _check_solver("wrong_solver", "l2", False)
+    def test_random_state(self):
+        X = np.linspace(-1, 1, 1000)
+        y = X.copy()
+        X = X[:, np.newaxis]
 
-        with self.assertRaises(ValueError):
-            _check_solver("lbfgs", "l1", False)
+        clf0 = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1), random_state=0)
+        clf1 = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1), random_state=1)
+        clf0.fit(X, y)
+        clf1.fit(X, y)
+        self.assertFalse(np.any(clf0.coef_ == clf1.coef_))
 
-        with self.assertRaises(ValueError):
-            _check_solver("lbfgs", "l2", True)
-
-        self.assertIsNotNone(_check_solver("lbfgs", "l2", False))
-
-    def test_check_multi_class(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            _check_multi_class("multinomial", "lbfgs", 2)
-
-        self.assertIsNotNone(_check_multi_class("ovr", "lbfgs", 2))
+        clf1 = LinearRegression(epsilon=2, fit_intercept=False, bounds_X=(-1, 1), bounds_y=(-1, 1), random_state=0)
+        clf1.fit(X, y)
+        self.assertTrue(np.all(clf0.coef_ == clf1.coef_))
 
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant

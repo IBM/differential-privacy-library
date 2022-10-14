@@ -41,9 +41,13 @@ class Geometric(DPMechanism):
     sensitivity : float, default: 1
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity=1):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, sensitivity=1, random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = - self.epsilon / self.sensitivity if self.sensitivity > 0 else - float("inf")
 
@@ -128,9 +132,13 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
     upper : int
         The upper bound of the mechanism.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity=1, lower, upper):
-        super().__init__(epsilon=epsilon, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, sensitivity=1, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @classmethod
@@ -184,9 +192,13 @@ class GeometricFolded(Geometric, TruncationAndFoldingMixin):
     upper : int or float
         The upper bound of the mechanism.  Must be integer or half-integer -valued.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, sensitivity=1, lower, upper):
-        super().__init__(epsilon=epsilon, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, sensitivity=1, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, random_state=random_state)
         TruncationAndFoldingMixin.__init__(self, lower=lower, upper=upper)
 
     @classmethod

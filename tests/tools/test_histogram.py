@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogram
-from diffprivlib.utils import global_seed, BudgetError
+from diffprivlib.utils import BudgetError
 
 
 class TestHistogram(TestCase):
@@ -26,7 +26,6 @@ class TestHistogram(TestCase):
         self.assertTrue((edges == dp_edges).all())
 
     def test_different_result(self):
-        global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
         hist, _ = np.histogram(a, bins=3, range=(0, 10))
         dp_hist, _ = histogram(a, epsilon=0.01, bins=3, range=(0, 10))
@@ -36,7 +35,6 @@ class TestHistogram(TestCase):
         self.assertTrue((hist != dp_hist).any())
 
     def test_density(self):
-        global_seed(3141592653)
         a = np.array([1, 2, 3, 4, 5])
         dp_hist, _ = histogram(a, epsilon=10, bins=3, range=(0, 10), density=True)
 

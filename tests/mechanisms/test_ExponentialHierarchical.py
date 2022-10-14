@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import ExponentialHierarchical
-from diffprivlib.utils import global_seed
 
 
 class TestExponentialHierarchical(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = ExponentialHierarchical
 
     def teardown_method(self, method):
@@ -67,7 +63,7 @@ class TestExponentialHierarchical(TestCase):
         epsilon = np.log(2)
         runs = 20000
         balanced_tree = False
-        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]])
+        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]], random_state=0)
         count = [0, 0, 0]
 
         for i in range(runs):
@@ -90,7 +86,7 @@ class TestExponentialHierarchical(TestCase):
     def test_neighbours_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]])
+        mech = self.mech(epsilon=epsilon, hierarchy=[["A", "B"], ["C"]], random_state=0)
         count = [0, 0, 0]
 
         for i in range(runs):
@@ -114,7 +110,7 @@ class TestExponentialHierarchical(TestCase):
     def test_neighbours_flat_hierarchy_prob(self):
         epsilon = np.log(2)
         runs = 20000
-        mech = self.mech(epsilon=epsilon, hierarchy=["A", "B", "C"])
+        mech = self.mech(epsilon=epsilon, hierarchy=["A", "B", "C"], random_state=0)
         count = [0, 0, 0]
 
         for i in range(runs):
@@ -134,6 +130,16 @@ class TestExponentialHierarchical(TestCase):
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.05)
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
         self.assertLessEqual(count[1] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, hierarchy=["A", "B", "C"], random_state=42)
+        mech2 = self.mech(epsilon=1, hierarchy=["A", "B", "C"], random_state=42)
+        self.assertEqual([mech1.randomise("A") for _ in range(100)], [mech2.randomise("A") for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise("A")] * 100, [mech1.randomise("A") for _ in range(100)])
+
+        mech2 = self.mech(epsilon=1, hierarchy=["A", "B", "C"], random_state=np.random.RandomState(0))
+        self.assertNotEqual([mech1.randomise("A") for _ in range(100)], [mech2.randomise("A") for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, hierarchy=[]))

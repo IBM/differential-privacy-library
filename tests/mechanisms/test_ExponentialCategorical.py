@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import ExponentialCategorical
-from diffprivlib.utils import global_seed
 
 
 class TestExponential(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = ExponentialCategorical
 
     def teardown_method(self, method):
@@ -155,6 +151,22 @@ class TestExponential(TestCase):
         # print("A: %d, B: %d, C: %d" % (count[0], count[1], count[2]))
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[2] / runs + 0.05)
         self.assertAlmostEqual(count[0] / count[1], count[1] / count[2], delta=0.15)
+
+    def test_random_state(self):
+        utility_list = [
+            ["A", "B", 1],
+            ["A", "C", 2],
+            ["B", "C", 2]
+        ]
+
+        mech1 = self.mech(epsilon=1, utility_list=utility_list, random_state=42)
+        mech2 = self.mech(epsilon=1, utility_list=utility_list, random_state=42)
+        self.assertEqual([mech1.randomise("A") for _ in range(100)], [mech2.randomise("A") for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise("A")] * 100, [mech1.randomise("A") for _ in range(100)])
+
+        mech2 = self.mech(epsilon=1, utility_list=utility_list, random_state=np.random.RandomState(0))
+        self.assertNotEqual([mech1.randomise("A") for _ in range(100)], [mech2.randomise("A") for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, utility_list=[]))

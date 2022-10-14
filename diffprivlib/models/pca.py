@@ -53,7 +53,7 @@ from sklearn.utils.extmath import stable_cumsum, svd_flip
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.models.utils import covariance_eig
 from diffprivlib.tools import mean
-from diffprivlib.utils import copy_docstring, PrivacyLeakWarning
+from diffprivlib.utils import copy_docstring, PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import DiffprivlibMixin
 
 
@@ -122,9 +122,9 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         components) but can sometime improve the predictive accuracy of the downstream estimators by making their
         data respect some hard-wired assumptions.
 
-    random_state : int or RandomState instance, optional
-        If int, random_state is the seed used by the random number generator; If RandomState instance, random_state
-        is the random number generator.
+    random_state : int or RandomState, optional
+        Controls the randomness of the model.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
 
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
@@ -199,6 +199,8 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
     def _fit_full(self, X, n_components):
         self.accountant.check(self.epsilon, 0)
 
+        random_state = check_random_state(self.random_state)
+
         n_samples, n_features = X.shape
 
         if self.centered:
@@ -214,7 +216,8 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
                 self.bounds = (np.min(X, axis=0), np.max(X, axis=0))
 
             self.bounds = self._check_bounds(self.bounds, n_features)
-            self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, accountant=BudgetAccountant())
+            self.mean_ = mean(X, epsilon=self.epsilon / 2, bounds=self.bounds, axis=0, random_state=random_state,
+                              accountant=BudgetAccountant())
 
         X -= self.mean_
 
@@ -227,7 +230,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         X = self._clip_to_norm(X, self.data_norm)
 
         sigma_vec, u_mtx = covariance_eig(X, epsilon=self.epsilon if self.centered else self.epsilon / 2,
-                                          norm=self.data_norm,
+                                          norm=self.data_norm, random_state=random_state,
                                           dims=n_components if isinstance(n_components, Integral) else None)
         u_mtx, _ = svd_flip(u_mtx, np.zeros_like(u_mtx).T)
         sigma_vec = np.sqrt(sigma_vec)
@@ -242,7 +245,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
         # Post-process the number of components required
         if n_components == 'mle':
-            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)
+            n_components = sk_pca._infer_dimension(explained_variance_, n_samples)  # pylint: disable=protected-access
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold

@@ -6,7 +6,7 @@ import struct
 
 import numpy as np
 try:
-    from crlibm import log_rn
+    from crlibm import log_rn  # pylint: disable=no-name-in-module
 except ModuleNotFoundError:
     log_rn = np.log
 
@@ -40,14 +40,19 @@ class Snapping(LaplaceTruncated):
     upper : float
         The upper bound of the mechanism.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [Mir12] Mironov, Ilya. "On significance of the least significant bits for differential privacy." Proceedings of
      the 2012 ACM conference on Computer and communications security (2012).
 
     """
-    def __init__(self, *, epsilon, sensitivity, lower, upper):
-        super().__init__(epsilon=epsilon, sensitivity=sensitivity, delta=0.0, lower=lower, upper=upper)
+    def __init__(self, *, epsilon, sensitivity, lower, upper, random_state=None):
+        super().__init__(epsilon=epsilon, sensitivity=sensitivity, delta=0.0, lower=lower, upper=upper,
+                         random_state=random_state)
         self._bound = self._scale_bound()
 
     @classmethod
@@ -186,13 +191,19 @@ class Snapping(LaplaceTruncated):
 
         """
         mantissa_size = np.finfo(float).nmant
-        mantissa = 1 << mantissa_size | self._rng.getrandbits(mantissa_size)
+        mantissa = 1 << mantissa_size | self._getrandbits(mantissa_size)
         exponent = -(mantissa_size + 1)
         x = 0
         while not x:
-            x = self._rng.getrandbits(32)
+            x = self._getrandbits(32)
             exponent += x.bit_length() - 32
         return np.ldexp(mantissa, exponent)
+
+    def _getrandbits(self, bits):
+        try:
+            return self._rng.getrandbits(bits)
+        except AttributeError:
+            return self._rng.randint(0, 2 ** bits)
 
     @staticmethod
     def _laplace_sampler(unif_bit, unif):
@@ -232,8 +243,8 @@ class Snapping(LaplaceTruncated):
         value_scaled_offset = self._scale_and_offset_value(value)
         value_clamped = self._truncate(value_scaled_offset)
 
-        scale = 1.0 / self.effective_epsilon()  # everything is scaled to sensitivity 1
+        scale = 1.0 / self.effective_epsilon()  # everything is already scaled to sensitivity 1
         lambda_ = self._get_nearest_power_of_2(scale)
-        laplace = scale * self._laplace_sampler(self._rng.getrandbits(1), self._uniform_sampler())
+        laplace = scale * self._laplace_sampler(self._getrandbits(1), self._uniform_sampler())
         value_rounded = self._round_to_nearest_power_of_2(value_clamped + laplace, lambda_)
         return self._reverse_scale_and_offset_value(self._truncate(value_rounded))

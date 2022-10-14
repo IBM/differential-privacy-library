@@ -40,9 +40,13 @@ class Uniform(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, delta, sensitivity):
-        super().__init__(epsilon=0.0, delta=delta)
+    def __init__(self, *, delta, sensitivity, random_state=None):
+        super().__init__(epsilon=0.0, delta=delta, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
 
     @classmethod

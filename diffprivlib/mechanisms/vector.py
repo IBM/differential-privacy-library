@@ -52,15 +52,18 @@ class Vector(DPMechanism):
     alpha : float, default: 0.01
         Regularisation parameter.  Must be in (0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01):
-        super().__init__(epsilon=epsilon, delta=0.0)
+    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01,
+                 random_state=None):
+        super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
                                                                                    data_sensitivity)
         self.dimension = self._check_dimension(dimension)
         self.alpha = self._check_alpha(alpha)
-
-        self._rng = np.random.default_rng()
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -147,10 +150,15 @@ class Vector(DPMechanism):
 
         scale = self.data_sensitivity * 2 / epsilon_p
 
-        normed_noisy_vector = self._rng.standard_normal((self.dimension, 4)).sum(axis=1) / 2
-        norm = np.linalg.norm(normed_noisy_vector, 2)
-        noisy_norm = self._rng.gamma(self.dimension / 4, scale, 4).sum()
+        try:
+            normed_noisy_vector = self._rng.standard_normal((self.dimension, 4)).sum(axis=1) / 2
+            noisy_norm = self._rng.gamma(self.dimension / 4, scale, 4).sum()
+        except AttributeError:  # rng is secrets.SystemRandom
+            normed_noisy_vector = np.reshape([self._rng.normalvariate(0, 1) for _ in range(self.dimension * 4)],
+                                             (-1, 4)).sum(axis=1) / 2
+            noisy_norm = sum(self._rng.gammavariate(self.dimension / 4, scale) for _ in range(4)) if scale > 0 else 0.0
 
+        norm = np.linalg.norm(normed_noisy_vector, 2)
         normed_noisy_vector = normed_noisy_vector / norm * noisy_norm
 
         def output_func(*args):

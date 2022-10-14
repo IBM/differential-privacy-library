@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import LaplaceBoundedNoise
-from diffprivlib.utils import global_seed
 
 
 class TestLaplaceBoundedNoise(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = LaplaceBoundedNoise
 
     def teardown_method(self, method):
@@ -65,7 +61,7 @@ class TestLaplaceBoundedNoise(TestCase):
         self.assertTrue(np.isnan(mech.randomise(np.nan)))
 
     def test_zero_median_prob(self):
-        mech = self.mech(epsilon=1, delta=0.1, sensitivity=1)
+        mech = self.mech(epsilon=1, delta=0.1, sensitivity=1, random_state=0)
         vals = []
 
         for i in range(10000):
@@ -75,22 +71,15 @@ class TestLaplaceBoundedNoise(TestCase):
         self.assertAlmostEqual(np.abs(median), 0.0, delta=0.1)
 
     def test_neighbors_prob(self):
-        runs = 10000
+        runs = 1000
         delta = 0.1
-        mech = self.mech(epsilon=1, delta=delta, sensitivity=1)
-        count = [0, 0]
+        mech = self.mech(epsilon=1, delta=delta, sensitivity=1, random_state=2)
 
-        for i in range(runs):
-            val0 = mech.randomise(0)
-            if val0 <= 1 - mech._noise_bound:
-                count[0] += 1
+        count0 = (np.array([mech.randomise(0) for _ in range(runs)]) <= 1 - mech._noise_bound).sum()
+        count1 = (np.array([mech.randomise(1) for _ in range(runs)]) >= mech._noise_bound).sum()
 
-            val1 = mech.randomise(1)
-            if val1 >= mech._noise_bound:
-                count[1] += 1
-
-        self.assertAlmostEqual(count[0] / runs, delta, delta=delta/10)
-        self.assertAlmostEqual(count[1] / runs, delta, delta=delta/10)
+        self.assertAlmostEqual(count0 / runs, delta, delta=delta / 10)
+        self.assertAlmostEqual(count1 / runs, delta, delta=delta / 10)
 
     def test_within_bounds(self):
         mech = self.mech(epsilon=1, delta=0.1, sensitivity=1)
@@ -103,6 +92,18 @@ class TestLaplaceBoundedNoise(TestCase):
 
         self.assertTrue(np.all(vals >= -mech._noise_bound))
         self.assertTrue(np.all(vals <= mech._noise_bound))
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, delta=1e-3, sensitivity=1, random_state=42)
+        mech2 = self.mech(epsilon=1, delta=1e-3, sensitivity=1, random_state=42)
+        self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, delta=1e-3, sensitivity=1, random_state=rng)
+        mech2 = self.mech(epsilon=1, delta=1e-3, sensitivity=1, random_state=rng)
+        self.assertNotEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, delta=0.1, sensitivity=1))

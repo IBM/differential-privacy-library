@@ -24,12 +24,13 @@ import numpy as np
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Exponential
-from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning
+from diffprivlib.utils import warn_unused_args, PrivacyLeakWarning, check_random_state
 from diffprivlib.validation import clip_to_bounds, check_bounds
 from diffprivlib.tools.utils import _wrap_axis
 
 
-def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, random_state=None, accountant=None,
+             **unused_args):
     r"""
     Compute the differentially private quantile of the array.
 
@@ -70,6 +71,10 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -86,6 +91,8 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
 
     """
     warn_unused_args(unused_args)
+
+    random_state = check_random_state(random_state)
 
     if bounds is None:
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -107,7 +114,7 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
 
     if axis is not None or keepdims:
         return _wrap_axis(quantile, array, quant=quant, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims,
-                          accountant=accountant)
+                          random_state=random_state, accountant=accountant)
 
     # Dealing with a scalar output from now on
     bounds = check_bounds(bounds, shape=0, min_separation=1e-5)
@@ -129,16 +136,17 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
         return np.nan
 
     mech = Exponential(epsilon=epsilon, sensitivity=1, utility=list(-np.abs(np.arange(0, k + 1) - quant * k)),
-                       measure=list(interval_sizes))
+                       measure=list(interval_sizes), random_state=random_state)
     idx = mech.randomise()
-    output = mech._rng.random() * (array[idx+1] - array[idx]) + array[idx]
+    output = random_state.random() * (array[idx+1] - array[idx]) + array[idx]
 
     accountant.spend(epsilon, 0)
 
     return output
 
 
-def percentile(array, percent, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+def percentile(array, percent, epsilon=1.0, bounds=None, axis=None, keepdims=False, random_state=None, accountant=None,
+               **unused_args):
     r"""
     Compute the differentially private percentile of the array.
 
@@ -175,6 +183,10 @@ def percentile(array, percent, epsilon=1.0, bounds=None, axis=None, keepdims=Fal
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -197,10 +209,12 @@ def percentile(array, percent, epsilon=1.0, bounds=None, axis=None, keepdims=Fal
     if np.any(quant < 0) or np.any(quant > 1):
         raise ValueError("Percentiles must be between 0 and 100 inclusive")
 
-    return quantile(array, quant, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims, accountant=accountant)
+    return quantile(array, quant, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims,
+                    random_state=random_state, accountant=accountant)
 
 
-def median(array, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountant=None, **unused_args):
+def median(array, epsilon=1.0, bounds=None, axis=None, keepdims=False, random_state=None, accountant=None,
+           **unused_args):
     r"""
     Compute the differentially private median of the array.
 
@@ -234,6 +248,10 @@ def median(array, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountan
         of `ndarray`, however any non-default value will be.  If the sub-class' method does not implement `keepdims` any
         exceptions will be raised.
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     accountant : BudgetAccountant, optional
         Accountant to keep track of privacy budget.
 
@@ -251,4 +269,5 @@ def median(array, epsilon=1.0, bounds=None, axis=None, keepdims=False, accountan
     """
     warn_unused_args(unused_args)
 
-    return quantile(array, 0.5, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims, accountant=accountant)
+    return quantile(array, 0.5, epsilon=epsilon, bounds=bounds, axis=axis, keepdims=keepdims, random_state=random_state,
+                    accountant=accountant)

@@ -2,14 +2,10 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Geometric
-from diffprivlib.utils import global_seed
 
 
 class TestGeometric(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Geometric
 
     def teardown_method(self, method):
@@ -87,7 +83,7 @@ class TestGeometric(TestCase):
     def test_neighbors_prob(self):
         epsilon = 1
         runs = 10000
-        mech = self.mech(epsilon=epsilon, sensitivity=1)
+        mech = self.mech(epsilon=epsilon, sensitivity=1, random_state=0)
         count = [0, 0]
 
         for i in range(runs):
@@ -101,6 +97,18 @@ class TestGeometric(TestCase):
 
         self.assertGreater(count[0], count[1])
         self.assertLessEqual(count[0] / runs, np.exp(epsilon) * count[1] / runs + 0.1)
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, sensitivity=1, random_state=42)
+        mech2 = self.mech(epsilon=1, sensitivity=1, random_state=42)
+        self.assertEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
+
+        self.assertNotEqual([mech1.randomise(0)] * 100, [mech1.randomise(0) for _ in range(100)])
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, sensitivity=1, random_state=rng)
+        mech2 = self.mech(epsilon=1, sensitivity=1, random_state=rng)
+        self.assertNotEqual([mech1.randomise(0) for _ in range(100)], [mech2.randomise(0) for _ in range(100)])
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, sensitivity=1))

@@ -2,14 +2,11 @@ import numpy as np
 from unittest import TestCase
 
 from diffprivlib.mechanisms import Bingham
-from diffprivlib.utils import global_seed
+from diffprivlib.utils import check_random_state
 
 
 class TestBingham(TestCase):
     def setup_method(self, method):
-        if method.__name__ .endswith("prob"):
-            global_seed(314159)
-
         self.mech = Bingham
         a = np.random.random((5, 3))
         self.random_array = a.T.dot(a)
@@ -132,12 +129,13 @@ class TestBingham(TestCase):
             mech.randomise(np.ones((3, 3, 3)))
 
     def test_large_input(self):
-        X = np.random.randn(10000, 21)
+        rng = check_random_state(0)
+        X = rng.randn(5000, 21)
         X -= np.mean(X, axis=0)
         X /= np.linalg.norm(X, axis=1).max()
         XtX = X.T.dot(X)
 
-        mech = self.mech(epsilon=1)
+        mech = self.mech(epsilon=1, random_state=rng)
         self.assertIsNotNone(mech.randomise(XtX))
 
     def test_different_result(self):
@@ -151,6 +149,19 @@ class TestBingham(TestCase):
 
             self.assertTrue(np.isclose(noisy_data.dot(noisy_data), 1.0))
             self.assertFalse(np.allclose(noisy_data, old_noisy_data))
+
+    def test_random_state(self):
+        mech1 = self.mech(epsilon=1, sensitivity=1, random_state=0)
+        mech2 = self.mech(epsilon=1, sensitivity=1, random_state=0)
+        self.assertTrue(np.allclose(mech1.randomise(self.random_array), mech2.randomise(self.random_array)))
+
+        mech1 = self.mech(epsilon=1, sensitivity=1, random_state=0)
+        self.assertFalse(np.allclose(mech1.randomise(self.random_array), mech2.randomise(self.random_array)))
+
+        rng = np.random.RandomState(0)
+        mech1 = self.mech(epsilon=1, sensitivity=1, random_state=rng)
+        mech2 = self.mech(epsilon=1, sensitivity=1, random_state=rng)
+        self.assertFalse(np.allclose(mech1.randomise(self.random_array), mech2.randomise(self.random_array)))
 
     def test_repr(self):
         repr_ = repr(self.mech(epsilon=1, sensitivity=1))

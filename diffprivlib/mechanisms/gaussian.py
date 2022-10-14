@@ -48,6 +48,10 @@ class Gaussian(DPMechanism):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     References
     ----------
     .. [DR14] Dwork, Cynthia, and Aaron Roth. "The algorithmic foundations of differential privacy." Found. Trends
@@ -57,8 +61,8 @@ class Gaussian(DPMechanism):
         arXiv:2107.10138 (2021).
 
     """
-    def __init__(self, *, epsilon, delta, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta)
+    def __init__(self, *, epsilon, delta, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = np.sqrt(2 * np.log(1.25 / self.delta)) * self.sensitivity / self.epsilon
 
@@ -105,7 +109,10 @@ class Gaussian(DPMechanism):
     def randomise(self, value):
         self._check_all(value)
 
-        standard_normal = (self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)) / np.sqrt(2)
+        try:
+            standard_normal = (self._rng.normalvariate(0, 1) + self._rng.normalvariate(0, 1)) / np.sqrt(2)
+        except AttributeError:  # random_state is a np.random.RandomState
+            standard_normal = (self._rng.standard_normal() + self._rng.standard_normal()) / np.sqrt(2)
 
         return value + standard_normal * self._scale
 
@@ -129,9 +136,13 @@ class GaussianAnalytic(Gaussian):
     sensitivity : float
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta, sensitivity):
-        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity)
+    def __init__(self, *, epsilon, delta, sensitivity, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, sensitivity=sensitivity, random_state=random_state)
         self._scale = self._find_scale()
 
     @classmethod
@@ -139,7 +150,7 @@ class GaussianAnalytic(Gaussian):
         if epsilon == 0 or delta == 0:
             raise ValueError("Neither Epsilon nor Delta can be zero")
 
-        return super(Gaussian, cls)._check_epsilon_delta(epsilon, delta)
+        return DPMechanism._check_epsilon_delta(epsilon, delta)  # pylint: disable=protected-access
 
     def _check_all(self, value):
         super()._check_all(value)
@@ -217,9 +228,13 @@ class GaussianDiscrete(DPMechanism):
     sensitivity : int, default: 1
         The sensitivity of the mechanism.  Must be in [0, ∞).
 
+    random_state : int or RandomState, optional
+        Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
+        ``random_state`` has to be fixed to an integer.
+
     """
-    def __init__(self, *, epsilon, delta, sensitivity=1):
-        super().__init__(epsilon=epsilon, delta=delta)
+    def __init__(self, *, epsilon, delta, sensitivity=1, random_state=None):
+        super().__init__(epsilon=epsilon, delta=delta, random_state=random_state)
         self.sensitivity = self._check_sensitivity(sensitivity)
         self._scale = self._find_scale()
 
@@ -272,7 +287,7 @@ class GaussianDiscrete(DPMechanism):
             while bernoulli_neg_exp(tau, self._rng):
                 geom_x += 1
 
-            bern_b = np.random.binomial(1, 0.5)
+            bern_b = self._rng.random() < 0.5
             if bern_b and not geom_x:
                 continue
 

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from diffprivlib.tools.quantiles import quantile
-from diffprivlib.utils import PrivacyLeakWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_state
 
 
 class TestQuantile(TestCase):
@@ -47,9 +47,10 @@ class TestQuantile(TestCase):
         self.assertIsNotNone(res)
 
     def test_large_epsilon(self):
-        a = np.random.random(1000)
+        rng = check_random_state(0)
+        a = rng.random(1000)
         res = np.quantile(a, 0.5)
-        res_dp = quantile(a, 0.5, epsilon=5, bounds=(0, 1))
+        res_dp = quantile(a, 0.5, epsilon=5, bounds=(0, 1), random_state=rng)
 
         self.assertAlmostEqual(float(res), float(res_dp), delta=0.01)
 
@@ -65,26 +66,29 @@ class TestQuantile(TestCase):
         self.assertTrue(isinstance(res, float))
 
     def test_simple(self):
-        a = np.random.random(1000)
+        rng = check_random_state(0)
+        a = rng.random(1000)
         for q in [0.1, 0.25, 0.5, 0.75, 0.9]:
-            res = quantile(a, q, epsilon=5, bounds=(0, 1))
+            res = quantile(a, q, epsilon=5, bounds=(0, 1), random_state=rng)
             self.assertAlmostEqual(res, q, delta=0.05)
 
     def test_normal(self):
-        a = np.random.normal(size=2000)
-        res = quantile(a, 0.5, epsilon=3, bounds=(-3, 3))
+        rng = check_random_state(0)
+        a = rng.normal(size=2000)
+        res = quantile(a, 0.5, epsilon=3, bounds=(-3, 3), random_state=rng)
         self.assertAlmostEqual(res, 0, delta=0.1)
 
     @pytest.mark.filterwarnings("ignore:Bounds have not been specified")
     def test_uniform_array(self):
         a = np.array([1] * 10)
-        res = quantile(a, 0.5, epsilon=1)
+        res = quantile(a, 0.5, epsilon=1, random_state=0)
         self.assertTrue(0 <= res <= 2)
 
     def test_multiple_q(self):
-        a = np.random.random(1000)
+        rng = check_random_state(0)
+        a = rng.random(1000)
         q = [0.1, 0.25, 0.5, 0.75, 0.9]
-        res = quantile(a, q, epsilon=5, bounds=(0, 1))
+        res = quantile(a, q, epsilon=5, bounds=(0, 1), random_state=rng)
 
         self.assertEqual(len(q), len(res))
         self.assertTrue(np.isclose(res, q, atol=0.05).all())
