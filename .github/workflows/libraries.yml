@@ -20,34 +20,25 @@ jobs:
       matrix:
         include:
           - library: numpy
-            version: 1.19.5
-            python-version: 3.8
-          - library: numpy
-            version: 1.20.3
-            python-version: 3.9
-          - library: numpy
             version: 1.21.6
-            python-version: 3.9
+            python-version: '3.10'
+          - library: numpy
+            version: 1.22.4
+            python-version: '3.10'
 
-          - library: scikit-learn
-            version: 0.23.2
-            python-version: 3.8
           - library: scikit-learn
             version: 0.24.2
             python-version: 3.9
           - library: scikit-learn
             version: 1.0.2
-            python-version: 3.9
+            python-version: '3.10'
 
           - library: scipy
-            version: 1.5.4
-            python-version: 3.8
-          - library: scipy
-            version: 1.6.3
-            python-version: 3.8
-          - library: scipy
             version: 1.7.3
-            python-version: 3.9
+            python-version: '3.10'
+          - library: scipy
+            version: 1.8.1
+            python-version: '3.10'
 
           - library: crlibm
             python-version: '3.10'
