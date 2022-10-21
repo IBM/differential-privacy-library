@@ -29,4 +29,4 @@ from diffprivlib import models
 from diffprivlib import tools
 from diffprivlib.accountant import BudgetAccountant
 
-__version__ = '0.6.dev0'
+__version__ = '0.6.0'
