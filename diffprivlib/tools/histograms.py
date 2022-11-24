@@ -244,7 +244,7 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
                           "specified for each dimension independently of the data (i.e., using domain knowledge).",
                           PrivacyLeakWarning)
 
-    hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, normed=None, weights=weights, density=None)
+    hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, weights=weights, density=None)
 
     dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize, random_state=random_state)
 
