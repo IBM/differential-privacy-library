@@ -88,7 +88,7 @@ class TestPCA(TestCase):
             self.assertAlmostEqual(clf.score(X), sk_clf.score(X))
             self.assertTrue(np.allclose(clf.get_precision(), sk_clf.get_precision()))
             self.assertTrue(np.allclose(clf.get_covariance(), sk_clf.get_covariance()))
-            self.assertTrue(np.allclose(np.abs((clf.components_ / sk_clf.components_).sum(axis=1)), clf.n_features_))
+            self.assertTrue(np.allclose(np.abs((clf.components_ / sk_clf.components_).sum(axis=1)), clf.n_features_in_))
 
     def test_big_epsilon(self):
         rng = check_random_state(2)
