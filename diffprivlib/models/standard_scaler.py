@@ -200,6 +200,7 @@ class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
             Ignored by diffprivlib.  Present for consistency with sklearn API.
 
         """
+        self._validate_params()
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:

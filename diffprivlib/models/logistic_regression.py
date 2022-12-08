@@ -177,6 +177,10 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
     """
 
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        linear_model.LogisticRegression, "tol", "C", "fit_intercept", "max_iter", "verbose", "warm_start", "n_jobs",
+        "random_state")
+
     def __init__(self, *, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
                  warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
@@ -209,6 +213,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         self : class
 
         """
+        self._validate_params()
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
@@ -216,6 +221,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
         random_state = check_random_state(self.random_state)
 
+        # Todo: Remove when scikit-learn v1.2 is a min requirement
         if not isinstance(self.C, numbers.Real) or self.C < 0:
             raise ValueError(f"Penalty term must be positive; got (C={self.C})")
         if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:

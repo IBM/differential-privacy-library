@@ -184,6 +184,10 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         component analysis." In 2016 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
         pp. 2339-2343. IEEE, 2016.
     """
+
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        sk_pca.PCA, "n_components", "copy", "whiten", "random_state")
+
     def __init__(self, n_components=None, *, epsilon=1.0, data_norm=None, centered=False, bounds=None, copy=True,
                  whiten=False, random_state=None, accountant=None, **unused_args):
         super().__init__(n_components=n_components, copy=copy, whiten=whiten, svd_solver='full', tol=0.0,

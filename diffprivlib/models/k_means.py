@@ -78,6 +78,9 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
     """
 
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        sk_cluster.KMeans, "n_clusters", "random_state")
+
     def __init__(self, n_clusters=8, *, epsilon=1.0, bounds=None, random_state=None, accountant=None, **unused_args):
         super().__init__(n_clusters=n_clusters, random_state=random_state)
 
@@ -113,6 +116,7 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
         self : class
 
         """
+        self._validate_params()
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
