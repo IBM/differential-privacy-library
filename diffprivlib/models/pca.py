@@ -159,7 +159,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         svd_solver == 'full') this number is estimated from input data.  Otherwise it equals the parameter
         n_components, or the lesser value of n_features and n_samples if n_components is None.
 
-    n_features_ : int
+    n_features_in_ : int
         Number of features in the training data.
 
     n_samples_ : int
@@ -195,6 +195,11 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         self.accountant = BudgetAccountant.load_default(accountant)
 
         self._warn_unused_args(unused_args)
+
+    # Todo: Remove when scikit-learn v1.2 is a min requirement
+    @property
+    def n_features_(self):
+        return self.n_features_in_
 
     def _fit_full(self, X, n_components):
         self.accountant.check(self.epsilon, 0)
@@ -259,7 +264,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         else:
             self.noise_variance_ = 0.
 
-        self.n_samples_, self.n_features_ = n_samples, n_features
+        self.n_samples_ = n_samples
         self.components_ = components_[:n_components]
         self.n_components_ = n_components
         self.explained_variance_ = explained_variance_[:n_components]
