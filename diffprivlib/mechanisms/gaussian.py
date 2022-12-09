@@ -175,36 +175,33 @@ class GaussianAnalytic(Gaussian):
 
         delta_0 = b_plus(0)
 
-        if delta_0 == 0:
-            alpha = 1
+        if delta_0 < 0:
+            target_func = b_plus
         else:
-            if delta_0 < 0:
-                target_func = b_plus
-            else:
-                target_func = b_minus
+            target_func = b_minus
 
-            # Find the starting interval by doubling the initial size until the target_func sign changes, as suggested
-            # in the paper
-            left = 0
-            right = 1
+        # Find the starting interval by doubling the initial size until the target_func sign changes, as suggested
+        # in the paper
+        left = 0
+        right = 1
 
-            while target_func(left) * target_func(right) > 0:
-                left = right
-                right *= 2
+        while target_func(left) * target_func(right) > 0:
+            left = right
+            right *= 2
 
-            # Binary search code copied from mechanisms.LaplaceBoundedDomain
-            old_interval_size = (right - left) * 2
+        # Binary search code copied from mechanisms.LaplaceBoundedDomain
+        old_interval_size = (right - left) * 2
 
-            while old_interval_size > right - left:
-                old_interval_size = right - left
-                middle = (right + left) / 2
+        while old_interval_size > right - left:
+            old_interval_size = right - left
+            middle = (right + left) / 2
 
-                if target_func(middle) * target_func(left) <= 0:
-                    right = middle
-                if target_func(middle) * target_func(right) <= 0:
-                    left = middle
+            if target_func(middle) * target_func(left) <= 0:
+                right = middle
+            if target_func(middle) * target_func(right) <= 0:
+                left = middle
 
-            alpha = np.sqrt(1 + (left + right) / 4) + (-1 if delta_0 < 0 else 1) * np.sqrt((left + right) / 4)
+        alpha = np.sqrt(1 + (left + right) / 4) + (-1 if delta_0 < 0 else 1) * np.sqrt((left + right) / 4)
 
         return alpha * self.sensitivity / np.sqrt(2 * self.epsilon)
 

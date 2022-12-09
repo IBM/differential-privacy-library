@@ -128,6 +128,9 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
 
     """
 
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        skRandomForestClassifier, "n_estimators", "n_jobs", "verbose", "random_state", "warm_start")
+
     def __init__(self, n_estimators=10, *, epsilon=1.0, bounds=None, classes=None, n_jobs=1, verbose=0, accountant=None,
                  random_state=None, max_depth=5, warm_start=False, shuffle=False, **unused_args):
         super().__init__(
@@ -145,7 +148,11 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         self.shuffle = shuffle
         self.accountant = BudgetAccountant.load_default(accountant)
 
-        self.base_estimator = DecisionTreeClassifier()
+        # Todo: Remove when scikit-learn v1.2 is a min requirement
+        if hasattr(self, "estimator"):
+            self.estimator = DecisionTreeClassifier()
+        else:
+            self.base_estimator = DecisionTreeClassifier()
         self.estimator_params = ("max_depth", "epsilon", "bounds", "classes")
 
         self._warn_unused_args(unused_args)
@@ -170,6 +177,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         self : object
             Fitted estimator.
         """
+        self._validate_params()
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
@@ -250,6 +258,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         # that case. However, for joblib 0.12+ we respect any
         # parallel_backend contexts set at a higher level,
         # since correctness does not rely on using threads.
+        # Todo: Remove when scikit-learn v1.1 is a min requirement
         try:
             trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
                 delayed(_parallel_build_trees)(
@@ -332,9 +341,12 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
 
     """
 
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        skDecisionTreeClassifier, "max_depth", "random_state")
+
     def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None, accountant=None,
                  **unused_args):
-        # TODO: Remove try...except when sklearn v1.0 is min-requirement
+        # Todo: Remove when scikit-learn v1.0 is a min requirement
         try:
             super().__init__(  # pylint: disable=unexpected-keyword-arg
                 criterion=None,
@@ -391,6 +403,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self : DecisionTreeClassifier
             Fitted estimator.
         """
+        self._validate_params()
         random_state = check_random_state(self.random_state)
 
         self.accountant.check(self.epsilon, 0)

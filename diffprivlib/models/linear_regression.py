@@ -221,6 +221,10 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         regression analysis under differential privacy." arXiv preprint arXiv:1208.0219 (2012).
 
     """
+
+    _parameter_constraints = DiffprivlibMixin._copy_parameter_constraints(
+        sk_lr.LinearRegression, "fit_intercept", "copy_X")
+
     def __init__(self, *, epsilon=1.0, bounds_X=None, bounds_y=None, fit_intercept=True, copy_X=True, random_state=None,
                  accountant=None, **unused_args):
         super().__init__(fit_intercept=fit_intercept, copy_X=copy_X, n_jobs=None)
@@ -253,6 +257,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
         self : returns an instance of self.
 
         """
+        self._validate_params()
         self.accountant.check(self.epsilon, 0)
 
         if sample_weight is not None:
