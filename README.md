@@ -133,3 +133,10 @@ If you use diffprivlib for research, please consider citing the following refere
   month = jul
 }
 ```
+
+## References
+
+* Holohan, N., Antonatos, S., Braghin, S. and Mac Aonghusa, P., 2018. The Bounded Laplace Mechanism in Differential privacy. arXiv preprint arXiv:1808.10410.
+* Holohan, N., Braghin, S., Mac Aonghusa, P. and Levacher, K., 2019. Diffprivlib: the IBM Differential Privacy Library. arXiv preprint arXiv:1907.02444.
+* Ludwig, H., Baracaldo, N., Thomas, G., Zhou, Y., Anwar, A., Rajamoni, S., Ong, Y., Radhakrishnan, J., Verma, A., Sinn, M. and Purcell, M., 2020. IBM Federated Learning: an Enterprise Framework White Paper v0. 1. arXiv preprint arXiv:2007.10987.
+* Holohan, N. and Braghin, S., 2021. Secure Random Sampling in Differential Privacy. In Computer Security–ESORICS 2021: 26th European Symposium on Research in Computer Security, Darmstadt, Germany, October 4–8, 2021, Proceedings, Part II 26 (pp. 523-542). Springer International Publishing.
