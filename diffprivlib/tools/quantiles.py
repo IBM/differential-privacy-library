@@ -107,7 +107,7 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
 
     if len(quant) > 1:
         return np.array([quantile(array, q_i, epsilon=epsilon / len(quant), bounds=bounds, axis=axis, keepdims=keepdims,
-                                  accountant=accountant) for q_i in quant])
+                                  accountant=accountant, random_state=random_state) for q_i in quant])
 
     # Dealing with a single quant from now on
     quant = quant.item()
@@ -131,7 +131,7 @@ def quantile(array, quant, epsilon=1.0, bounds=None, axis=None, keepdims=False, 
 
     interval_sizes = np.diff(array)
 
-    # Todo: Need to find a way to do this in a differentially private way
+    # Todo: Need to find a way to do this in a differentially private way, see GH 80
     if np.isnan(interval_sizes).any():
         return np.nan
 
