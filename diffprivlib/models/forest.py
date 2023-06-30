@@ -631,3 +631,7 @@ class _Node:
         yield 0.0  # Impurity
         yield 0  # n_node_samples
         yield 0.0  # weighted_n_node_samples
+
+        # remove branch when scikit-learn v1.3 is min requirement
+        if len(NODE_DTYPE) > 7:
+            yield False
