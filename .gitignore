@@ -113,3 +113,4 @@ ENV/
 
 # all sub-directories in notebooks
 /notebooks/*/
+Pipfile
