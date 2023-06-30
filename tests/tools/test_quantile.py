@@ -123,6 +123,16 @@ class TestQuantile(TestCase):
         res = quantile(a, 0.5, bounds=(0, 1))
         self.assertTrue(np.isnan(res))
 
+    def test_random_state(self):
+        rng = check_random_state(0)
+        quantiles_1 = quantile([0, 1, 2, 3, 4], quant=[0.33, 0.66], bounds=(0, 4), random_state=rng)
+        quantiles_2 = quantile([0, 1, 2, 3, 4], quant=[0.33, 0.66], bounds=(0, 4), random_state=rng)
+        assert not np.all(quantiles_1 == quantiles_2)
+
+        quantiles_1 = quantile([0, 1, 2, 3, 4], quant=[0.33, 0.66], bounds=(0, 4), random_state=0)
+        quantiles_2 = quantile([0, 1, 2, 3, 4], quant=[0.33, 0.66], bounds=(0, 4), random_state=0)
+        assert np.all(quantiles_1 == quantiles_2)
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant(1.5, 0)
