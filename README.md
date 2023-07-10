@@ -136,7 +136,8 @@ If you use diffprivlib for research, please consider citing the following refere
 
 ## References
 
-* Holohan, N., Antonatos, S., Braghin, S. and Mac Aonghusa, P., 2018. The Bounded Laplace Mechanism in Differential privacy. arXiv preprint arXiv:1808.10410.
-* Holohan, N., Braghin, S., Mac Aonghusa, P. and Levacher, K., 2019. Diffprivlib: the IBM Differential Privacy Library. arXiv preprint arXiv:1907.02444.
-* Ludwig, H., Baracaldo, N., Thomas, G., Zhou, Y., Anwar, A., Rajamoni, S., Ong, Y., Radhakrishnan, J., Verma, A., Sinn, M. and Purcell, M., 2020. IBM Federated Learning: an Enterprise Framework White Paper v0. 1. arXiv preprint arXiv:2007.10987.
-* Holohan, N. and Braghin, S., 2021. Secure Random Sampling in Differential Privacy. In Computer Security–ESORICS 2021: 26th European Symposium on Research in Computer Security, Darmstadt, Germany, October 4–8, 2021, Proceedings, Part II 26 (pp. 523-542). Springer International Publishing.
+* Holohan, N., Antonatos, S., Braghin, S. and Mac Aonghusa, P., 2018. [The Bounded Laplace Mechanism in Differential privacy](https://doi.org/10.29012/jpc.715). *Journal of Privacy and Confidentiality 10 (1).*
+* Holohan, N., Braghin, S., Mac Aonghusa, P. and Levacher, K., 2019. [Diffprivlib: the IBM Differential Privacy Library](https://arxiv.org/abs/1907.02444). *ArXiv e-prints 1907.02444 [cs.CR].*
+* Ludwig, H., Baracaldo, N., Thomas, G., Zhou, Y., Anwar, A., Rajamoni, S., Ong, Y., Radhakrishnan, J., Verma, A., Sinn, M. and Purcell, M., 2020. [IBM Federated Learning: an Enterprise Framework White Paper v0.1](https://doi.org/10.48550/arXiv.2007.10987). *ArXiv e-prints 2007.10987 [cs.LG].*
+* Holohan, N. and Braghin, S., 2021. [Secure Random Sampling in Differential Privacy](https://doi.org/10.1007/978-3-030-88428-4_26). *In Computer Security–ESORICS 2021: 26th European Symposium on Research in Computer Security, Darmstadt, Germany, October 4–8, 2021, Proceedings, Part II 26 (pp. 523-542). Springer International Publishing.*
+* Holohan, N., 2023. [Random Number Generators and Seeding for Differential Privacy](https://doi.org/10.48550/arXiv.2307.03543). *ArXiv e-prints 2307.03543 [cs.CR].*
