@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from diffprivlib.tools.quantiles import median
-from diffprivlib.utils import PrivacyLeakWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_state
 
 
 class TestMedian(TestCase):
@@ -57,9 +57,10 @@ class TestMedian(TestCase):
         self.assertTrue(isinstance(res, float))
 
     def test_simple(self):
-        a = np.random.random(1000)
+        rng = check_random_state(10)
+        a = rng.random(1000)
 
-        res = median(a, epsilon=5, bounds=(0, 1))
+        res = median(a, epsilon=5, bounds=(0, 1), random_state=rng)
         self.assertAlmostEqual(res, 0.5, delta=0.05)
 
     def test_normal(self):
