@@ -70,6 +70,10 @@ class TestVar(TestCase):
         res = var(a, bounds=(0, 1))
         self.assertTrue(np.isnan(res))
 
+        with self.assertWarns(PrivacyLeakWarning):
+            res = var(a)
+        self.assertTrue(np.isnan(res))
+
     def test_accountant(self):
         from diffprivlib.accountant import BudgetAccountant
         acc = BudgetAccountant(1.5, 0)
