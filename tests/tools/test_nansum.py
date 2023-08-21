@@ -22,18 +22,18 @@ class TestNansum(TestCase):
         self.assertIsNotNone(nansum(a, bounds=(1, 3)))
 
     def test_no_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertWarns(PrivacyLeakWarning):
             res = nansum(a, epsilon=1)
         self.assertIsNotNone(res)
 
     def test_mis_ordered_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertRaises(ValueError):
             nansum(a, epsilon=1, bounds=(1, 0))
 
     def test_missing_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertWarns(PrivacyLeakWarning):
             res = nansum(a, epsilon=1, bounds=None)
         self.assertIsNotNone(res)
@@ -53,8 +53,8 @@ class TestNansum(TestCase):
         self.assertAlmostEqual(res, res_dp, delta=0.01 * res)
 
     def test_array_like(self):
-        self.assertIsNotNone(nansum([1, 2, 3], bounds=(1, 3)))
-        self.assertIsNotNone(nansum((1, 2, 3), bounds=(1, 3)))
+        self.assertIsNotNone(nansum([1, 2, 3, np.nan], bounds=(1, 3)))
+        self.assertIsNotNone(nansum((1, 2, 3, np.nan), bounds=(1, 3)))
 
     def test_axis(self):
         a = np.random.random((1000, 5))
@@ -81,6 +81,10 @@ class TestNansum(TestCase):
         a[2, 2] = np.nan
 
         res = nansum(a, bounds=(0, 1))
+        self.assertFalse(np.isnan(res))
+
+        with self.assertWarns(PrivacyLeakWarning):
+            res = nansum(a)
         self.assertFalse(np.isnan(res))
 
         a = np.array([np.nan] * 10)

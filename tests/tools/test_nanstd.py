@@ -22,17 +22,17 @@ class TestNanStd(TestCase):
         self.assertIsNotNone(nanstd(a, bounds=(0, 1)))
 
     def test_no_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertWarns(PrivacyLeakWarning):
             nanstd(a, epsilon=1)
 
     def test_bad_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertRaises(ValueError):
             nanstd(a, epsilon=1, bounds=(0, -1))
 
     def test_missing_bounds(self):
-        a = np.array([1, 2, 3])
+        a = np.array([1, 2, 3, np.nan])
         with self.assertWarns(PrivacyLeakWarning):
             res = nanstd(a, 1, None)
         self.assertIsNotNone(res)
@@ -53,8 +53,8 @@ class TestNanStd(TestCase):
             self.assertAlmostEqual(res[i], res_dp[i], delta=0.01)
 
     def test_array_like(self):
-        self.assertIsNotNone(nanstd([1, 2, 3], bounds=(1, 3)))
-        self.assertIsNotNone(nanstd((1, 2, 3), bounds=(1, 3)))
+        self.assertIsNotNone(nanstd([1, 2, 3, np.nan], bounds=(1, 3)))
+        self.assertIsNotNone(nanstd((1, 2, 3, np.nan), bounds=(1, 3)))
 
     def test_clipped_output(self):
         a = np.random.random((10,))
@@ -68,6 +68,10 @@ class TestNanStd(TestCase):
         a[2, 2] = np.nan
 
         res = nanstd(a, bounds=(0, 1))
+        self.assertFalse(np.isnan(res))
+
+        with self.assertWarns(PrivacyLeakWarning):
+            res = nanstd(a)
         self.assertFalse(np.isnan(res))
 
     def test_accountant(self):
