@@ -141,3 +141,6 @@ If you use diffprivlib for research, please consider citing the following refere
 * Ludwig, H., Baracaldo, N., Thomas, G., Zhou, Y., Anwar, A., Rajamoni, S., Ong, Y., Radhakrishnan, J., Verma, A., Sinn, M. and Purcell, M., 2020. [IBM Federated Learning: an Enterprise Framework White Paper v0.1](https://doi.org/10.48550/arXiv.2007.10987). *ArXiv e-prints 2007.10987 [cs.LG].*
 * Holohan, N. and Braghin, S., 2021. [Secure Random Sampling in Differential Privacy](https://doi.org/10.1007/978-3-030-88428-4_26). *In Computer Security–ESORICS 2021: 26th European Symposium on Research in Computer Security, Darmstadt, Germany, October 4–8, 2021, Proceedings, Part II 26 (pp. 523-542). Springer International Publishing.*
 * Holohan, N., 2023. [Random Number Generators and Seeding for Differential Privacy](https://doi.org/10.48550/arXiv.2307.03543). *ArXiv e-prints 2307.03543 [cs.CR].*
+
+## Acknowledgement
+Work in this repository was partially supported by the European Union's Horizon 2020 research and innovation programme under grant number 951911 – AI4Media.
