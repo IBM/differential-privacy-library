@@ -1,7 +1,7 @@
 # Diffprivlib v0.6
 
 [![Python versions](https://img.shields.io/pypi/pyversions/diffprivlib.svg)](https://pypi.org/project/diffprivlib/)
-[![Downloads](https://pepy.tech/badge/diffprivlib)](https://pepy.tech/project/diffprivlib)
+[![Downloads](https://static.pepy.tech/badge/diffprivlib)](https://pepy.tech/project/diffprivlib)
 [![PyPi version](https://img.shields.io/pypi/v/diffprivlib.svg)](https://pypi.org/project/diffprivlib/)
 [![PyPi status](https://img.shields.io/pypi/status/diffprivlib.svg)](https://pypi.org/project/diffprivlib/)
 [![General tests](https://github.com/IBM/differential-privacy-library/actions/workflows/general.yml/badge.svg)](https://github.com/IBM/differential-privacy-library/actions/workflows/general.yml)
