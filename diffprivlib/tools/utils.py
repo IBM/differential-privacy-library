@@ -276,7 +276,7 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        bounds = (np.min(array), np.max(array))
+        bounds = (np.nanmin(array), np.nanmax(array))
 
     if axis is not None or keepdims:
         return _wrap_axis(_mean, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
@@ -432,7 +432,7 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        bounds = (np.min(array), np.max(array))
+        bounds = (np.nanmin(array), np.nanmax(array))
 
     if axis is not None or keepdims:
         return _wrap_axis(_var, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
@@ -720,7 +720,7 @@ def _sum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
         warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
                       "result in additional privacy leakage. To ensure differential privacy and no additional "
                       "privacy leakage, specify bounds for each dimension.", PrivacyLeakWarning)
-        bounds = (np.min(array), np.max(array))
+        bounds = (np.nanmin(array), np.nanmax(array))
 
     if axis is not None or keepdims:
         return _wrap_axis(_sum, array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
