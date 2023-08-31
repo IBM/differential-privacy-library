@@ -88,7 +88,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
 
     Attributes
     ----------
-    base_estimator_ : DecisionTreeClassifier
+    estimator_ : DecisionTreeClassifier
         The child estimator template used to create the collection of fitted sub-estimators.
 
     estimators_ : list of DecisionTreeClassifier

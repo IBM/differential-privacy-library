@@ -23,7 +23,7 @@ Tree-Based Models
 .. autoclass:: RandomForestClassifier
    :members:
    :inherited-members:
-   :exclude-members: feature_importances_,n_features_
+   :exclude-members: feature_importances_,n_features_,base_estimator_
 
 .. autoclass:: DecisionTreeClassifier
    :members:
