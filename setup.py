@@ -29,8 +29,8 @@ install_requires = [
 ]
 
 docs_require = [
-    'sphinx >= 1.4',
-    'sphinx_rtd_theme'
+    'sphinx >= 5.0',
+    'sphinx_rtd_theme >= 1.3'
 ]
 
 setuptools.setup(
