@@ -345,7 +345,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         skDecisionTreeClassifier, "max_depth", "random_state")
 
     def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None, accountant=None,
-                 **unused_args):
+                 criterion=None, **unused_args):
         # Todo: Remove when scikit-learn v1.0 is a min requirement
         try:
             super().__init__(  # pylint: disable=unexpected-keyword-arg
@@ -378,6 +378,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self.bounds = bounds
         self.classes = classes
         self.accountant = BudgetAccountant.load_default(accountant)
+        del criterion
 
         self._warn_unused_args(unused_args)
 
@@ -445,6 +446,11 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self.tree_ = tree
 
         self.accountant.spend(self.epsilon, 0)
+
+        return self
+
+    def _fit(self, X, y, sample_weight=None, check_input=True, missing_values_in_feature_mask=None):
+        self.fit(X, y, sample_weight=sample_weight, check_input=check_input)
 
         return self
 

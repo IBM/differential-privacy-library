@@ -180,7 +180,7 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf = LogisticRegression(epsilon=2, data_norm=1.0, random_state=0)
+        clf = LogisticRegression(epsilon=2, data_norm=1.0, random_state=1)
         clf.fit(X, y)
 
         self.assertIsNotNone(clf)
