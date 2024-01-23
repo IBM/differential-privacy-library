@@ -1,8 +1,9 @@
 import numpy as np
-from unittest import TestCase
+from unittest import TestCase, skipIf
 
 from diffprivlib.models.logistic_regression import LogisticRegression
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from sklearn import __version__ as sklearn_version
 
 
 class TestLogisticRegression(TestCase):
@@ -151,6 +152,7 @@ class TestLogisticRegression(TestCase):
 
         self.assertTrue(np.any(predict1 != predict2) or np.any(predict1 != predict3))
 
+    @skipIf(sklearn_version < "1.4", "The penalty was scaled incorrectly in previous versions (Scikit-Learn GH 26721)")
     def test_same_results(self):
         from sklearn import datasets
         from sklearn.model_selection import train_test_split
