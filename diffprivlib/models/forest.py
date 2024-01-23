@@ -378,7 +378,9 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
         self.bounds = bounds
         self.classes = classes
         self.accountant = BudgetAccountant.load_default(accountant)
-        del criterion
+
+        if criterion is not None:
+            unused_args['criterion'] = criterion
 
         self._warn_unused_args(unused_args)
 
