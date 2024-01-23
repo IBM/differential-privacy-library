@@ -413,7 +413,8 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
                              function_sensitivity=0.25, data_sensitivity=data_norm, random_state=random_state)
         noisy_logistic_loss = vector_mech.randomise(func)
 
-        args = (X, target, sample_weight, l2_reg_strength) if SKL_LOSS_MODULE else (X, target, l2_reg_strength, sample_weight)
+        args = (X, target, sample_weight, l2_reg_strength) if SKL_LOSS_MODULE else (X, target, l2_reg_strength,
+                                                                                    sample_weight)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
