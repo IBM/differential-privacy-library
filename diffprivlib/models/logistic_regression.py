@@ -371,7 +371,7 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
         X = check_array(X, accept_sparse='csr', dtype=np.float64, accept_large_sparse=True)
         y = check_array(y, ensure_2d=False, dtype=None)
         check_consistent_length(X, y)
-    _, n_features = X.shape
+    n_samples, n_features = X.shape
 
     classes = np.unique(y)
 
@@ -400,17 +400,21 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
 
     if SKL_LOSS_MODULE:
         func = LinearModelLoss(base_loss=HalfBinomialLoss(), fit_intercept=fit_intercept).loss_gradient
+        sw_sum = n_samples
     else:
         func = _logistic_loss_and_grad
+        sw_sum = 1
 
     coefs = []
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
-        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1. / C,
+        l2_reg_strength = 1.0 / (C * sw_sum)
+        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=l2_reg_strength,
                              function_sensitivity=0.25, data_sensitivity=data_norm, random_state=random_state)
         noisy_logistic_loss = vector_mech.randomise(func)
 
-        args = (X, target, sample_weight, 1. / C) if SKL_LOSS_MODULE else (X, target, 1. / C, sample_weight)
+        args = (X, target, sample_weight, l2_reg_strength) if SKL_LOSS_MODULE else (X, target, l2_reg_strength,
+                                                                                    sample_weight)
 
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
         output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
