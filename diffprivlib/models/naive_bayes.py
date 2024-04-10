@@ -148,7 +148,7 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
         classes = self.classes_
 
         unique_y = np.unique(y)
-        unique_y_in_classes = np.in1d(unique_y, classes)
+        unique_y_in_classes = np.isin(unique_y, classes)
 
         if not np.all(unique_y_in_classes):
             raise ValueError(f"The target label(s) {unique_y[~unique_y_in_classes]} in y do not exist in the initial "
