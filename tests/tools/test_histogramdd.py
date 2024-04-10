@@ -35,7 +35,7 @@ class TestHistogramdd(TestCase):
     def test_different_result(self):
         a = np.array([1, 2, 3, 4, 5])
         hist, _ = np.histogramdd(a, bins=3, range=[(0, 10)])
-        dp_hist, _ = histogramdd(a, epsilon=0.1, bins=3, range=[(0, 10)])
+        dp_hist, _ = histogramdd(a, epsilon=0.1, bins=3, range=[(0, 10)], random_state=0)
 
         # print("Non-private histogram: %s" % hist)
         # print("Private histogram: %s" % dp_hist)

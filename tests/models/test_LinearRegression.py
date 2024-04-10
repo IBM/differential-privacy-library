@@ -1,10 +1,8 @@
 import numpy as np
 from unittest import TestCase
 
-import pytest
-
 from diffprivlib.models.linear_regression import LinearRegression
-from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError, check_random_state
 
 
 class TestLinearRegression(TestCase):
@@ -58,7 +56,6 @@ class TestLinearRegression(TestCase):
 
         self.assertIsNotNone(clf.fit(X, y))
 
-    @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
         from sklearn import datasets
         from sklearn import linear_model
@@ -87,17 +84,19 @@ class TestLinearRegression(TestCase):
         self.assertFalse(np.all(predict1 == predict2))
         self.assertFalse(np.all(predict3 == predict1) and np.all(predict3 == predict2))
 
-    @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_same_results(self):
         from sklearn import datasets
         from sklearn.model_selection import train_test_split
         from sklearn import linear_model
 
+        rng = check_random_state(42)
+
         dataset = datasets.load_iris()
-        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2,
+                                                            random_state=rng)
 
         clf = LinearRegression(epsilon=float("inf"), bounds_X=([4.3, 2.0, 1.0, 0.1], [7.9, 4.4, 6.9, 2.5]),
-                               bounds_y=(0, 2))
+                               bounds_y=(0, 2), random_state=rng)
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
