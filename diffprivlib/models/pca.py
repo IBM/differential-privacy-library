@@ -205,7 +205,7 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
     def n_features_(self):
         return self.n_features_in_
 
-    def _fit_full(self, X, n_components):
+    def _fit_full(self, X, n_components, xp=None, is_array_api_compliant=False):
         self.accountant.check(self.epsilon, 0)
 
         random_state = check_random_state(self.random_state)
