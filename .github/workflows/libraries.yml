@@ -20,13 +20,13 @@ jobs:
       matrix:
         include:
           - library: numpy
-            version: 1.23.5
-            python-version: '3.10'
-          - library: numpy
             version: 1.24.4
             python-version: '3.11'
           - library: numpy
             version: 1.25.2
+            python-version: '3.11'
+          - library: numpy
+            version: 1.26.4
             python-version: '3.11'
 
           - library: scikit-learn
