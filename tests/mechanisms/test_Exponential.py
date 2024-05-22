@@ -133,7 +133,7 @@ class TestExponential(TestCase):
         measure = [1, 1, 0]
         utility = [1, 1, 1]
         runs = 10000
-        mech = self.mech(epsilon=1, utility=utility, measure=measure, sensitivity=1)
+        mech = self.mech(epsilon=1, utility=utility, measure=measure, sensitivity=1, random_state=0)
         count = [0] * 3
 
         for i in range(runs):

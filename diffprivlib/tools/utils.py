@@ -45,8 +45,6 @@ General utilities and tools for performing differentially private operations on 
 import warnings
 from numbers import Integral
 import numpy as np
-from numpy.core import multiarray as mu
-from numpy.core import umath as um
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
@@ -586,12 +584,12 @@ def _std(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     ret = _var(array, epsilon=epsilon, bounds=bounds, axis=axis, dtype=dtype, keepdims=keepdims,
                random_state=random_state, accountant=accountant, nan=nan)
 
-    if isinstance(ret, mu.ndarray):
-        ret = um.sqrt(ret)
+    if isinstance(ret, np.ndarray):
+        ret = np.sqrt(ret)
     elif hasattr(ret, 'dtype'):
-        ret = ret.dtype.type(um.sqrt(ret))
+        ret = ret.dtype.type(np.sqrt(ret))
     else:
-        ret = um.sqrt(ret)
+        ret = np.sqrt(ret)
 
     return ret
 
