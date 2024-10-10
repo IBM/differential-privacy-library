@@ -29,7 +29,7 @@ jobs:
             version: 1.26.4
             python-version: '3.11'
 
-          - library: scikit-learn
+          - library: scikit-learn-legacy
             version: 1.2.2
             python-version: '3.10'
           - library: scikit-learn
@@ -73,6 +73,11 @@ jobs:
       if: ${{ matrix.library == 'scikit-learn' }}
       run: |
         python -m pip install scikit-learn==${{ matrix.version }}
+
+    - name: Pre-install scikit-learn (legacy)
+      if: ${{ matrix.library == 'scikit-learn-legacy' }}
+      run: |
+        python -m pip install scikit-learn==${{ matrix.version }} numpy==1.26.4
 
     - name: Pre-install scipy
       if: ${{ matrix.library == 'scipy' }}
