@@ -9,15 +9,13 @@
 [![CodeQL](https://github.com/IBM/differential-privacy-library/actions/workflows/codeql.yml/badge.svg)](https://github.com/IBM/differential-privacy-library/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/IBM/differential-privacy-library/branch/main/graph/badge.svg)](https://codecov.io/gh/IBM/differential-privacy-library)
 
-Diffprivlib is a general-purpose library for experimenting with, investigating and developing applications in, differential privacy.
-
-Use diffprivlib if you are looking to:
+Diffprivlib is a general-purpose library for differential privacy (DP). Use diffprivlib if you are looking to:
 
 - Experiment with differential privacy
-- Explore the impact of differential privacy on machine learning accuracy using classification and clustering models 
-- Build your own differential privacy applications, using our extensive collection of mechanisms
+- Explore the impact of differential privacy on machine learning and data analytics applications 
+- Prototype your own differential privacy algorithms
 
-Diffprivlib supports Python versions 3.8 to 3.12.
+Since its initial release in 2019, diffprivlib has proven to be an invaluable resource for the DP community, with hundreds of citations, stars, forks and deployments. The library has lowered the barrier to entry for new scientists and engineers working in and learning about DP, spawned new research, and served as a benchmark for new algorithms and libraries.
 
 __Note:__ The public release of diffprivlib is intended for research and education purposes only. Please reach out to us if you are interested in using diffprivlib in a production environment. 
 
@@ -143,6 +141,7 @@ If you use diffprivlib for research, please consider citing the following refere
 * Ludwig, H., Baracaldo, N., Thomas, G., Zhou, Y., Anwar, A., Rajamoni, S., Ong, Y., Radhakrishnan, J., Verma, A., Sinn, M. and Purcell, M., 2020. [IBM Federated Learning: an Enterprise Framework White Paper v0.1](https://doi.org/10.48550/arXiv.2007.10987). *ArXiv e-prints 2007.10987 [cs.LG].*
 * Holohan, N. and Braghin, S., 2021. [Secure Random Sampling in Differential Privacy](https://doi.org/10.1007/978-3-030-88428-4_26). *In Computer Security–ESORICS 2021: 26th European Symposium on Research in Computer Security, Darmstadt, Germany, October 4–8, 2021, Proceedings, Part II 26 (pp. 523-542). Springer International Publishing.*
 * Holohan, N., 2023. [Random Number Generators and Seeding for Differential Privacy](https://doi.org/10.48550/arXiv.2307.03543). *ArXiv e-prints 2307.03543 [cs.CR].*
+* Holohan, N., Braghin, S. and Suliman, M., 2024. [Securing Floating-Point Arithmetic for Noise Addition](https://doi.org/10.1145/3658644.3690347). *In Proceedings of the 2024 on ACM SIGSAC Conference on Computer and Communications Security (pp. 1954-1966).*
 
 ## Acknowledgement
-Work in this repository was partially supported by the European Union's Horizon 2020 research and innovation programme under grant number 951911 – AI4Media.
+Work in this repository was partially supported by the European Union's Horizon research and innovation programme under grant numbers 951911 (AI4Media) and 101070473 (FLUIDOS).
