@@ -19,6 +19,8 @@ Use diffprivlib if you are looking to:
 
 Diffprivlib supports Python versions 3.8 to 3.12.
 
+__Note:__ The public release of diffprivlib is intended for research and education purposes only. Please reach out to us if you are interested in using diffprivlib in a production environment. 
+
 ## Getting started: [Machine learning with differential privacy in 30 seconds](https://github.com/IBM/differential-privacy-library/blob/main/notebooks/30seconds.ipynb)
 We're using the [Iris dataset](https://archive.ics.uci.edu/ml/datasets/iris), so let's load it and perform an 80/20 train/test split.
 
