@@ -21,9 +21,9 @@ def get_version(file_path):
 
 
 install_requires = [
-    'numpy >= 1.21.6',
+    'numpy >= 2.0.0',
     'scikit-learn >= 1.4.0',
-    'scipy >= 1.7.3',
+    'scipy >= 1.13.0',
     'joblib >= 0.16.0',
     'setuptools >= 49.0.0',
 ]
