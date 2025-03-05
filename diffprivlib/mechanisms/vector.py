@@ -143,11 +143,13 @@ class Vector(DPMechanism):
         """
         self._check_all(value)
 
-        epsilon_p = self.epsilon - 2 * np.log(1 + self.function_sensitivity * self.data_sensitivity / self.alpha)
+        epsilon_p = self.epsilon - 2 * np.log(1 + self.function_sensitivity * self.data_sensitivity /
+                                              self.alpha / self.n)
         delta = 0
 
         if epsilon_p <= 0:
-            delta = self.function_sensitivity * self.data_sensitivity / (np.exp(self.epsilon / 4) - 1) - self.alpha
+            delta = (self.function_sensitivity * self.data_sensitivity / (np.exp(self.epsilon / 4) - 1) / self.n
+                     - self.alpha)
             epsilon_p = self.epsilon / 2
 
         scale = self.data_sensitivity * 2 / epsilon_p
