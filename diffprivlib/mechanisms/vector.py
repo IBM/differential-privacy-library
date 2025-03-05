@@ -42,7 +42,7 @@ class Vector(DPMechanism):
         The function sensitivity of the mechanism.  Must be in [0, ∞).
 
     data_sensitivity : float, default: 1.0
-        The data sensitivityof the mechanism.  Must be in [0, ∞).
+        The data sensitivity of the mechanism.  Must be in [0, ∞).
 
     dimension : int
         Function input dimension.  This dimension relates to the size of the input vector of the function being
@@ -52,18 +52,22 @@ class Vector(DPMechanism):
     alpha : float, default: 0.01
         Regularisation parameter.  Must be in (0, ∞).
 
+    n : int, default: 1
+        Size of the training dataset, required to calibrate the influence of the random vector in the objective.
+
     random_state : int or RandomState, optional
         Controls the randomness of the mechanism.  To obtain a deterministic behaviour during randomisation,
         ``random_state`` has to be fixed to an integer.
 
     """
     def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01,
-                 random_state=None):
+                 n=1, random_state=None):
         super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
                                                                                    data_sensitivity)
         self.dimension = self._check_dimension(dimension)
         self.alpha = self._check_alpha(alpha)
+        self.n = int(n)
 
     @classmethod
     def _check_epsilon_delta(cls, epsilon, delta):
@@ -171,11 +175,11 @@ class Vector(DPMechanism):
             else:
                 grad = None
 
-            func += np.dot(normed_noisy_vector, input_vec)
+            func += np.dot(normed_noisy_vector, input_vec) / self.n
             func += 0.5 * delta * np.dot(input_vec, input_vec)
 
             if grad is not None:
-                grad += normed_noisy_vector + delta * input_vec
+                grad += normed_noisy_vector / self.n + delta * input_vec
 
                 return func, grad
 
