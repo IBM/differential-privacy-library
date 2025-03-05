@@ -304,9 +304,3 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
             i = (i - sgn) % len(unique_y)
 
         return noisy_counts
-
-    @property
-    def sigma_(self):
-        """Variance of each feature per class."""
-        # Todo: Consider removing when sklearn v1.0 is required
-        return self.var_

@@ -154,12 +154,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         self.max_depth = max_depth
         self.shuffle = shuffle
         self.accountant = BudgetAccountant.load_default(accountant)
-
-        # Todo: Remove when scikit-learn v1.2 is a min requirement
-        if hasattr(self, "estimator"):
-            self.estimator = DecisionTreeClassifier()
-        else:
-            self.base_estimator = DecisionTreeClassifier()
+        self.estimator = DecisionTreeClassifier()
         self.estimator_params = ("max_depth", "epsilon", "bounds", "classes")
 
         self._warn_unused_args(unused_args)
@@ -265,35 +260,19 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         # that case. However, for joblib 0.12+ we respect any
         # parallel_backend contexts set at a higher level,
         # since correctness does not rely on using threads.
-        # Todo: Remove when scikit-learn v1.1 is a min requirement
-        try:
-            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                delayed(_parallel_build_trees)(
-                    tree=t,
-                    bootstrap=False,
-                    X=X[tree_idxs == i],
-                    y=y[tree_idxs == i],
-                    sample_weight=None,
-                    tree_idx=i,
-                    n_trees=len(trees),
-                    verbose=self.verbose,
-                )
-                for i, t in enumerate(trees)
+        trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+            delayed(_parallel_build_trees)(
+                tree=t,
+                bootstrap=False,
+                X=X[tree_idxs == i],
+                y=y[tree_idxs == i],
+                sample_weight=None,
+                tree_idx=i,
+                n_trees=len(trees),
+                verbose=self.verbose,
             )
-        except TypeError:
-            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                delayed(_parallel_build_trees)(
-                    tree=t,
-                    forest=self,
-                    X=X[tree_idxs == i],
-                    y=y[tree_idxs == i],
-                    sample_weight=None,
-                    tree_idx=i,
-                    n_trees=len(trees),
-                    verbose=self.verbose,
-                )
-                for i, t in enumerate(trees)
-            )
+            for i, t in enumerate(trees)
+        )
 
         # Collect newly grown trees
         self.estimators_.extend(trees)
@@ -353,34 +332,18 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
 
     def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None, accountant=None,
                  criterion=None, **unused_args):
-        # Todo: Remove when scikit-learn v1.0 is a min requirement
-        try:
-            super().__init__(  # pylint: disable=unexpected-keyword-arg
-                criterion=None,
-                splitter=None,
-                max_depth=max_depth,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                min_weight_fraction_leaf=None,
-                max_features=None,
-                random_state=random_state,
-                max_leaf_nodes=None,
-                min_impurity_decrease=None,
-                min_impurity_split=None
-            )
-        except TypeError:
-            super().__init__(
-                criterion=None,
-                splitter=None,
-                max_depth=max_depth,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                min_weight_fraction_leaf=None,
-                max_features=None,
-                random_state=random_state,
-                max_leaf_nodes=None,
-                min_impurity_decrease=None
-            )
+        super().__init__(
+            criterion=None,
+            splitter=None,
+            max_depth=max_depth,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            min_weight_fraction_leaf=None,
+            max_features=None,
+            random_state=random_state,
+            max_leaf_nodes=None,
+            min_impurity_decrease=None
+        )
         self.epsilon = epsilon
         self.bounds = bounds
         self.classes = classes
