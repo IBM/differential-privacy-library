@@ -402,8 +402,8 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
 
         args = (X, target, sample_weight, l2_reg_strength)
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
-        output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
-                                                     args=args, iprint=iprint, pgtol=tol, maxiter=max_iter)
+        output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None, factr=64, args=args,
+                                                     iprint=iprint, pgtol=tol, maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 
