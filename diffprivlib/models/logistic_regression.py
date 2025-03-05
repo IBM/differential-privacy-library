@@ -63,6 +63,13 @@ except (ModuleNotFoundError, ImportError):
     from sklearn.linear_model._logistic import _logistic_loss_and_grad
     SKL_LOSS_MODULE = False
 
+# TODO: remove when sklearn v1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
@@ -229,7 +236,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         if not isinstance(self.tol, numbers.Real) or self.tol < 0:
             raise ValueError(f"Tolerance for stopping criteria must be positive; got (tol={self.tol})")
 
-        X, y = self._validate_data(X, y, accept_sparse='csr', dtype=float, order="C",
+        X, y = validate_data(self, X, y, accept_sparse='csr', dtype=float, order="C",
                                    accept_large_sparse=True)
         check_classification_targets(y)
         self.classes_ = np.unique(y)

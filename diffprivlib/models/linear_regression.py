@@ -51,6 +51,13 @@ from scipy.optimize import minimize
 from sklearn.utils import check_array
 from sklearn.utils.validation import FLOAT_DTYPES
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Laplace, LaplaceFolded
 from diffprivlib.tools import mean
@@ -265,7 +272,7 @@ class LinearRegression(sk_lr.LinearRegression, DiffprivlibMixin):
 
         random_state = check_random_state(self.random_state)
 
-        X, y = self._validate_data(X, y, accept_sparse=False, y_numeric=True, multi_output=True)
+        X, y = validate_data(self, X, y, accept_sparse=False, y_numeric=True, multi_output=True)
 
         if self.bounds_X is None or self.bounds_y is None:
             warnings.warn(

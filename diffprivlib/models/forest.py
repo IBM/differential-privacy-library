@@ -28,6 +28,13 @@ from sklearn.tree._tree import Tree, DOUBLE, DTYPE, NODE_DTYPE  # pylint: disabl
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.mechanisms import PermuteAndFlip
@@ -184,7 +191,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
             self._warn_unused_args("sample_weight")
 
         # Validate or convert input data
-        X, y = self._validate_data(X, y, multi_output=False, dtype=DTYPE)
+        X, y = validate_data(self, X, y, multi_output=False, dtype=DTYPE)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -415,7 +422,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
             self._warn_unused_args("sample_weight")
 
         if check_input:
-            X, y = self._validate_data(X, y, multi_output=False)
+            X, y = validate_data(self, X, y, multi_output=False)
         self.n_outputs_ = 1
 
         if self.bounds is None:

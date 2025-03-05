@@ -23,6 +23,13 @@ import warnings
 import numpy as np
 import sklearn.cluster as sk_cluster
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricFolded
 from diffprivlib.utils import PrivacyLeakWarning, check_random_state
@@ -126,7 +133,7 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
         random_state = check_random_state(self.random_state)
 
-        X = self._validate_data(X, accept_sparse=False, dtype=[np.float64, np.float32])
+        X = validate_data(self, X, accept_sparse=False, dtype=[np.float64, np.float32])
         n_samples, n_dims = X.shape
 
         if n_samples < self.n_clusters:
