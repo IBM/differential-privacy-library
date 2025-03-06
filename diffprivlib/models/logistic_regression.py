@@ -395,7 +395,7 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
         l2_reg_strength = 1.0 / (C * n_samples)
-        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=l2_reg_strength,
+        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1.0 / C,
                              function_sensitivity=0.25, data_sensitivity=data_norm, n=n_samples,
                              random_state=random_state)
         noisy_logistic_loss = vector_mech.randomise(func)
