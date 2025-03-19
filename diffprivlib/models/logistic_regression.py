@@ -53,15 +53,15 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
 from sklearn.utils import check_array, check_consistent_length
 from sklearn.utils.multiclass import check_classification_targets
+from sklearn.linear_model._linear_loss import LinearModelLoss
+from sklearn._loss import HalfBinomialLoss
 
-# todo: Remove when sklearn v1.1.0 is min requirement
+# TODO: remove when sklearn v1.6 a min req
 try:
-    from sklearn.linear_model._linear_loss import LinearModelLoss
-    from sklearn._loss import HalfBinomialLoss
-    SKL_LOSS_MODULE = True
-except (ModuleNotFoundError, ImportError):
-    from sklearn.linear_model._logistic import _logistic_loss_and_grad
-    SKL_LOSS_MODULE = False
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import Vector
@@ -221,16 +221,8 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
         random_state = check_random_state(self.random_state)
 
-        # Todo: Remove when scikit-learn v1.2 is a min requirement
-        if not isinstance(self.C, numbers.Real) or self.C < 0:
-            raise ValueError(f"Penalty term must be positive; got (C={self.C})")
-        if not isinstance(self.max_iter, numbers.Integral) or self.max_iter < 0:
-            raise ValueError(f"Maximum number of iteration must be positive; got (max_iter={self.max_iter})")
-        if not isinstance(self.tol, numbers.Real) or self.tol < 0:
-            raise ValueError(f"Tolerance for stopping criteria must be positive; got (tol={self.tol})")
-
-        X, y = self._validate_data(X, y, accept_sparse='csr', dtype=float, order="C",
-                                   accept_large_sparse=True)
+        X, y = validate_data(self, X, y, accept_sparse='csr', dtype=float, order="C",
+                             accept_large_sparse=True)
         check_classification_targets(y)
         self.classes_ = np.unique(y)
         _, n_features = X.shape
@@ -383,11 +375,11 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
 
     sample_weight = np.ones(X.shape[0], dtype=X.dtype)
 
-    # For doing a ovr, we need to mask the labels first.
+    # For doing an ovr, we need to mask the labels first.
     output_vec = np.zeros(n_features + int(fit_intercept), dtype=X.dtype)
     mask = (y == pos_class)
     y_bin = np.ones(y.shape, dtype=X.dtype)
-    y_bin[~mask] = 0.0 if SKL_LOSS_MODULE else -1.0
+    y_bin[~mask] = 0.0
 
     if coef is not None:
         # it must work both giving the bias term and not
@@ -397,28 +389,21 @@ def _logistic_regression_path(X, y, epsilon, data_norm, pos_class=None, Cs=10, f
         output_vec[:coef.size] = coef
 
     target = y_bin
-
-    if SKL_LOSS_MODULE:
-        func = LinearModelLoss(base_loss=HalfBinomialLoss(), fit_intercept=fit_intercept).loss_gradient
-        sw_sum = n_samples
-    else:
-        func = _logistic_loss_and_grad
-        sw_sum = 1
+    func = LinearModelLoss(base_loss=HalfBinomialLoss(), fit_intercept=fit_intercept).loss_gradient
 
     coefs = []
     n_iter = np.zeros(len(Cs), dtype=np.int32)
     for i, C in enumerate(Cs):
-        l2_reg_strength = 1.0 / (C * sw_sum)
-        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=l2_reg_strength,
-                             function_sensitivity=0.25, data_sensitivity=data_norm, random_state=random_state)
+        l2_reg_strength = 1.0 / (C * n_samples)
+        vector_mech = Vector(epsilon=epsilon, dimension=n_features + int(fit_intercept), alpha=1.0 / C,
+                             function_sensitivity=0.25, data_sensitivity=data_norm, n=n_samples,
+                             random_state=random_state)
         noisy_logistic_loss = vector_mech.randomise(func)
 
-        args = (X, target, sample_weight, l2_reg_strength) if SKL_LOSS_MODULE else (X, target, l2_reg_strength,
-                                                                                    sample_weight)
-
+        args = (X, target, sample_weight, l2_reg_strength)
         iprint = [-1, 50, 1, 100, 101][np.searchsorted(np.array([0, 1, 2, 3]), verbose)]
-        output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None,
-                                                     args=args, iprint=iprint, pgtol=tol, maxiter=max_iter)
+        output_vec, _, info = optimize.fmin_l_bfgs_b(noisy_logistic_loss, output_vec, fprime=None, factr=64, args=args,
+                                                     iprint=iprint, pgtol=tol, maxiter=max_iter)
         if info["warnflag"] == 1:
             warnings.warn("lbfgs failed to converge. Increase the number of iterations.", ConvergenceWarning)
 

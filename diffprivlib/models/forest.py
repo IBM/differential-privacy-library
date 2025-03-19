@@ -28,6 +28,13 @@ from sklearn.tree._tree import Tree, DOUBLE, DTYPE, NODE_DTYPE  # pylint: disabl
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.mechanisms import PermuteAndFlip
@@ -147,12 +154,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         self.max_depth = max_depth
         self.shuffle = shuffle
         self.accountant = BudgetAccountant.load_default(accountant)
-
-        # Todo: Remove when scikit-learn v1.2 is a min requirement
-        if hasattr(self, "estimator"):
-            self.estimator = DecisionTreeClassifier()
-        else:
-            self.base_estimator = DecisionTreeClassifier()
+        self.estimator = DecisionTreeClassifier()
         self.estimator_params = ("max_depth", "epsilon", "bounds", "classes")
 
         self._warn_unused_args(unused_args)
@@ -184,7 +186,7 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
             self._warn_unused_args("sample_weight")
 
         # Validate or convert input data
-        X, y = self._validate_data(X, y, multi_output=False, dtype=DTYPE)
+        X, y = validate_data(self, X, y, multi_output=False, dtype=DTYPE)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -258,35 +260,19 @@ class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pyl
         # that case. However, for joblib 0.12+ we respect any
         # parallel_backend contexts set at a higher level,
         # since correctness does not rely on using threads.
-        # Todo: Remove when scikit-learn v1.1 is a min requirement
-        try:
-            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                delayed(_parallel_build_trees)(
-                    tree=t,
-                    bootstrap=False,
-                    X=X[tree_idxs == i],
-                    y=y[tree_idxs == i],
-                    sample_weight=None,
-                    tree_idx=i,
-                    n_trees=len(trees),
-                    verbose=self.verbose,
-                )
-                for i, t in enumerate(trees)
+        trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
+            delayed(_parallel_build_trees)(
+                tree=t,
+                bootstrap=False,
+                X=X[tree_idxs == i],
+                y=y[tree_idxs == i],
+                sample_weight=None,
+                tree_idx=i,
+                n_trees=len(trees),
+                verbose=self.verbose,
             )
-        except TypeError:
-            trees = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads")(
-                delayed(_parallel_build_trees)(
-                    tree=t,
-                    forest=self,
-                    X=X[tree_idxs == i],
-                    y=y[tree_idxs == i],
-                    sample_weight=None,
-                    tree_idx=i,
-                    n_trees=len(trees),
-                    verbose=self.verbose,
-                )
-                for i, t in enumerate(trees)
-            )
+            for i, t in enumerate(trees)
+        )
 
         # Collect newly grown trees
         self.estimators_.extend(trees)
@@ -346,34 +332,18 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
 
     def __init__(self, max_depth=5, *, epsilon=1, bounds=None, classes=None, random_state=None, accountant=None,
                  criterion=None, **unused_args):
-        # Todo: Remove when scikit-learn v1.0 is a min requirement
-        try:
-            super().__init__(  # pylint: disable=unexpected-keyword-arg
-                criterion=None,
-                splitter=None,
-                max_depth=max_depth,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                min_weight_fraction_leaf=None,
-                max_features=None,
-                random_state=random_state,
-                max_leaf_nodes=None,
-                min_impurity_decrease=None,
-                min_impurity_split=None
-            )
-        except TypeError:
-            super().__init__(
-                criterion=None,
-                splitter=None,
-                max_depth=max_depth,
-                min_samples_split=None,
-                min_samples_leaf=None,
-                min_weight_fraction_leaf=None,
-                max_features=None,
-                random_state=random_state,
-                max_leaf_nodes=None,
-                min_impurity_decrease=None
-            )
+        super().__init__(
+            criterion=None,
+            splitter=None,
+            max_depth=max_depth,
+            min_samples_split=None,
+            min_samples_leaf=None,
+            min_weight_fraction_leaf=None,
+            max_features=None,
+            random_state=random_state,
+            max_leaf_nodes=None,
+            min_impurity_decrease=None
+        )
         self.epsilon = epsilon
         self.bounds = bounds
         self.classes = classes
@@ -415,7 +385,7 @@ class DecisionTreeClassifier(skDecisionTreeClassifier, DiffprivlibMixin):
             self._warn_unused_args("sample_weight")
 
         if check_input:
-            X, y = self._validate_data(X, y, multi_output=False)
+            X, y = validate_data(self, X, y, multi_output=False)
         self.n_outputs_ = 1
 
         if self.bounds is None:

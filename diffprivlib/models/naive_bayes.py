@@ -24,6 +24,13 @@ import numpy as np
 import sklearn.naive_bayes as sk_nb
 from sklearn.utils.multiclass import _check_partial_fit_first_call
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.mechanisms import LaplaceBoundedDomain, GeometricTruncated, LaplaceTruncated
 from diffprivlib.utils import PrivacyLeakWarning, warn_unused_args, check_random_state
@@ -101,7 +108,7 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
 
         random_state = check_random_state(self.random_state)
 
-        X, y = self._validate_data(X, y)
+        X, y = validate_data(self, X, y)
 
         if self.bounds is None:
             warnings.warn("Bounds have not been specified and will be calculated on the data provided. This will "
@@ -297,9 +304,3 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
             i = (i - sgn) % len(unique_y)
 
         return noisy_counts
-
-    @property
-    def sigma_(self):
-        """Variance of each feature per class."""
-        # Todo: Consider removing when sklearn v1.0 is required
-        return self.var_

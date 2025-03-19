@@ -93,12 +93,7 @@ class TestGaussianNB(TestCase):
         for clf in [clf_dp, clf_non_private]:
             clf.fit(x_train, y_train)
 
-        # Todo: remove try...except when sklearn v1.0 is required
-        try:
-            nonprivate_var = clf_non_private.var_
-        except AttributeError:
-            nonprivate_var = clf_non_private.sigma_
-
+        nonprivate_var = clf_non_private.var_
         theta_diff = (clf_dp.theta_ - clf_non_private.theta_) ** 2
         self.assertGreater(theta_diff.sum(), 0)
 
@@ -189,7 +184,7 @@ class TestGaussianNB(TestCase):
     def test_sigma(self):
         clf = GaussianNB(epsilon=1, bounds=(-2, 2))
         clf.fit(X, y)
-        self.assertIsInstance(clf.sigma_, np.ndarray)
+        self.assertIsInstance(clf.var_, np.ndarray)
 
     def test_random_state(self):
         clf0 = GaussianNB(epsilon=1, bounds=(-2, 2), random_state=0)

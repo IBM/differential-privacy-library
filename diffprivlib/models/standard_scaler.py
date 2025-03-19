@@ -49,6 +49,13 @@ import numpy as np
 import sklearn.preprocessing as sk_pp
 from sklearn.preprocessing._data import _handle_zeros_in_scale
 
+# TODO: remove when sklearn 1.6 a min req
+try:
+    from sklearn.utils.validation import validate_data
+except ImportError:
+    from sklearn.base import BaseEstimator
+    validate_data = BaseEstimator._validate_data
+
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning, check_random_state
 from diffprivlib.tools import nanvar, nanmean
@@ -210,8 +217,7 @@ class StandardScaler(sk_pp.StandardScaler, DiffprivlibMixin):
 
         epsilon_0 = self.epsilon / 2 if self.with_std else self.epsilon
 
-        X = self._validate_data(X, accept_sparse=False, copy=self.copy, estimator=self, dtype=float,
-                                force_all_finite='allow-nan')
+        X = validate_data(self, X, accept_sparse=False, copy=self.copy, estimator=self, dtype=float)
 
         if self.bounds is None:
             warnings.warn("Bounds parameter hasn't been specified, so falling back to determining bounds from the "

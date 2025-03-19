@@ -200,11 +200,6 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
 
         self._warn_unused_args(unused_args)
 
-    # Todo: Remove when scikit-learn v1.2 is a min requirement
-    @property
-    def n_features_(self):
-        return self.n_features_in_
-
     def _fit_full(self, X, n_components, xp=None, is_array_api_compliant=False):
         self.accountant.check(self.epsilon, 0)
 
