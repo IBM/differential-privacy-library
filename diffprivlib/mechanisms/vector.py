@@ -60,8 +60,8 @@ class Vector(DPMechanism):
         ``random_state`` has to be fixed to an integer.
 
     """
-    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01,
-                 n=1, random_state=None):
+    def __init__(self, *, epsilon, function_sensitivity, data_sensitivity=1.0, dimension, alpha=0.01, n=1,
+                 random_state=None):
         super().__init__(epsilon=epsilon, delta=0.0, random_state=random_state)
         self.function_sensitivity, self.data_sensitivity = self._check_sensitivity(function_sensitivity,
                                                                                    data_sensitivity)
@@ -110,6 +110,9 @@ class Vector(DPMechanism):
         self._check_alpha(self.alpha)
         self._check_sensitivity(self.function_sensitivity, self.data_sensitivity)
         self._check_dimension(self.dimension)
+
+        if self.n < 1:
+            raise ValueError(f"n must be strictly positive, got {self.n}")
 
         if not callable(value):
             raise TypeError("Value to be randomised must be a function")
