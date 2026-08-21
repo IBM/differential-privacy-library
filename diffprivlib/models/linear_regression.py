@@ -141,7 +141,7 @@ def _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon, alpha, random_s
     mono_coef_2 = np.zeros((n_features, n_features))
 
     for i in range(n_features):
-        sensitivity = np.max(np.abs([bounds_X[0][i], bounds_X[0][i]])) ** 2
+        sensitivity = np.max(np.abs([bounds_X[0][i], bounds_X[1][i]])) ** 2
         mech = LaplaceFolded(epsilon=local_epsilon, sensitivity=sensitivity, lower=0, upper=float("inf"),
                              random_state=random_state)
         mono_coef_2[i, i] = mech.randomise(coefs[2][i, i])
