@@ -1,7 +1,8 @@
 import numpy as np
 from unittest import TestCase
 
-from diffprivlib.models.linear_regression import LinearRegression
+from diffprivlib.mechanisms import LaplaceFolded
+from diffprivlib.models.linear_regression import LinearRegression, _construct_regression_obj
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError, check_random_state
 
 
@@ -132,6 +133,39 @@ class TestLinearRegression(TestCase):
         self.assertIsNotNone(clf)
         self.assertIsNotNone(clf._preprocess_data(X, y, fit_intercept=True, bounds_X=(-1, 1), bounds_y=(-1, 1),
                                                   check_input=False, copy=True))
+
+    def test_diagonal_sensitivity_uses_both_bounds(self):
+        # Regression test: the diagonal (X_i * X_i) sensitivity calculation in
+        # _construct_regression_obj used bounds_X[0][i] twice instead of
+        # bounds_X[0][i] and bounds_X[1][i], silently underestimating (and, when
+        # the lower bound is 0, zeroing out) the calibrated noise for that
+        # coefficient.
+        recorded_sensitivities = []
+        orig_init = LaplaceFolded.__init__
+
+        def recording_init(mech_self, *args, **kwargs):
+            recorded_sensitivities.append(kwargs.get("sensitivity"))
+            orig_init(mech_self, *args, **kwargs)
+
+        X = np.array([[10.0], [20.0], [30.0]])
+        y = np.array([1.0, 2.0, 3.0])
+        bounds_X = (np.array([0.0]), np.array([100.0]))
+        bounds_y = (np.array([0.0]), np.array([10.0]))
+
+        LaplaceFolded.__init__ = recording_init
+        try:
+            _construct_regression_obj(X, y, bounds_X, bounds_y, epsilon=1.0, alpha=0.0,
+                                       random_state=check_random_state(0))
+        finally:
+            LaplaceFolded.__init__ = orig_init
+
+        # recorded_sensitivities[0] is the bounds_y-based 0th-degree term (line
+        # 126, unaffected by the bug); recorded_sensitivities[1] is the
+        # bounds_X-based diagonal 2nd-degree term for feature 0 (line 144, the
+        # line under test). With bounds_X = (0, 100), the correct sensitivity is
+        # max(|0|, |100|) ** 2 = 10000; the bug produced 0.0 (only the lower
+        # bound was ever consulted).
+        self.assertEqual(recorded_sensitivities[1], 100.0 ** 2)
 
     def test_multiple_targets(self):
         from sklearn.linear_model import LinearRegression as sk_LinearRegression
