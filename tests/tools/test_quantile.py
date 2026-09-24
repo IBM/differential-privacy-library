@@ -8,6 +8,18 @@ from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_stat
 
 
 class TestQuantile(TestCase):
+
+    def test_integer_duplicates_at_target_rank(self):
+        # Regression test for #107: on integer data with a duplicate run at the target rank
+        # (large n, epsilon >= 0.3), the exponential mechanism's probability vector underflowed
+        # to all-zeros and normalisation produced NaNs, raising "Can't find a candidate to
+        # return". The mechanism now stabilises on the combined weight (utility + log(measure)).
+        rng = np.random.RandomState(0)
+        a = np.concatenate([np.full(800_000, 65_000, dtype=np.int64),
+                            rng.randint(0, 500_000, size=200_000)])
+        res = quantile(a, 0.5, epsilon=0.5, bounds=(0, 500_000), random_state=rng)
+        self.assertFalse(np.isnan(res))
+        self.assertTrue(60_000 <= res <= 70_000)  # ~80% of mass is at 65000
     def test_not_none(self):
         mech = quantile
         self.assertIsNotNone(mech)
