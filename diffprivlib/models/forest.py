@@ -24,7 +24,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 from sklearn.exceptions import DataConversionWarning
-from sklearn.tree._tree import Tree, DOUBLE, DTYPE, NODE_DTYPE  # pylint: disable=no-name-in-module
+from sklearn.tree._tree import Tree, NODE_DTYPE  # pylint: disable=no-name-in-module
 from sklearn.ensemble._forest import RandomForestClassifier as skRandomForestClassifier, _parallel_build_trees
 from sklearn.tree import DecisionTreeClassifier as skDecisionTreeClassifier
 
@@ -41,6 +41,10 @@ from diffprivlib.mechanisms import PermuteAndFlip
 from diffprivlib.validation import DiffprivlibMixin
 
 MAX_INT = np.iinfo(np.int32).max
+
+# Dtypes used by sklearn's tree code. sklearn.tree._tree stopped exporting them in scikit-learn 1.9.
+DTYPE = np.float32
+DOUBLE = np.float64
 
 
 class RandomForestClassifier(skRandomForestClassifier, DiffprivlibMixin):  # pylint: disable=too-many-ancestors
