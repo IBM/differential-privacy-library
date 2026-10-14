@@ -130,15 +130,29 @@ class Exponential(DPMechanism):
     def _find_probabilities(cls, epsilon, sensitivity, utility, monotonic, measure):
         scale = epsilon / sensitivity / (2 - monotonic) if sensitivity / epsilon > 0 else float("inf")
 
-        # Set max utility to 0 to avoid overflow on high utility; will be normalised out before returning
-        utility = np.array(utility) - max(utility)
+        # Work in log-space and fold the measure into the exponent BEFORE the numerical
+        # stabilisation, so the max-subtraction accounts for the combined weight
+        # ``scale * utility + log(measure)``.  Stabilising on ``utility`` alone breaks when
+        # the highest-utility candidate has zero measure (e.g. a zero-width interval from
+        # duplicate data) while the remaining candidates underflow ``exp`` to 0: the whole
+        # vector becomes 0 and the normalisation below divides by zero (see #107).
+        utility = np.asarray(utility, dtype=float)
 
         if np.isinf(scale):
-            probabilities = np.isclose(utility, 0).astype(float)
+            log_probabilities = np.where(np.isclose(utility, utility.max()), 0.0, -np.inf)
         else:
-            probabilities = np.exp(scale * utility)
+            log_probabilities = scale * utility
 
-        probabilities *= np.array(measure) if measure else 1
+        if measure is not None:
+            with np.errstate(divide="ignore"):  # log(0) -> -inf is intended: zero measure -> zero probability
+                log_probabilities = log_probabilities + np.log(np.asarray(measure, dtype=float))
+
+        finite = np.isfinite(log_probabilities)
+        if finite.any():
+            probabilities = np.exp(log_probabilities - log_probabilities[finite].max())
+        else:  # degenerate: every candidate has zero weight -> fall back to uniform
+            probabilities = np.ones_like(log_probabilities)
+
         probabilities /= probabilities.sum()
 
         return np.cumsum(probabilities)
