@@ -135,10 +135,18 @@ class Exponential(DPMechanism):
 
         if np.isinf(scale):
             probabilities = np.isclose(utility, 0).astype(float)
+            probabilities *= np.array(measure) if measure else 1
         else:
-            probabilities = np.exp(scale * utility)
+            # Compute weights in log-space (logsumexp trick) so that scale * |utility|
+            # exceeding the float64 exp() range does not round all weights to 0 and
+            # produce a NaN probability vector after normalisation.
+            log_weights = scale * utility
+            if measure:
+                with np.errstate(divide="ignore"):
+                    log_weights = log_weights + np.log(np.array(measure))
+            log_weights -= np.max(log_weights)
+            probabilities = np.exp(log_weights)
 
-        probabilities *= np.array(measure) if measure else 1
         probabilities /= probabilities.sum()
 
         return np.cumsum(probabilities)

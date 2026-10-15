@@ -84,6 +84,23 @@ class TestQuantile(TestCase):
         res = quantile(a, 0.5, epsilon=1, random_state=0)
         self.assertTrue(0 <= res <= 2)
 
+    def test_integer_duplicates_at_median(self):
+        # Regression: a duplicate run at the target rank used to crash with
+        # "Can't find a candidate to return". The EM probability vector
+        # collapsed because exp(scale * utility) underflowed to 0 for indices
+        # outside the duplicate run while the in-run measure was 0; after
+        # normalisation the vector was all-NaN. Fixed by computing weights in
+        # log-space in Exponential._find_probabilities.
+        rng = check_random_state(0)
+        a = np.concatenate([
+            np.full(80_000, 65_000, dtype=np.int64),
+            rng.randint(0, 500_000, size=20_000),
+        ])
+        for eps in (0.3, 0.5, 1.0):
+            res = quantile(a, 0.5, epsilon=eps, bounds=(0, 500_000), random_state=rng)
+            self.assertFalse(np.isnan(res))
+            self.assertAlmostEqual(res, 65_000, delta=1_000)
+
     def test_multiple_q(self):
         rng = check_random_state(0)
         a = rng.random(1000)
