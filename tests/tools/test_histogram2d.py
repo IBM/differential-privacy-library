@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogram2d
-from diffprivlib.utils import PrivacyLeakWarning, BudgetError, check_random_state
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, DiffprivlibCompatibilityWarning, check_random_state
 
 
 class TestHistogram2d(TestCase):
@@ -79,3 +79,14 @@ class TestHistogram2d(TestCase):
 
         with self.assertRaises(BudgetError):
             histogram2d(x, y, epsilon=1, bins=3, range=[(0, 10), (0, 10)], density=True, accountant=acc)
+
+    def test_weights_ignored(self):
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([5, 7, 1, 5, 9])
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            dp_hist, _, _ = histogram2d(x, y, epsilon=1, bins=3, range=[(0, 10), (0, 10)],
+                                        weights=[1, 1, 1, 1, 1000], random_state=0)
+
+        expected, _, _ = histogram2d(x, y, epsilon=1, bins=3, range=[(0, 10), (0, 10)], random_state=0)
+        self.assertTrue((dp_hist == expected).all())
