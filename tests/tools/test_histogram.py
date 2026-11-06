@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogram
-from diffprivlib.utils import BudgetError
+from diffprivlib.utils import BudgetError, DiffprivlibCompatibilityWarning
 
 
 class TestHistogram(TestCase):
@@ -65,3 +65,12 @@ class TestHistogram(TestCase):
         acc2 = BudgetAccountant.pop_default()
         self.assertEqual((1, 0), acc.total())
         self.assertIsNot(acc, acc2)
+
+    def test_weights_ignored(self):
+        a = np.array([1, 2, 3, 4, 5])
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            dp_hist, _ = histogram(a, epsilon=1, bins=3, range=(0, 10), weights=[1, 1, 1, 1, 1000], random_state=0)
+
+        expected, _ = histogram(a, epsilon=1, bins=3, range=(0, 10), random_state=0)
+        self.assertTrue((dp_hist == expected).all())

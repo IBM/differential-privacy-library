@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.tools.histograms import histogramdd
-from diffprivlib.utils import PrivacyLeakWarning, BudgetError
+from diffprivlib.utils import PrivacyLeakWarning, BudgetError, DiffprivlibCompatibilityWarning
 
 
 class TestHistogramdd(TestCase):
@@ -79,3 +79,13 @@ class TestHistogramdd(TestCase):
         histogramdd(a, epsilon=1, bins=3, range=[(0, 10), (0, 10)])
 
         self.assertEqual((1, 0), acc.total())
+
+    def test_weights_ignored(self):
+        a = np.array([1, 2, 3, 4, 5])
+
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            dp_hist, _ = histogramdd([a, a], epsilon=1, bins=3, range=[(0, 10), (0, 10)],
+                                     weights=[1, 1, 1, 1, 1000], random_state=0)
+
+        expected, _ = histogramdd([a, a], epsilon=1, bins=3, range=[(0, 10), (0, 10)], random_state=0)
+        self.assertTrue((dp_hist == expected).all())

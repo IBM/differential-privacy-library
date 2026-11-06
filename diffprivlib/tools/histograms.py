@@ -85,10 +85,8 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
         the automatic bin computation as well.  While bin width is computed to be optimal based on the actual data
         within `range`, the bin count will fill the entire range including portions containing no data.
 
-    weights : array_like, optional
-        An array of weights, of the same shape as `a`.  Each value in `a` only contributes its associated weight
-        towards the bin count (instead of 1).  If `density` is True, the weights are normalized, so that the integral
-        of the density over the range remains 1.
+    weights : ignored
+        Ignored by diffprivlib.  Present for consistency with the NumPy API.
 
     density : bool, optional
         If ``False``, the result will contain the number of samples in each bin.  If ``True``, the result is the value
@@ -138,7 +136,10 @@ def histogram(sample, epsilon=1.0, bins=10, range=None, weights=None, density=No
                       "To ensure differential privacy, and no additional privacy leakage, the range must be "
                       "specified independently of the data (i.e., using domain knowledge).", PrivacyLeakWarning)
 
-    hist, bin_edges = np.histogram(sample, bins=bins, range=range, weights=weights, density=None)
+    if weights is not None:
+        warn_unused_args("weights")
+
+    hist, bin_edges = np.histogram(sample, bins=bins, range=range, density=None)
 
     dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize, random_state=random_state)
 
@@ -203,10 +204,8 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
         If False, the default, returns the number of samples in each bin.  If True, returns the probability *density*
         function at the bin, ``bin_count / sample_count / bin_volume``.
 
-    weights : (N,) array_like, optional
-        An array of values `w_i` weighing each sample `(x_i, y_i, z_i, ...)`.  Weights are normalized to 1 if normed is
-        True.  If normed is False, the values of the returned histogram are equal to the sum of the weights belonging to
-        the samples falling into each bin.
+    weights : ignored
+        Ignored by diffprivlib.  Present for consistency with the NumPy API.
 
     random_state : int or RandomState, optional
         Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
@@ -244,7 +243,10 @@ def histogramdd(sample, epsilon=1.0, bins=10, range=None, weights=None, density=
                           "specified for each dimension independently of the data (i.e., using domain knowledge).",
                           PrivacyLeakWarning)
 
-    hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, weights=weights, density=None)
+    if weights is not None:
+        warn_unused_args("weights")
+
+    hist, bin_edges = np.histogramdd(sample, bins=bins, range=range, density=None)
 
     dp_mech = GeometricTruncated(epsilon=epsilon, sensitivity=1, lower=0, upper=maxsize, random_state=random_state)
 
@@ -310,10 +312,8 @@ def histogram2d(array_x, array_y, epsilon=1.0, bins=10, range=None, weights=None
         If False, the default, returns the number of samples in each bin.  If True, returns the probability *density*
         function at the bin, ``bin_count / sample_count / bin_area``.
 
-    weights : array_like, shape(N,), optional
-        An array of values ``w_i`` weighing each sample ``(x_i, y_i)``.  Weights are normalized to 1 if `normed` is
-        True.  If `normed` is False, the values of the returned histogram are equal to the sum of the weights belonging
-        to the samples falling into each bin.
+    weights : ignored
+        Ignored by diffprivlib.  Present for consistency with the NumPy API.
 
     random_state : int or RandomState, optional
         Controls the randomness of the algorithm.  To obtain a deterministic behaviour during randomisation,
