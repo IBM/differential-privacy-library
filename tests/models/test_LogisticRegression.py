@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from unittest import TestCase, skipIf
 
@@ -105,6 +107,65 @@ class TestLogisticRegression(TestCase):
         clf = LogisticRegression(data_norm=1.0)
 
         self.assertIsNotNone(clf.fit(X, y))
+
+    def test_classes_not_specified_warning(self):
+        X = np.array([[0.25], [0.50], [0.75], [1.00]])
+        y = np.array([0, 1, 0, 1])
+
+        with self.assertWarns(PrivacyLeakWarning):
+            LogisticRegression(data_norm=1.0).fit(X, y)
+
+    def test_classes_specified_no_warning(self):
+        X = np.array([[0.25], [0.50], [0.75], [1.00]])
+        y = np.array([0, 1, 0, 1])
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            LogisticRegression(data_norm=1.0, classes=[0, 1]).fit(X, y)
+
+        self.assertFalse([w for w in caught if issubclass(w.category, PrivacyLeakWarning)])
+
+    def test_classes_independent_of_data(self):
+        rng = np.random.RandomState(0)
+        X = rng.uniform(-0.5, 0.5, size=(50, 2))
+        y = rng.choice([0, 1], size=50)
+        X_neighbour = np.vstack([X, [[0.1, 0.1]]])
+        y_neighbour = np.append(y, 2)
+
+        clf = LogisticRegression(data_norm=1.0, classes=[0, 1, 2], random_state=0).fit(X, y)
+        clf_neighbour = LogisticRegression(data_norm=1.0, classes=[0, 1, 2], random_state=0).fit(X_neighbour,
+                                                                                                 y_neighbour)
+
+        self.assertEqual(clf.classes_.tolist(), [0, 1, 2])
+        self.assertEqual(clf_neighbour.classes_.tolist(), [0, 1, 2])
+        self.assertEqual(clf.coef_.shape, clf_neighbour.coef_.shape)
+        self.assertEqual(clf.intercept_.shape, clf_neighbour.intercept_.shape)
+
+    def test_classes_absent_from_data(self):
+        X = np.array([[0.25], [0.50], [0.75], [1.00]])
+        y = np.array([0, 0, 0, 0])
+
+        clf = LogisticRegression(data_norm=1.0, classes=[0, 1], random_state=0).fit(X, y)
+
+        self.assertEqual(clf.classes_.tolist(), [0, 1])
+        self.assertEqual(clf.coef_.shape, (1, 1))
+        self.assertTrue(set(clf.predict(X)) <= {0, 1})
+
+    def test_label_not_in_classes(self):
+        X = np.array([[0.25], [0.50], [0.75], [1.00]])
+        y = np.array([0, 1, 2, 1])
+
+        with self.assertRaises(ValueError):
+            LogisticRegression(data_norm=1.0, classes=[0, 1]).fit(X, y)
+
+    def test_classes_sorted_and_deduplicated(self):
+        X = np.array([[0.25], [0.50], [0.75], [1.00]])
+        y = np.array(["b", "a", "b", "a"])
+
+        clf = LogisticRegression(data_norm=1.0, classes=["b", "a", "b"], random_state=0).fit(X, y)
+
+        self.assertEqual(clf.classes_.tolist(), ["a", "b"])
+        self.assertTrue(set(clf.predict(X)) <= {"a", "b"})
 
     def test_multi_dim_y(self):
         X = np.array(

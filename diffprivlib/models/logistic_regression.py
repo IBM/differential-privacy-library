@@ -99,6 +99,12 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         :class:`.PrivacyLeakWarning`, as it reveals information about the data.  To preserve differential privacy fully,
         `data_norm` should be selected independently of the data, i.e. with domain knowledge.
 
+    classes : array-like of shape (n_classes,), optional
+        Array of classes to be trained on.  If not provided, the classes will be read from the data when ``.fit()`` is
+        called, resulting in a :class:`.PrivacyLeakWarning`, as the set of labels in the data reveals information
+        about the data.  To preserve differential privacy fully, `classes` should be selected independently of the
+        data.
+
     tol : float, default: 1e-4
         Tolerance for stopping criteria.
 
@@ -181,13 +187,14 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         linear_model.LogisticRegression, "tol", "C", "fit_intercept", "max_iter", "verbose", "warm_start", "n_jobs",
         "random_state")
 
-    def __init__(self, *, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
-                 warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
+    def __init__(self, *, epsilon=1.0, data_norm=None, classes=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100,
+                 verbose=0, warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=random_state, solver='lbfgs', max_iter=max_iter,
                          multi_class='ovr', verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
         self.data_norm = data_norm
+        self.classes = classes
         self.classes_ = None
         self.accountant = BudgetAccountant.load_default(accountant)
 
@@ -224,7 +231,19 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         X, y = validate_data(self, X, y, accept_sparse='csr', dtype=float, order="C",
                              accept_large_sparse=True)
         check_classification_targets(y)
-        self.classes_ = np.unique(y)
+
+        if self.classes is None:
+            warnings.warn("Classes have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify `classes` at initialisation.", PrivacyLeakWarning)
+            self.classes_ = np.unique(y)
+        else:
+            self.classes_ = np.unique(self.classes)
+            unknown_labels = np.setdiff1d(y, self.classes_)
+            if unknown_labels.size > 0:
+                raise ValueError(f"The target label(s) {unknown_labels} in y do not exist in the classes "
+                                 f"{self.classes_}")
+
         _, n_features = X.shape
 
         if self.data_norm is None:
