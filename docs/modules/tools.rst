@@ -38,3 +38,8 @@ Quantile-like functions
 
 .. autofunction:: median
 
+Bounds estimation
+-----------------------------
+.. autofunction:: approx_bounds
+
+.. autofunction:: approx_data_norm
