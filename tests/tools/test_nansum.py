@@ -102,3 +102,36 @@ class TestNansum(TestCase):
         with acc:
             with self.assertRaises(BudgetError):
                 nansum(a, epsilon=1, bounds=(0, 1))
+
+    def test_replacing_a_value_by_nan_is_not_distinguishable(self):
+        a = np.array([10] * 50)
+        b = np.array([10] * 49 + [np.nan])
+        res_a = np.array([nansum(a, epsilon=1, bounds=(5, 10), random_state=i) for i in range(1000)])
+        res_b = np.array([nansum(b, epsilon=1, bounds=(5, 10), random_state=1000 + i) for i in range(1000)])
+
+        for event_a, event_b in (res_a > 495, res_b > 495), (res_a <= 495, res_b <= 495):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)
+
+    def test_replacing_a_negative_value_by_nan_is_not_distinguishable(self):
+        a = np.array([-10] * 50)
+        b = np.array([-10] * 49 + [np.nan])
+        res_a = np.array([nansum(a, epsilon=1, bounds=(-10, -5), random_state=i) for i in range(1000)])
+        res_b = np.array([nansum(b, epsilon=1, bounds=(-10, -5), random_state=1000 + i) for i in range(1000)])
+
+        for event_a, event_b in (res_a > -495, res_b > -495), (res_a <= -495, res_b <= -495):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)
+
+    def test_replacing_an_integer_value_by_nan_is_not_distinguishable(self):
+        a = np.array([10] * 50)
+        b = np.array([10] * 49 + [np.nan])
+        res_a = np.array([nansum(a, epsilon=1, bounds=(5, 10), dtype=int, random_state=i) for i in range(1000)])
+        res_b = np.array([nansum(b, epsilon=1, bounds=(5, 10), dtype=int, random_state=1000 + i) for i in range(1000)])
+
+        for event_a, event_b in (res_a > 495, res_b > 495), (res_a <= 495, res_b <= 495):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)

@@ -212,11 +212,13 @@ def nanmean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fal
     Compute the differentially private arithmetic mean along the specified axis, ignoring NaNs.
 
     Returns the average of the array elements with differential privacy.  The average is taken over the flattened array
-    by default, otherwise over the specified axis.  Noise is added using :class:`.Laplace` to satisfy differential
-    privacy, where sensitivity is calculated using `bounds`.  Users are advised to consult the documentation of
-    :obj:`numpy.mean` for further details, as the behaviour of `mean` closely follows its Numpy variant.
+    by default, otherwise over the specified axis.  Users are advised to consult the documentation of :obj:`numpy.mean`
+    for further details, as the behaviour of `mean` closely follows its Numpy variant.
 
-    For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
+    The number of non-NaN values is not treated as public, since replacing a value by NaN changes it.  The budget is
+    split equally between the count of non-NaN values, using :class:`.GeometricTruncated`, and their sum, using
+    :class:`.LaplaceTruncated`, and the mean is their ratio.  For all-NaN slices a value within `bounds` is
+    returned, as returning NaN would reveal that the slice holds no values.
 
     Parameters
     ----------
@@ -287,16 +289,42 @@ def _mean(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False
 
     array = clip_to_bounds(np.ravel(array), bounds)
 
-    _func = np.nanmean if nan else np.mean
-    actual_mean = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
+    if nan:
+        output = _nan_moments(array, epsilon, lower, upper, random_state, variance=False)
+    else:
+        actual_mean = np.mean(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
-    mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=(upper - lower) / array.size, lower=lower,
-                            upper=upper, random_state=random_state)
-    output = mech.randomise(actual_mean)
+        mech = LaplaceTruncated(epsilon=epsilon, delta=0, sensitivity=(upper - lower) / array.size, lower=lower,
+                                upper=upper, random_state=random_state)
+        output = mech.randomise(actual_mean)
 
     accountant.spend(epsilon, 0)
 
     return output
+
+
+def _nan_moments(array, epsilon, lower, upper, random_state, variance):
+    values = array[~np.isnan(array)]
+    midpoint = (lower + upper) / 2
+    half_range = (upper - lower) / 2
+    epsilon_part = epsilon / (3 if variance else 2)
+
+    count_mech = GeometricTruncated(epsilon=epsilon_part, lower=0, upper=array.size, random_state=random_state)
+    count = max(count_mech.randomise(values.size), 1)
+
+    mech = LaplaceBoundedDomain if variance else LaplaceTruncated
+    sum_mech = mech(epsilon=epsilon_part, delta=0, sensitivity=upper - lower, lower=-half_range * array.size,
+                    upper=half_range * array.size, random_state=random_state)
+    centred_mean = sum_mech.randomise(np.sum(values - midpoint)) / count
+
+    if not variance:
+        return np.float64(np.clip(midpoint + centred_mean, lower, upper))
+
+    square_mech = LaplaceBoundedDomain(epsilon=epsilon_part, delta=0, sensitivity=half_range ** 2, lower=0,
+                                       upper=half_range ** 2 * array.size, random_state=random_state)
+    centred_square_mean = square_mech.randomise(np.sum((values - midpoint) ** 2)) / count
+
+    return np.float64(np.clip(centred_square_mean - centred_mean ** 2, 0, half_range ** 2))
 
 
 def var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False, random_state=None, accountant=None,
@@ -365,12 +393,14 @@ def nanvar(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
     Compute the differentially private variance along the specified axis, ignoring NaNs.
 
     Returns the variance of the array elements, a measure of the spread of a distribution, with differential privacy.
-    The variance is computer for the flattened array by default, otherwise over the specified axis.  Noise is added
-    using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is calculated using
-    `bounds`.  Users are advised to consult the documentation of :obj:`numpy.var` for further details, as the behaviour
-    of `var` closely follows its Numpy variant.
+    The variance is computer for the flattened array by default, otherwise over the specified axis.  Users are advised
+    to consult the documentation of :obj:`numpy.var` for further details, as the behaviour of `var` closely follows its
+    Numpy variant.
 
-    For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
+    The number of non-NaN values is not treated as public, since replacing a value by NaN changes it.  The budget is
+    split equally between the count of non-NaN values, using :class:`.GeometricTruncated`, and their sum and sum of
+    squares, using :class:`.LaplaceBoundedDomain`, from which the variance is computed.  For all-NaN slices a value
+    within the range of possible variances is returned, as returning NaN would reveal that the slice holds no values.
 
     Parameters
     ----------
@@ -444,13 +474,15 @@ def _var(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     # Let's ravel array to be single-dimensional
     array = clip_to_bounds(np.ravel(array), bounds)
 
-    _func = np.nanvar if nan else np.var
-    actual_var = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
+    if nan:
+        output = _nan_moments(array, epsilon, lower, upper, random_state, variance=True)
+    else:
+        actual_var = np.var(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
-    dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
-                                   sensitivity=((upper - lower) / array.size) ** 2 * (array.size - 1), lower=0,
-                                   upper=((upper - lower) ** 2) / 4, random_state=random_state)
-    output = dp_mech.randomise(actual_var)
+        dp_mech = LaplaceBoundedDomain(epsilon=epsilon, delta=0,
+                                       sensitivity=((upper - lower) / array.size) ** 2 * (array.size - 1), lower=0,
+                                       upper=((upper - lower) ** 2) / 4, random_state=random_state)
+        output = dp_mech.randomise(actual_var)
 
     accountant.spend(epsilon, 0)
 
@@ -524,11 +556,14 @@ def nanstd(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
 
     Returns the standard deviation of the array elements, a measure of the spread of a distribution, with differential
     privacy.  The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
-    Noise is added using :class:`.LaplaceBoundedDomain` to satisfy differential privacy, where sensitivity is
-    calculated using `bounds`.  Users are advised to consult the documentation of :obj:`numpy.std` for further details,
-    as the behaviour of `std` closely follows its Numpy variant.
+    Users are advised to consult the documentation of :obj:`numpy.std` for further details, as the behaviour of `std`
+    closely follows its Numpy variant.
 
-    For all-NaN slices, NaN is returned and a `RuntimeWarning` is raised.
+    The number of non-NaN values is not treated as public, since replacing a value by NaN changes it.  The budget is
+    split equally between the count of non-NaN values, using :class:`.GeometricTruncated`, and their sum and sum of
+    squares, using :class:`.LaplaceBoundedDomain`, from which the standard deviation is computed.  For all-NaN slices
+    a value within the range of possible standard deviations is returned, as returning NaN would reveal that the slice
+    holds no values.
 
     Parameters
     ----------
@@ -656,6 +691,9 @@ def nansum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=Fals
            **unused_args):
     r"""Sum of array elements over a given axis with differential privacy, ignoring NaNs.
 
+    Sensitivity accounts for a value being replaced by NaN, which changes the sum by up to the larger magnitude of the
+    two bounds.
+
     Parameters
     ----------
     array : array_like
@@ -735,8 +773,14 @@ def _sum(array, epsilon=1.0, bounds=None, axis=None, dtype=None, keepdims=False,
     _func = np.nansum if nan else np.sum
     actual_sum = _func(array, axis=axis, dtype=dtype, keepdims=keepdims)
 
+    if nan:
+        sensitivity = max(upper - lower, abs(lower), abs(upper))
+        lower, upper = min(lower, 0), max(upper, 0)
+    else:
+        sensitivity = upper - lower
+
     mech = GeometricTruncated if dtype is not None and issubclass(dtype, Integral) else LaplaceTruncated
-    mech = mech(epsilon=epsilon, sensitivity=upper - lower, lower=lower * array.size, upper=upper * array.size,
+    mech = mech(epsilon=epsilon, sensitivity=sensitivity, lower=lower * array.size, upper=upper * array.size,
                 random_state=random_state)
     output = mech.randomise(actual_sum)
 
