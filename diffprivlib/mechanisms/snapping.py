@@ -2,6 +2,7 @@
 The Snapping mechanism in differential privacy, which eliminates a weakness to floating point errors in the classic
 Laplace mechanism with standard Laplace sampling.
 """
+import math
 import struct
 
 import numpy as np
@@ -190,14 +191,14 @@ class Snapping(LaplaceTruncated):
         https://docs.python.org/3/library/random.html#recipes
 
         """
-        mantissa_size = np.finfo(float).nmant
+        mantissa_size = 52
         mantissa = 1 << mantissa_size | self._getrandbits(mantissa_size)
         exponent = -(mantissa_size + 1)
         x = 0
         while not x:
             x = self._getrandbits(32)
             exponent += x.bit_length() - 32
-        return np.ldexp(mantissa, exponent)
+        return np.float64(math.ldexp(mantissa, exponent))
 
     def _getrandbits(self, bits):
         try:
