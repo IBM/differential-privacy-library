@@ -198,3 +198,23 @@ class TestGaussianNB(TestCase):
         clf1.fit(X, y)
         self.assertTrue(np.all(clf0.theta_ == clf1.theta_))
         self.assertTrue(np.all(clf0.var_ == clf1.var_))
+
+    def test_relabelled_record_is_not_distinguishable(self):
+        n = 2000
+        features = np.full((2 * n, 1), 100.5)
+        labels = np.array([0] * n + [1] * n)
+        relabelled = labels.copy()
+        relabelled[0] = 1
+
+        def class_zero_sum(targets, seed):
+            clf = GaussianNB(epsilon=1, bounds=(100, 101), random_state=seed)
+            clf.fit(features, targets)
+            return clf.theta_[0, 0] * clf.class_count_[0] - 100.5 * n
+
+        res_a = np.array([class_zero_sum(labels, i) for i in range(500)])
+        res_b = np.array([class_zero_sum(relabelled, 500 + i) for i in range(500)])
+
+        for event_a, event_b in (res_a < -50, res_b < -50), (res_a >= -50, res_b >= -50):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)
