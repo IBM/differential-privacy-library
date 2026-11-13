@@ -251,9 +251,9 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
         for feature in range(n_features):
             temp_x = X[:, feature]
             lower, upper = self.bounds[0][feature], self.bounds[1][feature]
-            local_diameter = upper - lower
+            local_sensitivity = max(upper - lower, abs(lower), abs(upper))
 
-            mech_mu = LaplaceTruncated(epsilon=local_epsilon, delta=0, sensitivity=local_diameter,
+            mech_mu = LaplaceTruncated(epsilon=local_epsilon, delta=0, sensitivity=local_sensitivity,
                                        lower=lower * n_noisy, upper=upper * n_noisy, random_state=random_state)
             _mu = mech_mu.randomise(temp_x.sum()) / n_noisy
 
