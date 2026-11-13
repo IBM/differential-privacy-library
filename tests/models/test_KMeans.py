@@ -132,3 +132,10 @@ class TestKMeans(TestCase):
 
             with self.assertRaises(BudgetError):
                 clf2.fit(X)
+
+    def test_inertia_not_released(self):
+        X = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9]).reshape(-1, 1)
+        clf = KMeans(3, epsilon=10, bounds=(0, 1), random_state=0)
+        clf.fit(X)
+
+        self.assertIsNone(clf.inertia_)
