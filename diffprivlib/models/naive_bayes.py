@@ -161,13 +161,12 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
             raise ValueError(f"The target label(s) {unique_y[~unique_y_in_classes]} in y do not exist in the initial "
                              f"classes {classes}")
 
-        noisy_class_counts = self._noisy_class_counts(y, random_state=random_state)
+        noisy_class_counts = self._noisy_class_counts(y, classes, random_state=random_state)
 
-        for _i, y_i in enumerate(unique_y):
-            i = classes.searchsorted(y_i)
+        for i, y_i in enumerate(classes):
             X_i = X[y == y_i, :]
 
-            n_i = noisy_class_counts[_i]
+            n_i = noisy_class_counts[i]
 
             new_theta, new_var = self._update_mean_variance(self.class_count_[i], self.theta_[i, :], self.var_[i, :],
                                                             X_i, random_state=random_state, n_noisy=n_i)
@@ -284,23 +283,22 @@ class GaussianNB(sk_nb.GaussianNB, DiffprivlibMixin):
 
         return total_mu, total_var
 
-    def _noisy_class_counts(self, y, random_state):
-        unique_y = np.unique(y)
+    def _noisy_class_counts(self, y, classes, random_state):
         n_total = y.shape[0]
 
         # Use 1/3 of total epsilon budget for getting noisy class counts
-        mech = GeometricTruncated(epsilon=self.epsilon / 3, sensitivity=1, lower=1, upper=n_total,
+        mech = GeometricTruncated(epsilon=self.epsilon / 3, sensitivity=1, lower=0, upper=n_total,
                                   random_state=random_state)
-        noisy_counts = np.array([mech.randomise((y == y_i).sum()) for y_i in unique_y])
+        noisy_counts = np.array([mech.randomise((y == y_i).sum()) for y_i in classes])
 
         argsort = np.argsort(noisy_counts)
-        i = 0 if noisy_counts.sum() > n_total else len(unique_y) - 1
+        i = 0 if noisy_counts.sum() > n_total else len(classes) - 1
 
         while np.sum(noisy_counts) != n_total:
             _i = argsort[i]
             sgn = np.sign(n_total - noisy_counts.sum())
-            noisy_counts[_i] = np.clip(noisy_counts[_i] + sgn, 1, n_total)
+            noisy_counts[_i] = np.clip(noisy_counts[_i] + sgn, 0, n_total)
 
-            i = (i - sgn) % len(unique_y)
+            i = (i - sgn) % len(classes)
 
         return noisy_counts
