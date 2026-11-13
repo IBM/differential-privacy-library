@@ -65,14 +65,36 @@ class TestGaussianNB(TestCase):
         actual_counts = np.array([(y == y_i).sum() for y_i in np.unique(y)])
 
         clf = GaussianNB(epsilon=3)
-        noisy_counts = clf._noisy_class_counts(y, random_state=None)
+        noisy_counts = clf._noisy_class_counts(y, np.unique(y), random_state=None)
         self.assertEqual(y.shape[0], noisy_counts.sum())
         self.assertFalse(np.all(noisy_counts == actual_counts))
 
         clf = GaussianNB(epsilon=float("inf"))
-        noisy_counts = clf._noisy_class_counts(y, random_state=None)
+        noisy_counts = clf._noisy_class_counts(y, np.unique(y), random_state=None)
         self.assertEqual(y.shape[0], noisy_counts.sum())
         self.assertTrue(np.all(noisy_counts == actual_counts))
+
+    def test_empty_class_is_not_distinguishable(self):
+        epsilon = 1
+        features = np.full((1001, 1), 0.5)
+        labels = np.array([0] * 500 + [1] * 500 + [2])
+        relabelled = labels.copy()
+        relabelled[-1] = 0
+
+        def class_two_is_empty(targets, seed):
+            clf = GaussianNB(epsilon=epsilon, bounds=(0, 1), random_state=seed)
+            clf.partial_fit(features, targets, classes=[0, 1, 2])
+            return clf.class_count_[2] == 0
+
+        res_a = np.array([class_two_is_empty(labels, i) for i in range(500)])
+        res_b = np.array([class_two_is_empty(relabelled, 500 + i) for i in range(500)])
+
+        bound = np.exp(2 * epsilon / 3)
+
+        for event_a, event_b in (res_a, res_b), (~res_a, ~res_b):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, bound * p_b + 0.05)
+            self.assertLessEqual(p_b, bound * p_a + 0.05)
 
     @pytest.mark.filterwarnings('ignore: numpy.ufunc size changed')
     def test_different_results(self):
