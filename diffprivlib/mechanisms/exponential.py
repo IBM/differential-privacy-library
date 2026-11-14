@@ -92,10 +92,22 @@ class Exponential(DPMechanism):
 
     @classmethod
     def _check_utility_candidates_measure(cls, utility, candidates, measure):
+        float64, float32 = np.float64, np.float32
+        int64, int32 = np.int64, np.int32
+
+        sentinel = object()
+
+        def all_real(values):
+            invalid = (value for value in values
+                       if not (type(value) is float64 or type(value) is float32
+                               or type(value) is int64 or type(value) is int32
+                               or type(value) is float or type(value) is int or isinstance(value, Real)))
+            return next(invalid, sentinel) is sentinel
+
         if not isinstance(utility, list):
             raise TypeError(f"Utility must be a list, got a {utility}.")
 
-        if not all(isinstance(u, Real) for u in utility):
+        if not all_real(utility):
             raise TypeError("Utility must be a list of real-valued numbers.")
 
         if len(utility) < 1:
@@ -115,7 +127,7 @@ class Exponential(DPMechanism):
             if not isinstance(measure, list):
                 raise TypeError(f"Measure must be a list, got a {type(measure)}.")
 
-            if not all(isinstance(m, Real) for m in measure):
+            if not all_real(measure):
                 raise TypeError("Measure must be a list of real-valued numbers.")
 
             if np.isinf(measure).any():
