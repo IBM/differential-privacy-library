@@ -110,7 +110,11 @@ class Geometric(DPMechanism):
         sgn = -1 if unif_rv < 0 else 1
 
         # Use formula for geometric distribution, with ratio of exp(-epsilon/sensitivity)
-        return int(np.round(value + sgn * np.floor(np.log(sgn * unif_rv) / self._scale)))
+        noisy_value = value + sgn * np.floor(np.log(sgn * unif_rv) / self._scale)
+        # The floor and integer input normally give an integer-valued scalar.
+        if type(noisy_value) is not np.float64 or not noisy_value.is_integer():
+            noisy_value = np.round(noisy_value)
+        return int(noisy_value)
 
 
 class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
@@ -166,10 +170,16 @@ class GeometricTruncated(Geometric, TruncationAndFoldingMixin):
 
     @copy_docstring(Geometric.randomise)
     def randomise(self, value):
-        self._check_all(value)
+        # Geometric.randomise validates through this class's _check_all.
+        if type(self) is not GeometricTruncated:
+            self._check_all(value)
 
         noisy_value = super().randomise(value)
-        return int(np.round(self._truncate(noisy_value)))
+        truncated_value = self._truncate(noisy_value)
+        # NumPy rounding leaves ordinary Python integers unchanged.
+        if type(truncated_value) is int and -(1 << 63) <= truncated_value < (1 << 63):
+            return truncated_value
+        return int(np.round(truncated_value))
 
 
 class GeometricFolded(Geometric, TruncationAndFoldingMixin):
