@@ -44,7 +44,11 @@ def check_epsilon_delta(epsilon, delta, allow_zero=False):
         Allow epsilon and delta both be zero.
 
     """
-    if not isinstance(epsilon, Real) or not isinstance(delta, Real):
+    epsilon_type = type(epsilon)
+    delta_type = type(delta)
+    if (epsilon_type is not float and epsilon_type is not int and epsilon_type is not bool
+            and not isinstance(epsilon, Real)) or (delta_type is not float and delta_type is not int
+                                                 and delta_type is not bool and not isinstance(delta, Real)):
         raise TypeError("Epsilon and delta must be numeric")
 
     if epsilon < 0:
