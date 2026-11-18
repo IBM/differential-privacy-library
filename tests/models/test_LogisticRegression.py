@@ -4,6 +4,7 @@ from unittest import TestCase, skipIf
 from diffprivlib.models.logistic_regression import LogisticRegression
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 from sklearn import __version__ as sklearn_version
+from sklearn.multiclass import OneVsRestClassifier
 
 
 class TestLogisticRegression(TestCase):
@@ -82,7 +83,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=1.0, warm_start=True)
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0, warm_start=True))
         clf.fit(X, y)
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -92,7 +93,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=1.0)
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0))
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -102,7 +103,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2, 3])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=1.0)
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0))
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -135,17 +136,17 @@ class TestLogisticRegression(TestCase):
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2,
                                                             random_state=rng)
 
-        clf = LogisticRegression(data_norm=12, random_state=rng)
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng))
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = LogisticRegression(data_norm=12, random_state=rng)
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng))
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
 
-        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr", random_state=rng)
+        clf = OneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs", random_state=rng))
         clf.fit(X_train, y_train)
 
         predict3 = clf.predict(X_test)
@@ -161,12 +162,12 @@ class TestLogisticRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = LogisticRegression(data_norm=12, epsilon=float("inf"))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, epsilon=float("inf")))
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = linear_model.LogisticRegression(solver="lbfgs", multi_class="ovr")
+        clf = OneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs"))
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)

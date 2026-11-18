@@ -185,7 +185,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
                  warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=random_state, solver='lbfgs', max_iter=max_iter,
-                         multi_class='ovr', verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
+                         verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
         self.data_norm = data_norm
         self.classes_ = None
@@ -240,10 +240,15 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         if n_classes < 2:
             raise ValueError("This solver needs samples of at least 2 classes in the data, but the data contains only "
                              f"one class: {classes_[0]}")
+        elif n_classes > 2:
+            raise ValueError(
+                "This solver can only accept binary classification problems. Wrap your class with "
+                "sklearn.multiclass.OneVsRestClassifier during initialisation. "
+                f"Classes: {n_classes}. As follows: {classes_}"
+                )
 
-        if len(self.classes_) == 2:
-            n_classes = 1
-            classes_ = classes_[1:]
+        n_classes = 1
+        classes_ = classes_[1:]
 
         if self.warm_start:
             warm_start_coef = getattr(self, 'coef_', None)
@@ -255,21 +260,13 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         self.coef_ = []
         self.intercept_ = np.zeros(n_classes)
 
-        if warm_start_coef is None:
-            warm_start_coef = [None] * n_classes
+        coefs, _, n_iter = _logistic_regression_path(
+            X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=classes_, Cs=[self.C], fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose, coef=warm_start_coef, random_state=random_state, check_input=False
+        )
 
-        path_func = delayed(_logistic_regression_path)
+        self.n_iter_ = np.asarray(n_iter, dtype=np.int32)
 
-        fold_coefs_ = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer='processes')(
-            path_func(X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=class_, Cs=[self.C],
-                      fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose,
-                      coef=warm_start_coef_, random_state=random_state, check_input=False)
-            for class_, warm_start_coef_ in zip(classes_, warm_start_coef))
-
-        fold_coefs_, _, n_iter_ = zip(*fold_coefs_)
-        self.n_iter_ = np.asarray(n_iter_, dtype=np.int32)[:, 0]
-
-        self.coef_ = np.asarray(fold_coefs_)
+        self.coef_ = coefs[0, ...]
         self.coef_ = self.coef_.reshape(n_classes, n_features + int(self.fit_intercept))
 
         if self.fit_intercept:
