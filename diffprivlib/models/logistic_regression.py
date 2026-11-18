@@ -47,7 +47,6 @@ import numbers
 import warnings
 
 import numpy as np
-from joblib import delayed, Parallel
 from scipy import optimize
 from sklearn.exceptions import ConvergenceWarning
 from sklearn import linear_model
@@ -261,8 +260,9 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         self.intercept_ = np.zeros(n_classes)
 
         coefs, _, n_iter = _logistic_regression_path(
-            X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=classes_, Cs=[self.C], fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose, coef=warm_start_coef, random_state=random_state, check_input=False
-        )
+            X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=classes_, Cs=[self.C],
+            fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose,
+            coef=warm_start_coef, random_state=random_state, check_input=False)
 
         self.n_iter_ = np.asarray(n_iter, dtype=np.int32)
 
