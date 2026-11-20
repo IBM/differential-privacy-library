@@ -25,3 +25,4 @@ from diffprivlib.models.logistic_regression import LogisticRegression
 from diffprivlib.models.pca import PCA
 from diffprivlib.models.standard_scaler import StandardScaler
 from diffprivlib.models.forest import RandomForestClassifier, DecisionTreeClassifier
+from diffprivlib.models.multiclass import OneVsRestClassifier
