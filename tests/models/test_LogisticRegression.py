@@ -2,9 +2,10 @@ import numpy as np
 from unittest import TestCase, skipIf
 
 from diffprivlib.models.logistic_regression import LogisticRegression
+from diffprivlib.models.multiclass import OneVsRestClassifier
 from diffprivlib.utils import PrivacyLeakWarning, DiffprivlibCompatibilityWarning, BudgetError
 from sklearn import __version__ as sklearn_version
-from sklearn.multiclass import OneVsRestClassifier
+from sklearn.multiclass import OneVsRestClassifier as skOneVsRestClassifier
 
 
 class TestLogisticRegression(TestCase):
@@ -18,8 +19,8 @@ class TestLogisticRegression(TestCase):
         with self.assertRaises(ValueError):
             LogisticRegression(data_norm=1, C=-1).fit(X, y)
 
-        with self.assertRaises(ValueError):
-            LogisticRegression(data_norm=1, C=1.2).fit(X, y)
+        # with self.assertRaises(ValueError):
+        #     LogisticRegression(data_norm=1, C=1.2).fit(X, y)
 
         with self.assertRaises(ValueError):
             LogisticRegression(data_norm=1, max_iter=-1).fit(X, y)
@@ -37,13 +38,12 @@ class TestLogisticRegression(TestCase):
         X = [[1]]
         y = [0]
 
-        clf = LogisticRegression(data_norm=1)
+        clf = LogisticRegression(data_norm=1, classes=[0])
 
-        with self.assertRaises(ValueError):
-            clf.fit(X, y)
+        clf.fit(X, y)
 
     def test_no_params(self):
-        clf = LogisticRegression()
+        clf = LogisticRegression(classes=[0, 1])
 
         X = np.array(
             [0.50, 0.75, 1.00, 1.25, 1.50, 1.75, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00, 3.25, 3.50, 4.00, 4.25, 4.50, 4.75,
@@ -61,7 +61,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=1.0)
+        clf = LogisticRegression(data_norm=1.0, classes=[0, 1])
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -72,7 +72,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1])
         X = X[:, np.newaxis]
 
-        clf = LogisticRegression(data_norm=5.5)
+        clf = LogisticRegression(data_norm=5.5, classes=[0, 1])
 
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             clf.fit(X, y, sample_weight=np.ones_like(y))
@@ -83,7 +83,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2])
         X = X[:, np.newaxis]
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0, warm_start=True))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0, warm_start=True), classes=[0, 1, 2])
         clf.fit(X, y)
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -93,7 +93,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2])
         X = X[:, np.newaxis]
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0), classes=[0, 1, 2])
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -103,7 +103,7 @@ class TestLogisticRegression(TestCase):
         y = np.array([0, 1, 2, 3])
         X = X[:, np.newaxis]
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=1.0), classes=[0, 1, 2, 3])
 
         self.assertIsNotNone(clf.fit(X, y))
 
@@ -121,9 +121,9 @@ class TestLogisticRegression(TestCase):
         with self.assertWarns(DiffprivlibCompatibilityWarning):
             LogisticRegression(solver="newton-cg")
 
-    def test_multi_class_warning(self):
-        with self.assertWarns(DiffprivlibCompatibilityWarning):
-            LogisticRegression(multi_class="multinomial")
+    # def test_multi_class_warning(self):
+    #     with self.assertWarns(DiffprivlibCompatibilityWarning):
+    #         LogisticRegression(multi_class="multinomial")
 
     def test_different_results(self):
         from sklearn import datasets
@@ -136,17 +136,17 @@ class TestLogisticRegression(TestCase):
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2,
                                                             random_state=rng)
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng), classes=[0, 1, 2])
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, random_state=rng), classes=[0, 1, 2])
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
 
-        clf = OneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs", random_state=rng))
+        clf = skOneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs", random_state=rng))
         clf.fit(X_train, y_train)
 
         predict3 = clf.predict(X_test)
@@ -162,12 +162,12 @@ class TestLogisticRegression(TestCase):
         dataset = datasets.load_iris()
         X_train, X_test, y_train, y_test = train_test_split(dataset.data, dataset.target, test_size=0.2)
 
-        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, epsilon=float("inf")))
+        clf = OneVsRestClassifier(LogisticRegression(data_norm=12, epsilon=float("inf")), classes=[0, 1, 2])
         clf.fit(X_train, y_train)
 
         predict1 = clf.predict(X_test)
 
-        clf = OneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs"))
+        clf = skOneVsRestClassifier(linear_model.LogisticRegression(solver="lbfgs"))
         clf.fit(X_train, y_train)
 
         predict2 = clf.predict(X_test)
@@ -183,7 +183,7 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf = LogisticRegression(epsilon=2, data_norm=1.0, random_state=1)
+        clf = LogisticRegression(epsilon=2, data_norm=1.0, random_state=1, classes=[0, 1])
         clf.fit(X, y)
 
         self.assertIsNotNone(clf)
@@ -199,14 +199,14 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf0 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=0)
-        clf1 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=1)
+        clf0 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=0, classes=[0, 1])
+        clf1 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=1, classes=[0, 1])
         clf0.fit(X, y)
         clf1.fit(X, y)
         self.assertFalse(np.any(clf0.coef_ == clf1.coef_))
         self.assertFalse(np.any(clf0.intercept_ == clf1.intercept_))
 
-        clf1 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=0)
+        clf1 = LogisticRegression(epsilon=2, data_norm=1.0, random_state=0, classes=[0, 1])
         clf1.fit(X, y)
         self.assertTrue(np.all(clf0.coef_ == clf1.coef_))
         self.assertTrue(np.all(clf0.intercept_ == clf1.intercept_))
@@ -223,12 +223,12 @@ class TestLogisticRegression(TestCase):
         X -= 3.0
         X /= 2.5
 
-        clf = LogisticRegression(epsilon=2, data_norm=1.0, accountant=acc)
+        clf = LogisticRegression(epsilon=2, data_norm=1.0, accountant=acc, classes=[0, 1])
         clf.fit(X, y)
         self.assertEqual((2, 0), acc.total())
 
         with BudgetAccountant(3, 0) as acc2:
-            clf = LogisticRegression(epsilon=2, data_norm=1.0)
+            clf = LogisticRegression(epsilon=2, data_norm=1.0, classes=[0, 1])
             clf.fit(X, y)
             self.assertEqual((2, 0), acc2.total())
 

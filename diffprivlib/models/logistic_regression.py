@@ -181,16 +181,20 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         "random_state")
 
     def __init__(self, *, epsilon=1.0, data_norm=None, tol=1e-4, C=1.0, fit_intercept=True, max_iter=100, verbose=0,
-                 warm_start=False, n_jobs=None, random_state=None, accountant=None, **unused_args):
+                 warm_start=False, n_jobs=None, random_state=None, classes=None, accountant=None, **unused_args):
         super().__init__(penalty='l2', dual=False, tol=tol, C=C, fit_intercept=fit_intercept, intercept_scaling=1.0,
                          class_weight=None, random_state=random_state, solver='lbfgs', max_iter=max_iter,
                          verbose=verbose, warm_start=warm_start, n_jobs=n_jobs)
         self.epsilon = epsilon
         self.data_norm = data_norm
-        self.classes_ = None
+        self.classes_ = classes
         self.accountant = BudgetAccountant.load_default(accountant)
 
         self._warn_unused_args(unused_args)
+
+    @property
+    def classes(self):
+        return self.classes_
 
     # noinspection PyAttributeOutsideInit
     def fit(self, X, y, sample_weight=None):
@@ -223,7 +227,11 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         X, y = validate_data(self, X, y, accept_sparse='csr', dtype=float, order="C",
                              accept_large_sparse=True)
         check_classification_targets(y)
-        self.classes_ = np.unique(y)
+        if self.classes_ is None:
+            warnings.warn("Classes have not been specified and will be calculated on the data provided. This will "
+                          "result in additional privacy leakage. To ensure differential privacy and no additional "
+                          "privacy leakage, specify the prediction classes for model.", PrivacyLeakWarning)
+            self.classes_ = np.unique(y)
         _, n_features = X.shape
 
         if self.data_norm is None:
@@ -236,18 +244,11 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
         n_classes = len(self.classes_)
         classes_ = self.classes_
-        if n_classes < 2:
-            raise ValueError("This solver needs samples of at least 2 classes in the data, but the data contains only "
-                             f"one class: {classes_[0]}")
-        elif n_classes > 2:
-            raise ValueError(
-                "This solver can only accept binary classification problems. Wrap your class with "
-                "sklearn.multiclass.OneVsRestClassifier during initialisation. "
-                f"Classes: {n_classes}. As follows: {classes_}"
-                )
+        if n_classes > 2:
+            raise ValueError("This class can only accept binary classification problems. Wrap your class with "
+                             "OneVsRestClassifier during initialisation. ")
 
-        n_classes = 1
-        classes_ = classes_[1:]
+        classes_ = classes_[-1]
 
         if self.warm_start:
             warm_start_coef = getattr(self, 'coef_', None)
@@ -260,18 +261,21 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
         self.intercept_ = np.zeros(n_classes)
 
         coefs, _, n_iter = _logistic_regression_path(
-            X, y, epsilon=self.epsilon / n_classes, data_norm=self.data_norm, pos_class=classes_, Cs=[self.C],
+            X, y, epsilon=self.epsilon, data_norm=self.data_norm, pos_class=classes_, Cs=[self.C],
             fit_intercept=self.fit_intercept, max_iter=self.max_iter, tol=self.tol, verbose=self.verbose,
             coef=warm_start_coef, random_state=random_state, check_input=False)
 
         self.n_iter_ = np.asarray(n_iter, dtype=np.int32)
 
         self.coef_ = coefs[0, ...]
-        self.coef_ = self.coef_.reshape(n_classes, n_features + int(self.fit_intercept))
+        # self.coef_ = self.coef_.reshape(n_classes, n_features + int(self.fit_intercept))
 
         if self.fit_intercept:
-            self.intercept_ = self.coef_[:, -1]
-            self.coef_ = self.coef_[:, :-1]
+            self.intercept_ = self.coef_[-1:]
+            self.coef_ = self.coef_[:-1][None, :]
+        else:
+            self.intercept_ = np.zeros(1, dtype=X.dtype)
+            self.coef_ = self.coef_[None, :]
 
         self.accountant.spend(self.epsilon, 0)
 
