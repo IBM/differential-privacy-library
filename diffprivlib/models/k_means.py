@@ -69,10 +69,12 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
         with ``labels_``.
 
     labels_ :
-        Labels of each point
+        Labels of each point, computed on the training data after clipping to ``bounds``.  These will certainly not
+        satisfy differential privacy.
 
-    inertia_ : float
-        Sum of squared distances of samples to their closest cluster center.
+    inertia_ : None
+        Not computed.  The sum of squared distances of samples to their closest cluster center is not
+        differentially private, so it is not released.
 
     n_iter_ : int
         Number of iterations run.
@@ -152,7 +154,6 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
         centers = self._init_centers(n_dims, random_state=random_state)
         labels = None
-        distances = None
 
         # Run _update_centers first to ensure consistency of `labels` and `centers`, since convergence unlikely
         for _ in range(-1, iters):
@@ -160,11 +161,10 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
                 centers = self._update_centers(X, centers=centers, labels=labels, dims=n_dims, total_iters=iters,
                                                random_state=random_state)
 
-            distances, labels = self._distances_labels(X, centers)
+            _, labels = self._distances_labels(X, centers)
 
         self.cluster_centers_ = centers
         self.labels_ = labels
-        self.inertia_ = distances[np.arange(len(labels)), labels].sum()
         self.n_iter_ = iters
 
         self.accountant.spend(self.epsilon, 0)
