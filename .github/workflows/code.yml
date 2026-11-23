@@ -17,11 +17,11 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.14'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pylint==2.15.2 pycodestyle==2.9.1 pytest-cov
+        python -m pip install pylint==4.1.4 pycodestyle==2.15.0 pytest-cov
         python -m pip install .
         python -m pip list
     - name: Codecov test
