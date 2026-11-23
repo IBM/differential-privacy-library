@@ -26,7 +26,7 @@ from diffprivlib.mechanisms.exponential import Exponential, ExponentialCategoric
     PermuteAndFlip
 from diffprivlib.mechanisms.gaussian import Gaussian, GaussianAnalytic, GaussianDiscrete
 from diffprivlib.mechanisms.geometric import Geometric, GeometricFolded, GeometricTruncated
-from diffprivlib.mechanisms.laplace import Laplace, LaplaceBoundedDomain, LaplaceBoundedNoise, LaplaceFolded,\
+from diffprivlib.mechanisms.laplace import Laplace, LaplaceBoundedDomain, LaplaceBoundedNoise, LaplaceFolded, \
     LaplaceTruncated
 from diffprivlib.mechanisms.snapping import Snapping
 from diffprivlib.mechanisms.staircase import Staircase

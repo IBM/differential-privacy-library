@@ -62,6 +62,7 @@ def _fit_binary(estimator, X, y, fit_params):
 
     return estimator
 
+
 class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
     """One-vs-the-rest (OvR) multiclass strategy.
 
@@ -175,18 +176,18 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
         multiclass.OneVsRestClassifier, "estimator", "n_jobs", "verbose")
 
     def __init__(self, estimator, *, n_jobs=None, verbose=0, classes=None, epsilon=None, delta=None):
-            super().__init__(estimator, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(estimator, n_jobs=n_jobs, verbose=verbose)
 
-            if epsilon is not None:
-                 self.estimator.epsilon = epsilon
+        if epsilon is not None:
+            self.estimator.epsilon = epsilon
 
-            if delta is not None:
-                 self.estimator.delta = delta
+        if delta is not None:
+            self.estimator.delta = delta
 
-            self.classes_ = np.array(classes)
+        self.classes_ = np.array(classes)
 
-            # Classes from this class will always be 0 or 1. Need to specify here to avoid a diffprivlib warning
-            self.estimator.classes_ = [0, 1]
+        # Classes from this class will always be 0 or 1. Need to specify here to avoid a diffprivlib warning
+        self.estimator.classes_ = [0, 1]
 
     @property
     def classes(self):
