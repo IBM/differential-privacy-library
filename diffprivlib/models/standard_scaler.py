@@ -58,7 +58,7 @@ except ImportError:
 
 from diffprivlib.accountant import BudgetAccountant
 from diffprivlib.utils import PrivacyLeakWarning, check_random_state
-from diffprivlib.tools import nanvar, nanmean
+from diffprivlib.tools import mean, var
 from diffprivlib.validation import DiffprivlibMixin
 
 
@@ -71,7 +71,7 @@ def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last
     # updated = the aggregated stats
     last_sum = last_mean * last_sample_count
 
-    new_mean = nanmean(X, epsilon=epsilon, axis=0, bounds=bounds, random_state=random_state, accountant=temp_acc)
+    new_mean = mean(X, epsilon=epsilon, axis=0, bounds=bounds, random_state=random_state, accountant=temp_acc)
     new_sample_count = np.sum(~np.isnan(X), axis=0)
     new_sum = new_mean * new_sample_count
     updated_sample_count = last_sample_count + new_sample_count
@@ -81,8 +81,8 @@ def _incremental_mean_and_var(X, epsilon, bounds, last_mean, last_variance, last
     if last_variance is None:
         updated_variance = None
     else:
-        new_unnormalized_variance = nanvar(X, epsilon=epsilon, axis=0, bounds=bounds, random_state=random_state,
-                                           accountant=temp_acc) * new_sample_count
+        new_unnormalized_variance = var(X, epsilon=epsilon, axis=0, bounds=bounds, random_state=random_state,
+                                        accountant=temp_acc) * new_sample_count
         last_unnormalized_variance = last_variance * last_sample_count
 
         with np.errstate(divide='ignore', invalid='ignore'):

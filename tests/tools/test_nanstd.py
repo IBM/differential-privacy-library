@@ -85,3 +85,32 @@ class TestNanStd(TestCase):
         with acc:
             with self.assertRaises(BudgetError):
                 nanstd(a, epsilon=1, bounds=(0, 1))
+
+    def test_neighbouring_arrays_are_not_distinguishable(self):
+        a = np.array([0, 1] + [np.nan] * 98)
+        b = np.array([1, 1] + [np.nan] * 98)
+        res_a = np.array([nanstd(a, epsilon=1, bounds=(0, 1), random_state=i) for i in range(1000)])
+        res_b = np.array([nanstd(b, epsilon=1, bounds=(0, 1), random_state=1000 + i) for i in range(1000)])
+
+        for event_a, event_b in (res_a > 0.3, res_b > 0.3), (res_a <= 0.3, res_b <= 0.3):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)
+
+    def test_all_nan_slice(self):
+        a = np.array([np.nan, np.nan, np.nan])
+
+        for i in range(20):
+            res = nanstd(a, epsilon=1, bounds=(0, 1), random_state=i)
+            self.assertTrue(0 <= res <= 0.5)
+
+    def test_replacing_a_value_by_nan_is_not_distinguishable(self):
+        a = np.array([0, 1] + [np.nan] * 98)
+        b = np.array([0, 1, 1] + [np.nan] * 97)
+        res_a = np.array([nanstd(a, epsilon=1, bounds=(0, 1), random_state=i) for i in range(1000)])
+        res_b = np.array([nanstd(b, epsilon=1, bounds=(0, 1), random_state=1000 + i) for i in range(1000)])
+
+        for event_a, event_b in (res_a > 0.487, res_b > 0.487), (res_a <= 0.487, res_b <= 0.487):
+            p_a, p_b = event_a.mean(), event_b.mean()
+            self.assertLessEqual(p_a, np.e * p_b + 0.05)
+            self.assertLessEqual(p_b, np.e * p_a + 0.05)
