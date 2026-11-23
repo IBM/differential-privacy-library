@@ -80,13 +80,13 @@ def _preprocess_data(X, y, fit_intercept, epsilon=1.0, bounds_X=None, bounds_y=N
     y = np.asarray(y, dtype=X.dtype)
     X_scale = np.ones(X.shape[1], dtype=X.dtype)
 
+    bounds_X = check_bounds(bounds_X, X.shape[1])
+    bounds_y = check_bounds(bounds_y, y.shape[1] if y.ndim > 1 else 1)
+
+    X = clip_to_bounds(X, bounds_X)
+    y = clip_to_bounds(y, bounds_y)
+
     if fit_intercept:
-        bounds_X = check_bounds(bounds_X, X.shape[1])
-        bounds_y = check_bounds(bounds_y, y.shape[1] if y.ndim > 1 else 1)
-
-        X = clip_to_bounds(X, bounds_X)
-        y = clip_to_bounds(y, bounds_y)
-
         X_offset = mean(X, axis=0, bounds=bounds_X, epsilon=epsilon, random_state=random_state,
                         accountant=BudgetAccountant())
         X -= X_offset

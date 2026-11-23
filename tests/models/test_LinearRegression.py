@@ -134,6 +134,22 @@ class TestLinearRegression(TestCase):
         self.assertIsNotNone(clf._preprocess_data(X, y, fit_intercept=True, bounds_X=(-1, 1), bounds_y=(-1, 1),
                                                   check_input=False, copy=True))
 
+    def test_clipping_without_intercept(self):
+        X = np.linspace(0, 1, 100)
+        y = X / 2
+        X = X[:, np.newaxis]
+
+        X_outlier, y_outlier = X.copy(), y.copy()
+        X_outlier[0, 0], y_outlier[0] = 1000, 1000
+        X_clipped, y_clipped = X.copy(), y.copy()
+        X_clipped[0, 0], y_clipped[0] = 1, 1
+
+        clf = LinearRegression(epsilon=1, fit_intercept=False, bounds_X=(0, 1), bounds_y=(0, 1), random_state=0)
+        coef_outlier = clf.fit(X_outlier, y_outlier).coef_
+        coef_clipped = clf.fit(X_clipped, y_clipped).coef_
+
+        self.assertTrue(np.allclose(coef_outlier, coef_clipped))
+
     def test_diagonal_sensitivity_uses_both_bounds(self):
         # Regression test: the diagonal (X_i * X_i) sensitivity calculation in
         # _construct_regression_obj used bounds_X[0][i] twice instead of
