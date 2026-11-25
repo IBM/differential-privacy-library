@@ -41,23 +41,29 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import warnings
+"""
+Multiclass classification strategies satisfying differential privacy.
+"""
 
-from diffprivlib.utils import PrivacyLeakWarning
+import warnings
 
 from sklearn import multiclass
 from sklearn.base import _fit_context, clone
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.metadata_routing import _raise_for_params, process_routing
-import numpy as np
 
+from diffprivlib.utils import PrivacyLeakWarning
 from diffprivlib.validation import DiffprivlibMixin
 
 
-def _fit_binary(estimator, X, y, fit_params):
+def _fit_binary(estimator, X, y, fit_params, classes):
     """Fit a single binary estimator."""
     estimator = clone(estimator)
+    try:
+        estimator.classes_ = classes
+    except AttributeError:
+        pass
     estimator.fit(X, y, **fit_params)
 
     return estimator
@@ -156,8 +162,8 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
     Examples
     --------
     >>> import numpy as np
-    >>> from sklearn.multiclass import OneVsRestClassifier
-    >>> from sklearn.svm import SVC
+    >>> from diffprivlib.models import LogisticRegression
+    >>> from diffprivlib.models.multiclass import OneVsRestClassifier
     >>> X = np.array([
     ...     [10, 10],
     ...     [8, 10],
@@ -167,7 +173,8 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
     ...     [-15, -20]
     ... ])
     >>> y = np.array([0, 0, 1, 1, 2, 2])
-    >>> clf = OneVsRestClassifier(SVC()).fit(X, y)
+    >>> clf = OneVsRestClassifier(LogisticRegression(data_norm=30, random_state=0), epsilon=100,
+    ...                           classes=[0, 1, 2]).fit(X, y)
     >>> clf.predict([[-19, -20], [9, 9], [-5, 5]])
     array([2, 0, 1])
     """
@@ -184,17 +191,18 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
         if delta is not None:
             self.estimator.delta = delta
 
-        self.classes_ = np.array(classes)
-
-        # Classes from this class will always be 0 or 1. Need to specify here to avoid a diffprivlib warning
-        self.estimator.classes_ = [0, 1]
-
-    @property
-    def classes(self):
-        return self.classes_
+        self.classes = classes
 
     @property
     def epsilon(self):
+        r"""Privacy parameter :math:`\epsilon` of the underlying estimator.
+
+        Returns
+        -------
+        float or None
+            The ``epsilon`` attribute of ``self.estimator``, or ``None`` if the
+            estimator does not expose that attribute.
+        """
         try:
             return self.estimator.epsilon
         except AttributeError:
@@ -202,6 +210,17 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
 
     @property
     def delta(self):
+        r"""Privacy parameter :math:`\delta` of the underlying estimator.
+
+        :math:`\delta` is the failure probability in :math:`(\epsilon, \delta)`-differential
+        privacy.  A value of ``0`` corresponds to pure :math:`\epsilon`-differential privacy.
+
+        Returns
+        -------
+        float or None
+            The ``delta`` attribute of ``self.estimator``, or ``None`` if the
+            estimator does not expose that attribute.
+        """
         try:
             return self.estimator.delta
         except AttributeError:
@@ -245,16 +264,18 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
         # resulted in less or equal memory consumption in the fit_ovr function
         # overall.
         self.label_binarizer_ = LabelBinarizer(sparse_output=True)
-        if self.classes_ is not None:
-            self.label_binarizer_.fit(self.classes_)
+        if self.classes is not None:
+            self.label_binarizer_.fit(self.classes)
             Y = self.label_binarizer_.transform(y)
         else:
             warnings.warn("Classes have not been specified and will be calculated on the data provided. This will "
                           "result in additional privacy leakage. To ensure differential privacy and no additional "
                           "privacy leakage, specify the prediction classes for model.", PrivacyLeakWarning)
             Y = self.label_binarizer_.fit_transform(y)
-            self.classes_ = self.label_binarizer_.classes_
 
+        # classes_ needs to be set separately, as sklearn regonises this as a fitted parameter
+        self.classes_ = self.label_binarizer_.classes_
+        self.classes = self.classes_.tolist()
         Y = Y.tocsc()
         columns = (col.toarray().ravel() for col in Y.T)
 
@@ -267,6 +288,7 @@ class OneVsRestClassifier(multiclass.OneVsRestClassifier, DiffprivlibMixin):
                 X,
                 column,
                 fit_params=routed_params.estimator.fit,
+                classes=[0, 1]
             )
             for column in columns
         )

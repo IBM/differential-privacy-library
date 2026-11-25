@@ -194,6 +194,7 @@ class LogisticRegression(linear_model.LogisticRegression, DiffprivlibMixin):
 
     @property
     def classes(self):
+        """Class labels known to the classifier, as set by the ``classes`` parameter or learned during ``fit``."""
         return self.classes_
 
     # noinspection PyAttributeOutsideInit
