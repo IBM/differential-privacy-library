@@ -30,7 +30,7 @@ class TestDecisionTreeClassifier(TestCase):
             DecisionTreeClassifier(epsilon=-1, bounds=([0], [1])).fit(X, y)
 
         with self.assertWarns(DiffprivlibCompatibilityWarning):
-            DecisionTreeClassifier(bounds=([0], [1])).fit(X, y, sample_weight=1)
+            DecisionTreeClassifier(bounds=([0], [1]), classes=[0, 1]).fit(X, y, sample_weight=1)
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):

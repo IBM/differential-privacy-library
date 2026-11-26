@@ -253,7 +253,10 @@ class PCA(sk_pca.PCA, DiffprivlibMixin):
         elif 0 < n_components < 1.0:
             # number of components for which the cumulated explained
             # variance percentage is superior to the desired threshold
-            ratio_cumsum = stable_cumsum(explained_variance_ratio_)
+            try:
+                ratio_cumsum = np.cumulative_sum(explained_variance_ratio_)
+            except AttributeError:
+                ratio_cumsum = np.cumsum(explained_variance_ratio_)
             n_components = np.searchsorted(ratio_cumsum, n_components) + 1
 
         # Compute noise covariance using Probabilistic PCA model
