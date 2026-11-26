@@ -246,7 +246,7 @@ class TestOneVsRestClassifier(TestCase):
 
     def test_dp_gaussiannb_fit_predict(self):
         bounds = ([4.0, 2.0, 1.0, 0.0], [8.0, 5.0, 7.0, 3.0])
-        base = GaussianNB(epsilon=2.0, bounds=bounds)
+        base = GaussianNB(epsilon=2.0, bounds=bounds, random_state=0)
         ovr = OneVsRestClassifier(base, classes=[0, 1, 2])
 
         ovr.fit(iris.data, iris.target)
