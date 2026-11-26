@@ -1,10 +1,11 @@
 # pylint: disable=C0114,C0115,C0116,R0904
 
 import warnings
-from unittest import TestCase
+from unittest import TestCase, skipIf
 
 import numpy as np
 from sklearn import datasets
+import sklearn
 from sklearn.base import BaseEstimator
 from sklearn.dummy import DummyClassifier
 from sklearn.exceptions import NotFittedError
@@ -14,6 +15,7 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import assert_array_equal
+from sklearn.utils.fixes import parse_version
 
 from diffprivlib.models import LogisticRegression, OneVsRestClassifier, GaussianNB, RandomForestClassifier
 from diffprivlib.utils import PrivacyLeakWarning
@@ -220,6 +222,8 @@ class TestOneVsRestClassifier(TestCase):
         df = ovr.decision_function(iris.data)
         self.assertEqual(df.shape, (iris.data.shape[0], _N_CLASSES))
 
+    @skipIf(parse_version(sklearn.__version__) < parse_version("1.8.0"),
+            "scikit-learn < 1.8.0 breaks ties differently from np.argmax")
     def test_ties_broken_by_argmax(self):
         """Tie-breaking in predict must match np.argmax(decision_function)."""
 
