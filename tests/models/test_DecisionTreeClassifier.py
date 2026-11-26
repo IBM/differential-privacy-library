@@ -29,9 +29,8 @@ class TestDecisionTreeClassifier(TestCase):
         with self.assertRaises(ValueError):
             DecisionTreeClassifier(epsilon=-1, bounds=([0], [1])).fit(X, y)
 
-        with (self.assertWarns(DiffprivlibCompatibilityWarning),
-              self.assertWarns(PrivacyLeakWarning)):
-            DecisionTreeClassifier(bounds=([0], [1])).fit(X, y, sample_weight=1)
+        with self.assertWarns(DiffprivlibCompatibilityWarning):
+            DecisionTreeClassifier(bounds=([0], [1]), classes=[0, 1]).fit(X, y, sample_weight=1)
 
     def test_bad_data(self):
         with self.assertRaises(ValueError):
