@@ -288,7 +288,7 @@ class KMeans(sk_cluster.KMeans, DiffprivlibMixin):
 
         normaliser = self.epsilon / total_iters / (epsilon_i * dims + epsilon_0)
 
-        return epsilon_i * normaliser, epsilon_0 * normaliser
+        return epsilon_0 * normaliser, epsilon_i * normaliser
 
     def _calc_iters(self, n_dims, n_samples, rho=0.225):
         """Calculate the number of iterations to allow for the KMeans algorithm."""

@@ -132,3 +132,13 @@ class TestKMeans(TestCase):
 
             with self.assertRaises(BudgetError):
                 clf2.fit(X)
+
+    def test_split_epsilon(self):
+        clf = KMeans(n_clusters=2, epsilon=1.0)
+        rho = 0.225
+
+        for dims in (1, 2, 10):
+            for total_iters in (2, 5):
+                epsilon_0, epsilon_i = clf._split_epsilon(dims, total_iters, rho=rho)
+                self.assertAlmostEqual(total_iters * (epsilon_0 + dims * epsilon_i), clf.epsilon)
+                self.assertAlmostEqual(epsilon_0 / epsilon_i, np.cbrt(4 * dims * rho ** 2))
